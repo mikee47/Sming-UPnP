@@ -67,11 +67,16 @@ public:
 	 * @brief Standard fields have been completed
 	 * @note Fields can be modified typically by adding any custom fields
 	 * before sending response.
+	 * @param msg The message being constructed
+	 * @param ms Template spec. for message
+	 * @retval bool Return true to send message, false to cancel
 	 */
 	virtual bool formatMessage(Message& msg, MessageSpec& ms) = 0;
 
 	/**
 	 * @brief Called by framework to construct then send a message.
+	 * @param msg Message to send
+	 * @param ms Template spec.
 	 */
 	virtual void sendMessage(Message& msg, MessageSpec& ms);
 
@@ -84,6 +89,21 @@ public:
 	 */
 	virtual bool onHttpRequest(HttpServerConnection& connection) = 0;
 
+	/**
+	 * @brief Called by framework to handle an incoming SSDP message
+	 * @param msg
+	 */
+	virtual void onNotify(BasicMessage& msg)
+	{
+	}
+
+	/**
+	 * @brief Called by framework to construct a device description response stream
+	 * @retval IDataSourceStream* The XML description content
+	 *
+	 * By default, the framework generates a stream constructed from the device information fields,
+	 * but this method may be overridden if, for example, a fixed description is stored in an .xml file.
+	 */
 	virtual IDataSourceStream* createDescription();
 
 	/**

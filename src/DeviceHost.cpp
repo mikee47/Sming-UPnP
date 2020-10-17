@@ -156,6 +156,10 @@ bool DeviceHost::begin()
 		[this](BasicMessage& msg) {
 			if(msg.type == MESSAGE_MSEARCH) {
 				onSearchRequest(msg);
+			} else {
+				for(auto dev = firstRootDevice(); dev != nullptr; dev = dev->getNext()) {
+					dev->onNotify(msg);
+				}
 			}
 		},
 		[](Message& msg, MessageSpec& ms) {
