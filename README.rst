@@ -76,7 +76,7 @@ How do we deal with XML on a memory-constrained device?
    We want our classes to take care of all this transparently.
 
    If we want to discover other networked devices and control them, we'll also
-   to parse the XML data in a similar way.
+   need to parse the XML data in a similar way.
    
    -  `Tiny XML-2 <https://github.com/leethomason/tinyxml2>`__ is a very popular library.
       It's a `DOM parser <https://en.wikipedia.org/wiki/Document_Object_Model>`__ so memory
@@ -141,10 +141,9 @@ Classes
 
 An application implements their devices and services using these provided base classes.
 
-Manager
-   Implements SSDP discovery and notifcation supporting multiple root devices.
-   The application must implement this class and set the global `UPnP::manager` which is a reference
-   to the class. This allows behaviour to be more easily customised.
+DeviceHost
+   Implements SSDP discovery and notification supporting multiple root devices.
+   The :library:`SSDP` library handles the protocol details.
 
 Device
    All devices are implemented using this base class, including root devices.
@@ -157,6 +156,8 @@ Service
    A service implements actions and manages state to control a device.
    Like when a REST request asks for a light to be turned on, it'll be a service that performs the
    action and tracks state.
+   The advantage with UPnP is that services are self-documented. You can explore this using
+   various :ref:`upnp_tools`.
 
 Item
    All UPnP classes are implemented using the *Item* class template, which allows them to be efficiently
@@ -173,15 +174,16 @@ Features
 Discovery
    UPnP requires a minimal amount of information exchange to advertise services,
    however device descriptions can be relatively large and therefore unsafe to 
-   manipulate in a limited RAM system. Sming's template streams are the ideal
-   solution to this problem.
-
+   manipulate in a limited RAM system.
+   
+   Sming's template streams are one possible solution to this problem.
    The IMPORT_FSTR feature allows applications to easily define their own
-   descriptions (templates or otherwise), however all the standard templates
-   can form part of this library. Whilst this consumes PROGMEM, only those actually
-   used by an application will be linked. The alternative is to use SPIFFS,
+   descriptions (templates or otherwise). The alternative is to use SPIFFS,
    however when :issue:`Partition Tables <1676>` are supported this will provide
    the best of both worlds.
+
+   However, the application should not normally need to do all this as the framework will,
+   by default, enumerate device fields and build the device description information 'on the fly'.
 
 Memory efficiency
    Much of the UPnP framework is concerned with discovery and notification, which requires a significant
@@ -203,11 +205,25 @@ Enumeration
    enumerators have a ``clone()`` method and objects have copy constructors.
 
 
-Testing Tools
--------------
+.. _upnp_tools:
 
+UPnP Tools
+----------
 
 Windows:
 
--  `Developer Tools jfor UPnP Technologies <https://www.meshcommander.com/upnptools>`__
+-  `Developer Tools for UPnP Technologies <https://www.meshcommander.com/upnptools>`__
 
+Linux:
+
+   Under Ubuntu Linux you can install `gupnp-tools`::
+   
+      sudo apt install gupnp-tools
+
+   And then discover devices on the local network using the following command::
+      
+      gssdp-discover
+
+   Filter like this::
+   
+      gssdp-discover --target=upnp:rootdevice
