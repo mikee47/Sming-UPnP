@@ -17,8 +17,8 @@
  *
  ****/
 
-#include "include/UPnP/DeviceHost.h"
-#include "include/UPnP/DescriptionStream.h"
+#include <Network/UPnP/DeviceHost.h>
+#include <Network/UPnP/DescriptionStream.h>
 #include <Network/SSDP/Server.h>
 #include <lwip/igmp.h>
 #include <WMath.h>

@@ -17,10 +17,9 @@
  *
  ****/
 
-#include "include/UPnP/RootDevice.h"
-#include "include/UPnP/ItemEnumerator.h"
-#include "include/UPnP/DescriptionStream.h"
-#include "include/UPnP/common.h"
+#include <Network/UPnP/RootDevice.h>
+#include <Network/UPnP/ItemEnumerator.h>
+#include <Network/UPnP/DescriptionStream.h>
 #include <Network/Http/HttpConnection.h>
 #include <Network/Url.h>
 #include <assert.h>
@@ -28,6 +27,9 @@
 
 namespace UPnP
 {
+DEFINE_FSTR(upnp_org, "upnp-org");
+DEFINE_FSTR(schemas_upnp_org, "schemas-upnp-org");
+
 #define XX(name, req) DEFINE_FSTR_LOCAL(fn_##name, #name);
 UPNP_DEVICE_FIELD_MAP(XX);
 #undef XX

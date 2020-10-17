@@ -17,7 +17,7 @@
  *
  ****/
 
-#include "include/UPnP/RootDevice.h"
+#include <Network/UPnP/RootDevice.h>
 #include <Network/SSDP/Server.h>
 #include <Data/Stream/FlashMemoryStream.h>
 #include <Platform/Station.h>

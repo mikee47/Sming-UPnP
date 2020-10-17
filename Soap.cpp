@@ -17,7 +17,7 @@
  *
  ****/
 
-#include "include/UPnP/Soap.h"
+#include <Network/UPnP/Soap.h>
 
 IMPORT_FSTR(soap_envelope_xml, COMPONENT_PATH "/xml/envelope.xml");
 

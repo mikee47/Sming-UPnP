@@ -17,9 +17,9 @@
  *
  ****/
 
-#include "include/UPnP/Object.h"
-#include "include/UPnP/DescriptionStream.h"
-#include "include/UPnP/DeviceHost.h"
+#include <Network/UPnP/Object.h>
+#include <Network/UPnP/DescriptionStream.h>
+#include <Network/UPnP/DeviceHost.h>
 #include <Network/SSDP/Server.h>
 
 namespace UPnP

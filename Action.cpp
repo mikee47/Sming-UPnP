@@ -17,8 +17,8 @@
  *
  ****/
 
-#include "include/UPnP/Action.h"
-#include "include/UPnP/Service.h"
+#include <Network/UPnP/Action.h>
+#include <Network/UPnP/Service.h>
 
 namespace UPnP
 {

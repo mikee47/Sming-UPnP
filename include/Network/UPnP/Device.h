@@ -45,6 +45,9 @@ class Device;
 class Request;
 using DeviceList = ObjectList<Device>;
 
+DECLARE_FSTR(upnp_org);
+DECLARE_FSTR(schemas_upnp_org);
+
 /**
  * @brief Represents any kind of device, including a root device
  */

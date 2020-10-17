@@ -17,10 +17,9 @@
  *
  ****/
 
-#include "include/UPnP/RootDevice.h"
-#include "include/UPnP/ItemEnumerator.h"
-#include "include/UPnP/DescriptionStream.h"
-#include "include/UPnP/common.h"
+#include <Network/UPnP/RootDevice.h>
+#include <Network/UPnP/ItemEnumerator.h>
+#include <Network/UPnP/DescriptionStream.h>
 #include <Data/Stream/MemoryDataStream.h>
 #include <Data/Stream/FlashMemoryStream.h>
 #include <RapidXML.h>
@@ -223,7 +222,6 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 	};
 
 	auto handleSubscribe = [&]() {
-		//	response.code = HTTP_STATUS_NOT_IMPLEMENTED;
 		UUID uuid;
 		uuid.generate();
 
