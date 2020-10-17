@@ -23,7 +23,7 @@
 #include <Platform/Station.h>
 #include <SmingVersion.h>
 
-IMPORT_FSTR(upnp_default_page, COMPONENT_PATH "/default.html");
+IMPORT_FSTR(upnp_default_page, COMPONENT_PATH "/resource/default.html");
 
 namespace UPnP
 {

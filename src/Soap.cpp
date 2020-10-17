@@ -19,7 +19,7 @@
 
 #include <Network/UPnP/Soap.h>
 
-IMPORT_FSTR(soap_envelope_xml, COMPONENT_PATH "/xml/envelope.xml");
+IMPORT_FSTR(soap_envelope_xml, COMPONENT_PATH "/resource/envelope.xml");
 
 DEFINE_FSTR_LOCAL(soap_namespace, "http://schemas.xmlsoap.org/soap/envelope/");
 DEFINE_FSTR_LOCAL(soap_encoding, "http://schemas.xmlsoap.org/soap/encoding/");
