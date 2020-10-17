@@ -22,7 +22,7 @@
 #include "LinkedItem.h"
 #include <WString.h>
 #include <Delegate.h>
-#include <SSDP/MessageSpec.h>
+#include <Network/SSDP/MessageSpec.h>
 #include <Data/Stream/DataSourceStream.h>
 #include <Network/Http/HttpServerConnection.h>
 #include <Network/Http/HttpRequest.h>

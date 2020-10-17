@@ -24,7 +24,7 @@
 #include <Data/Stream/MemoryDataStream.h>
 #include <Data/Stream/FlashMemoryStream.h>
 #include <RapidXML.h>
-#include <SSDP/UUID.h>
+#include <Network/SSDP/UUID.h>
 
 // Testing
 #include <HardwareSerial.h>
@@ -228,7 +228,7 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 		uuid.generate();
 
 		response.headers[HTTP_HEADER_SERVER] = device_->getField(Device::Field::serverId);
-		response.headers["SID"] = String("uuid:") + uuid.toString();
+		response.headers["SID"] = String("uuid:") + String(uuid);
 		response.headers[HTTP_HEADER_CONTENT_LENGTH] = "0";
 		response.headers["TIMEOUT"] = "1800";
 		response.code = HTTP_STATUS_OK;

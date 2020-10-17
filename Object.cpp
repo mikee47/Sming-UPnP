@@ -20,7 +20,7 @@
 #include "include/UPnP/Object.h"
 #include "include/UPnP/DescriptionStream.h"
 #include "include/UPnP/DeviceHost.h"
-#include <SSDP/Server.h>
+#include <Network/SSDP/Server.h>
 
 namespace UPnP
 {

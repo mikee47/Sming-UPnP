@@ -20,7 +20,7 @@
 #pragma once
 
 #include "Device.h"
-#include <SSDP/Message.h>
+#include <Network/SSDP/Message.h>
 
 namespace UPnP
 {

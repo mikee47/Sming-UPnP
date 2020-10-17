@@ -18,7 +18,7 @@
  ****/
 
 #include "include/UPnP/RootDevice.h"
-#include <SSDP/Server.h>
+#include <Network/SSDP/Server.h>
 #include <Data/Stream/FlashMemoryStream.h>
 #include <Platform/Station.h>
 #include <SmingVersion.h>

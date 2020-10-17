@@ -19,7 +19,7 @@
 
 #include "include/UPnP/DeviceHost.h"
 #include "include/UPnP/DescriptionStream.h"
-#include <SSDP/Server.h>
+#include <Network/SSDP/Server.h>
 #include <lwip/igmp.h>
 #include <WMath.h>
 #include <Platform/Station.h>
@@ -113,7 +113,7 @@ void DeviceHost::search(SearchFilter& filter, Device* device)
 
 #if DEBUG_VERBOSE_LEVEL == DBG
 	unsigned count = server.messageQueue.count();
-	String s = getMessageTypeString(filter.ms.messageType);
+	String s = toString(filter.ms.messageType);
 	if(!s) {
 		s = _F("**BAD**  ");
 	}
@@ -124,9 +124,9 @@ void DeviceHost::search(SearchFilter& filter, Device* device)
 	s += ' ';
 
 	if(filter.ms.messageType == MESSAGE_RESPONSE) {
-		s += getSearchTargetString(filter.ms.target);
+		s += toString(filter.ms.target);
 	} else if(filter.ms.messageType == MESSAGE_NOTIFY) {
-		s += getNotifySubtypeString(filter.ms.notifySubtype);
+		s += toString(filter.ms.notifySubtype);
 	} else {
 		s += filter.targetString;
 	}
