@@ -1,10 +1,7 @@
-TODO
-----
+Development Notes
+-----------------
 
-Discovery
-
-   Review specs. and properly implement discovery and notification.
-
+These may be of some interest.
 
 Device state management
 
