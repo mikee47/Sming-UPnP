@@ -17,7 +17,7 @@
  *
  ****/
 
-#include <Network/UPnP/LinkedItemList.h>
+#include "include/Network/UPnP/LinkedItemList.h"
 
 namespace UPnP
 {

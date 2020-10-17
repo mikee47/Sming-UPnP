@@ -17,9 +17,9 @@
  *
  ****/
 
-#include <Network/UPnP/RootDevice.h>
-#include <Network/UPnP/ItemEnumerator.h>
-#include <Network/UPnP/DescriptionStream.h>
+#include "include/Network/UPnP/RootDevice.h"
+#include "include/Network/UPnP/ItemEnumerator.h"
+#include "include/Network/UPnP/DescriptionStream.h"
 #include <Data/Stream/MemoryDataStream.h>
 #include <Data/Stream/FlashMemoryStream.h>
 #include <RapidXML.h>

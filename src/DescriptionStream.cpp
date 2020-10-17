@@ -17,9 +17,9 @@
  *
  ****/
 
-#include <Network/UPnP/DescriptionStream.h>
-#include <Network/UPnP/ItemEnumerator.h>
-#include <Network/UPnP/RootDevice.h>
+#include "include/Network/UPnP/DescriptionStream.h"
+#include "include/Network/UPnP/ItemEnumerator.h"
+#include "include/Network/UPnP/RootDevice.h"
 
 #define XML_PRETTY true
 
