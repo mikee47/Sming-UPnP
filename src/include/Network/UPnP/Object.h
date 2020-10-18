@@ -90,14 +90,6 @@ public:
 	virtual bool onHttpRequest(HttpServerConnection& connection) = 0;
 
 	/**
-	 * @brief Called by framework to handle an incoming SSDP message
-	 * @param msg
-	 */
-	virtual void onNotify(BasicMessage& msg)
-	{
-	}
-
-	/**
 	 * @brief Called by framework to construct a device description response stream
 	 * @retval IDataSourceStream* The XML description content
 	 *

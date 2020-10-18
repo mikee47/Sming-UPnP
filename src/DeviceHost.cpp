@@ -19,6 +19,7 @@
 
 #include "include/Network/UPnP/DeviceHost.h"
 #include "include/Network/UPnP/DescriptionStream.h"
+#include "include/Network/UPnP/ControlPoint.h"
 #include <Network/SSDP/Server.h>
 #include <lwip/igmp.h>
 #include <WMath.h>
@@ -157,8 +158,8 @@ bool DeviceHost::begin()
 			if(msg.type == MESSAGE_MSEARCH) {
 				onSearchRequest(msg);
 			} else {
-				for(auto dev = firstRootDevice(); dev != nullptr; dev = dev->getNext()) {
-					dev->onNotify(msg);
+				for(auto cp = controlPoints.head(); cp != nullptr; cp = cp->getNext()) {
+					cp->onNotify(msg);
 				}
 			}
 		},

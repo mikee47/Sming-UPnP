@@ -20,6 +20,7 @@
 #pragma once
 
 #include "RootDevice.h"
+#include "ControlPoint.h"
 
 namespace UPnP
 {
@@ -39,6 +40,16 @@ public:
 
 	bool unRegisterDevice(RootDevice* device);
 
+	bool registerControlPoint(ControlPoint* cp)
+	{
+		return controlPoints.add(cp);
+	}
+
+	bool unRegisterControlPoint(ControlPoint* cp)
+	{
+		return controlPoints.remove(cp);
+	}
+
 	bool onHttpRequest(HttpServerConnection& connection);
 
 	RootDevice* firstRootDevice()
@@ -55,6 +66,7 @@ private:
 
 private:
 	RootDeviceList rootDevices;
+	ControlPointList controlPoints;
 };
 
 extern DeviceHost deviceHost;
