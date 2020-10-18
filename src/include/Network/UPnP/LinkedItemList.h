@@ -39,7 +39,7 @@ public:
 	}
 
 private:
-	LinkedItem* head_ = nullptr;
+	LinkedItem* head_{nullptr};
 };
 
 } // namespace UPnP

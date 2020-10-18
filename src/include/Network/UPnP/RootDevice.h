@@ -69,7 +69,7 @@ public:
 	}
 
 private:
-	uint16_t tcpPort = 80;
+	uint16_t tcpPort{80};
 };
 
 using RootDeviceList = ObjectList<RootDevice>;

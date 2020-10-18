@@ -97,7 +97,7 @@ public:
 private:
 	ServiceList services_;
 	DeviceList devices_;
-	Device* parent_ = nullptr;
+	Device* parent_{nullptr};
 };
 
 } // namespace UPnP

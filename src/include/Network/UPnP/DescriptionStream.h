@@ -65,18 +65,18 @@ protected:
 	void getContent();
 
 private:
-	Object* object_ = nullptr;
+	Object* object_{nullptr};
 	// Nesting levels
 	struct Segment {
-		Item* item = nullptr;
+		Item* item{nullptr};
 		String footer;
-		ItemEnumerator* list = nullptr; // active list
+		ItemEnumerator* list{nullptr}; // active list
 		String listName;
-		uint8_t listIndex = 0;
+		uint8_t listIndex{0};
 	};
 	Segment segments[4];
 	String content; // Buffer for current segment being output
-	uint16_t readPos = 0;
+	uint16_t readPos{0};
 	enum class State {
 		header,
 		item,
@@ -85,7 +85,7 @@ private:
 		nextListItem,
 		done,
 	} state = State::header;
-	uint8_t segIndex = 0; // nesting level
+	uint8_t segIndex{0}; // nesting level
 };
 
 } // namespace UPnP

@@ -69,7 +69,7 @@ public:
 
 private:
 	Item* head_;
-	Item* current_ = nullptr;
+	Item* current_{nullptr};
 };
 
 } // namespace UPnP

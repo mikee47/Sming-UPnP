@@ -88,7 +88,7 @@ private:
 	}
 
 private:
-	Device* device_ = nullptr;
+	Device* device_{nullptr};
 	// actionList
 	// serviceStateTable
 };

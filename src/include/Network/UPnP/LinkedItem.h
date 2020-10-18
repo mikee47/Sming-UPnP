@@ -43,7 +43,7 @@ public:
 
 private:
 	friend class LinkedItemList;
-	LinkedItem* next_ = nullptr;
+	LinkedItem* next_{nullptr};
 };
 
 } // namespace UPnP

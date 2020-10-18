@@ -68,7 +68,7 @@ private:
 	XML::Node* findBody();
 
 private:
-	XML::Node* body_ = nullptr;
+	XML::Node* body_{nullptr};
 };
 
 } // namespace SOAP

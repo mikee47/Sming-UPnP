@@ -73,8 +73,8 @@ public:
 	HttpConnection& connection;
 	Service& service;
 	SOAP::Envelope envelope;
-	XML::Node* action = nullptr;
-	XML::Node* response = nullptr;
+	XML::Node* action{nullptr};
+	XML::Node* response{nullptr};
 
 private:
 	bool findAction();
