@@ -21,7 +21,6 @@
 #include "include/Network/UPnP/DescriptionStream.h"
 #include "include/Network/UPnP/ControlPoint.h"
 #include <Network/SSDP/Server.h>
-#include <lwip/igmp.h>
 #include <WMath.h>
 #include <Platform/Station.h>
 

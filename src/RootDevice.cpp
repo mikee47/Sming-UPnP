@@ -66,10 +66,9 @@ bool RootDevice::onHttpRequest(HttpServerConnection& connection)
 		});
 		response->sendDataStream(tmpl, MIME_HTML);
 		return true;
-	} else {
-		debug_i("[UPnP] URL not matched: %s", request->uri.Path.c_str());
 	}
 
+	debug_i("[UPnP] URL not matched: %s", request->uri.Path.c_str());
 	return Device::onHttpRequest(connection);
 }
 

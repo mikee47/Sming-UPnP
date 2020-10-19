@@ -175,8 +175,6 @@ bool Service::formatMessage(Message& msg, MessageSpec& ms)
 
 bool Service::onHttpRequest(HttpServerConnection& connection)
 {
-	DEFINE_FSTR_LOCAL(to_be_completed, "<html><head></head><body><h1>To be completed</h1></body></html>");
-
 	auto& request = *connection.getRequest();
 	auto& response = *connection.getResponse();
 
