@@ -19,7 +19,7 @@
 
 #include "include/Network/UPnP/RootDevice.h"
 #include <Network/SSDP/Server.h>
-#include <Data/Stream/FlashMemoryStream.h>
+#include <FlashString/TemplateStream.hpp>
 #include <Platform/Station.h>
 #include <SmingVersion.h>
 
@@ -27,7 +27,7 @@ IMPORT_FSTR(upnp_default_page, COMPONENT_PATH "/resource/default.html");
 
 namespace UPnP
 {
-DEFINE_FSTR_LOCAL(defaultPresentationURL, "/");
+DEFINE_FSTR_LOCAL(defaultPresentationURL, "index.html");
 
 Url RootDevice::getURL(const String& path)
 {
@@ -38,7 +38,7 @@ String RootDevice::getField(Field desc)
 {
 	switch(desc) {
 	case Field::presentationURL:
-		return defaultPresentationURL;
+		return getField(Field::baseURL) + defaultPresentationURL;
 	case Field::serverId:
 		return SSDP::SERVER_ID;
 	case Field::baseURL:
@@ -55,8 +55,19 @@ bool RootDevice::onHttpRequest(HttpServerConnection& connection)
 	if(request->uri.Path == getField(Field::presentationURL)) {
 		debug_i("[UPnP] Sending default presentation page for '%s'", getField(Field::type).c_str());
 		auto response = connection.getResponse();
-		response->sendDataStream(new FlashMemoryStream(upnp_default_page), MIME_HTML);
+		auto tmpl = new FSTR::TemplateStream(upnp_default_page);
+		tmpl->onGetValue([this](const char* name) -> String {
+			Field field;
+			String s;
+			if(fromString(name, field)) {
+				s = getField(field);
+			}
+			return s;
+		});
+		response->sendDataStream(tmpl, MIME_HTML);
 		return true;
+	} else {
+		debug_i("[UPnP] URL not matched: %s", request->uri.Path.c_str());
 	}
 
 	return Device::onHttpRequest(connection);

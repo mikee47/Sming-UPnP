@@ -24,6 +24,7 @@
 #include <Network/Url.h>
 #include <assert.h>
 #include <SystemClock.h>
+#include <FlashString/Vector.hpp>
 
 namespace UPnP
 {
@@ -34,11 +35,20 @@ DEFINE_FSTR(schemas_upnp_org, "schemas-upnp-org");
 UPNP_DEVICE_FIELD_MAP(XX);
 #undef XX
 
-static FSTR_TABLE(fieldNames) = {
-#define XX(name, req) FSTR_PTR(fn_##name),
-	UPNP_DEVICE_FIELD_MAP(XX)
+#define XX(name, req) &fn_##name,
+DEFINE_FSTR_VECTOR(fieldNames, FlashString, UPNP_DEVICE_FIELD_MAP(XX))
 #undef XX
-}; // namespace UPnP
+
+bool fromString(const char* name, Device::Field& field)
+{
+	int i = fieldNames.indexOf(name);
+	if(i < 0) {
+		return false;
+	}
+
+	field = Device::Field(i);
+	return true;
+}
 
 RootDevice* Device::getRoot()
 {
@@ -82,7 +92,7 @@ XML::Node* Device::getDescription(XML::Document& doc, DescType descType)
 		for(unsigned i = 0; i < unsigned(Field::customStart); ++i) {
 			s = getField(Field(i));
 			if(s) {
-				XML::appendNode(dev, *fieldNames[i], s);
+				XML::appendNode(dev, fieldNames[i], s);
 			}
 		}
 
