@@ -5,6 +5,7 @@
 #include <Wemo.h>
 #include <DeviceFinder.h>
 #include <malloc_count.h>
+#include <Data/Stream/MemoryDataStream.h>
 
 // If you want, you can define WiFi settings globally in Eclipse Environment Variables
 #ifndef WIFI_SSID
@@ -34,6 +35,35 @@ int onHttpRequest(HttpServerConnection& connection, HttpRequest& request, HttpRe
 	}
 
 	// Not a UPnP request. Handle any application-specific pages here
+
+	auto path = request.uri.getRelativePath();
+	if(path.length() == 0 || path == F("index.html")) {
+		// Generate landing page
+		auto mem = new MemoryDataStream;
+		mem->println(F("<html lang=\"en\">"
+					 "<head><title>Basic UPnP</title></head>"
+					 "<body>"
+					 "<h1>Basic UPnP</h1>"
+					 "The following devices are being advertised:<p>"
+					 "<ul>"));
+
+		for(auto dev = UPnP::deviceHost.firstRootDevice(); dev != nullptr; dev = dev->getNext()) {
+			String fn = dev->getField(UPnP::Device::Field::friendlyName);
+			String url = dev->getField(UPnP::Device::Field::presentationURL);
+			mem->print(_F("<li><a href=\""));
+			mem->print(url);
+			mem->print(_F("\">"));
+			mem->print(fn);
+			mem->print(_F("</>"));
+			mem->println("</li>");
+		}
+
+		mem->println(_F("</ul>"
+					  "</body>"
+					  "</html>"));
+		response.sendDataStream(mem, MIME_HTML);
+		return 0;
+	}
 
 	Serial.print("Page not found: ");
 	Serial.println(request.uri.Path);
