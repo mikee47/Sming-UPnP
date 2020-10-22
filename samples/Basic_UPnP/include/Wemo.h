@@ -12,14 +12,6 @@ namespace Wemo
 using namespace UPnP;
 class Controllee;
 
-class Socket : public Item
-{
-};
-
-class SocketEnumerator //: public Enumerator<Socket, SocketEnumerator>
-{
-};
-
 class WemoService : public Service
 {
 public:
@@ -95,9 +87,9 @@ public:
 private:
 	BasicEventService eventService;
 	MetaInfoService metaInfoService;
-	unsigned id_ = 0;
+	unsigned id_{0};
 	String name_;
-	bool state_ = false;
+	bool state_{false};
 	StateChangeDelegate stateChangeDelegate;
 };
 

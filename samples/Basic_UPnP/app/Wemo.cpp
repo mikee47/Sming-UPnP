@@ -53,6 +53,7 @@ String MetaInfoService::getField(Field desc)
 
 void MetaInfoService::handleAction(ActionInfo& info)
 {
+	// TODO
 	//	auto res = createEnvelope(action);
 	//	XML::appendNode(res, "BinaryState", 1);
 	//	return res;
