@@ -25,9 +25,6 @@
 #include <RapidXML.h>
 #include <Network/SSDP/UUID.h>
 
-// Testing
-#include <HardwareSerial.h>
-
 namespace UPnP
 {
 #define XX(name, req) DEFINE_FSTR_LOCAL(fn_##name, #name);
@@ -184,6 +181,7 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 		debug_i("[UPnP] %s:%u %s %s for '%s'", connection.getRemoteIp().toString().c_str(), connection.getRemotePort(),
 				http_method_str(request.method), uri.Path.c_str(), getField(Field::type).c_str());
 
+#if DEBUG_VERBOSE_LEVEL >= DBG
 		if(verbose) {
 			auto& headers = request.headers;
 			for(unsigned i = 0; i < headers.count(); ++i) {
@@ -191,11 +189,20 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 				m_puts(headers[i].c_str());
 			}
 		}
+#endif
 	};
 
 	auto handleControl = [&]() {
 		String req = request.getBody();
-		Serial.println(req);
+		if(req.length() == 0) {
+			debug_w("Service: Empty request body");
+			return;
+		}
+
+#if DEBUG_VERBOSE_LEVEL >= DBG
+		m_puts(req.c_str());
+		m_puts("\r\n");
+#endif
 
 		ActionInfo info(connection, *this);
 		if(!info.load(req)) {
@@ -215,8 +222,11 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 		XML::serialize(info.envelope.doc, stream);
 		device_->sendXml(response, stream);
 
-		XML::serialize(info.envelope.doc, Serial, true);
-		m_putc('\n');
+#if DEBUG_VERBOSE_LEVEL >= DBG
+		XML::serialize(info.envelope.doc, s, true);
+		m_puts(s.c_str());
+		m_puts("\r\n");
+#endif
 	};
 
 	auto handleSubscribe = [&]() {
