@@ -52,6 +52,11 @@ public:
 
 	bool onHttpRequest(HttpServerConnection& connection);
 
+	/**
+	 * @brief Create an HTML page which applications may serve up to assist with debugging
+	 */
+	IDataSourceStream* generateDebugPage(const String& title);
+
 	RootDevice* firstRootDevice()
 	{
 		return rootDevices.head();

@@ -223,6 +223,7 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 		device_->sendXml(response, stream);
 
 #if DEBUG_VERBOSE_LEVEL >= DBG
+		String s;
 		XML::serialize(info.envelope.doc, s, true);
 		m_puts(s.c_str());
 		m_puts("\r\n");

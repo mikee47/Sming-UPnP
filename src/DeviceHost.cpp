@@ -23,6 +23,7 @@
 #include <Network/SSDP/Server.h>
 #include <WMath.h>
 #include <Platform/Station.h>
+#include <Data/Stream/MemoryDataStream.h>
 
 namespace UPnP
 {
@@ -230,6 +231,35 @@ bool DeviceHost::onHttpRequest(HttpServerConnection& connection)
 		device = device->getNext();
 	}
 	return false;
+}
+
+IDataSourceStream* DeviceHost::generateDebugPage(const String& title)
+{
+	auto mem = new MemoryDataStream;
+	mem->print(F("<html lang=\"en\"><head><title>"));
+	mem->print(title);
+	mem->print(F("</title></head><body><h1>"));
+	mem->print(title);
+	mem->println(F("</h1>"
+				   "The following devices are being advertised:<p>"
+				   "<ul>"));
+
+	for(auto dev = firstRootDevice(); dev != nullptr; dev = dev->getNext()) {
+		String fn = dev->getField(UPnP::Device::Field::friendlyName);
+		String url = dev->getField(UPnP::Device::Field::presentationURL);
+		mem->print(_F("<li><a href=\""));
+		mem->print(url);
+		mem->print(_F("\">"));
+		mem->print(fn);
+		mem->print(_F("</>"));
+		mem->println("</li>");
+	}
+
+	mem->println(_F("</ul>"
+					"</body>"
+					"</html>"));
+
+	return mem;
 }
 
 } // namespace UPnP

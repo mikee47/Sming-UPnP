@@ -38,30 +38,8 @@ int onHttpRequest(HttpServerConnection& connection, HttpRequest& request, HttpRe
 
 	auto path = request.uri.getRelativePath();
 	if(path.length() == 0 || path == F("index.html")) {
-		// Generate landing page
-		auto mem = new MemoryDataStream;
-		mem->println(F("<html lang=\"en\">"
-					 "<head><title>Basic UPnP</title></head>"
-					 "<body>"
-					 "<h1>Basic UPnP</h1>"
-					 "The following devices are being advertised:<p>"
-					 "<ul>"));
-
-		for(auto dev = UPnP::deviceHost.firstRootDevice(); dev != nullptr; dev = dev->getNext()) {
-			String fn = dev->getField(UPnP::Device::Field::friendlyName);
-			String url = dev->getField(UPnP::Device::Field::presentationURL);
-			mem->print(_F("<li><a href=\""));
-			mem->print(url);
-			mem->print(_F("\">"));
-			mem->print(fn);
-			mem->print(_F("</>"));
-			mem->println("</li>");
-		}
-
-		mem->println(_F("</ul>"
-					  "</body>"
-					  "</html>"));
-		response.sendDataStream(mem, MIME_HTML);
+		auto stream = UPnP::deviceHost.generateDebugPage(F("Basic UPnP"));
+		response.sendDataStream(stream, MIME_HTML);
 		return 0;
 	}
 
