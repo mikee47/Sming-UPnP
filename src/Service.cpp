@@ -22,21 +22,29 @@
 #include "include/Network/UPnP/DescriptionStream.h"
 #include <Data/Stream/MemoryDataStream.h>
 #include <Data/Stream/FlashMemoryStream.h>
+#include <FlashString/Vector.hpp>
 #include <RapidXML.h>
 #include <Network/SSDP/UUID.h>
 
-namespace UPnP
+namespace
 {
 #define XX(name, req) DEFINE_FSTR_LOCAL(fn_##name, #name);
 UPNP_SERVICE_FIELD_MAP(XX);
 #undef XX
 
-static FSTR_TABLE(fieldNames) = {
-#define XX(name, req) FSTR_PTR(fn_##name),
-	UPNP_SERVICE_FIELD_MAP(XX)
+#define XX(name, req) &fn_##name,
+DEFINE_FSTR_VECTOR(fieldNames, FlashString, UPNP_SERVICE_FIELD_MAP(XX))
 #undef XX
-};
 
+} // namespace
+
+String toString(UPnP::Service::Field field)
+{
+	return fieldNames[unsigned(field)];
+}
+
+namespace UPnP
+{
 RootDevice* Service::getRoot()
 {
 	return (device_ == nullptr) ? nullptr : device_->getRoot();
@@ -57,7 +65,7 @@ XML::Node* Service::getDescription(XML::Document& doc, DescType descType)
 		for(unsigned i = 0; i < unsigned(Field::customStart); ++i) {
 			s = getField(Field(i));
 			if(s) {
-				XML::appendNode(service, *fieldNames[i], s);
+				XML::appendNode(service, fieldNames[i], s);
 			}
 		}
 		return service;
@@ -276,6 +284,8 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 }
 
 /*
+ * Simple examples
+ *
 REQUEST:
 
 	<?xml version="1.0" encoding="utf-8"?>

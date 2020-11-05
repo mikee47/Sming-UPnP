@@ -94,3 +94,5 @@ private:
 };
 
 } // namespace UPnP
+
+String toString(UPnP::Service::Field field);

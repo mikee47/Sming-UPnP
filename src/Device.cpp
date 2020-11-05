@@ -30,7 +30,10 @@ namespace UPnP
 {
 DEFINE_FSTR(upnp_org, "upnp-org");
 DEFINE_FSTR(schemas_upnp_org, "schemas-upnp-org");
+} // namespace UPnP
 
+namespace
+{
 #define XX(name, req) DEFINE_FSTR_LOCAL(fn_##name, #name);
 UPNP_DEVICE_FIELD_MAP(XX);
 #undef XX
@@ -38,18 +41,26 @@ UPNP_DEVICE_FIELD_MAP(XX);
 #define XX(name, req) &fn_##name,
 DEFINE_FSTR_VECTOR(fieldNames, FlashString, UPNP_DEVICE_FIELD_MAP(XX))
 #undef XX
+} // namespace
 
-bool fromString(const char* name, Device::Field& field)
+String toString(UPnP::Device::Field& field)
+{
+	return fieldNames[unsigned(field)];
+}
+
+bool fromString(const char* name, UPnP::Device::Field& field)
 {
 	int i = fieldNames.indexOf(name);
 	if(i < 0) {
 		return false;
 	}
 
-	field = Device::Field(i);
+	field = UPnP::Device::Field(i);
 	return true;
 }
 
+namespace UPnP
+{
 RootDevice* Device::getRoot()
 {
 	assert(parent_ != nullptr);

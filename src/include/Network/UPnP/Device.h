@@ -100,11 +100,13 @@ private:
 	Device* parent_{nullptr};
 };
 
-bool fromString(const char* name, Device::Field& field);
+} // namespace UPnP
 
-inline bool fromString(const String& name, Device::Field& field)
+String toString(UPnP::Device::Field& field);
+
+bool fromString(const char* name, UPnP::Device::Field& field);
+
+inline bool fromString(const String& name, UPnP::Device::Field& field)
 {
 	return fromString(name.c_str(), field);
 }
-
-} // namespace UPnP
