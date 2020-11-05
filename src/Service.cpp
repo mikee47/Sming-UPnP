@@ -140,13 +140,13 @@ ItemEnumerator* Service::getList(unsigned index, String& name)
 
 void Service::search(const SearchFilter& filter)
 {
-	switch(filter.ms.target) {
-	case TARGET_ALL:
-		filter.callback(this, MATCH_TYPE);
+	switch(filter.ms.target()) {
+	case SearchTarget::ALL:
+		filter.callback(this, SearchMatch::TYPE);
 		break;
-	case TARGET_TYPE:
+	case SearchTarget::TYPE:
 		if(filter.targetString == getField(Field::serviceType)) {
-			filter.callback(this, MATCH_TYPE);
+			filter.callback(this, SearchMatch::TYPE);
 		}
 		break;
 	default:
@@ -156,7 +156,7 @@ void Service::search(const SearchFilter& filter)
 
 bool Service::formatMessage(Message& msg, MessageSpec& ms)
 {
-	if(ms.match != MATCH_TYPE) {
+	if(ms.match() != SearchMatch::TYPE) {
 		debug_e("[UPnP] Invalid search match value");
 		return false;
 	}
@@ -169,7 +169,7 @@ bool Service::formatMessage(Message& msg, MessageSpec& ms)
 	usn += "::";
 	usn += st;
 
-	if(msg.type == MESSAGE_NOTIFY) {
+	if(msg.type == MessageType::NOTIFY) {
 		msg["NT"] = st;
 	} else {
 		msg["ST"] = st;

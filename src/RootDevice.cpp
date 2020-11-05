@@ -74,13 +74,13 @@ bool RootDevice::onHttpRequest(HttpServerConnection& connection)
 
 void RootDevice::search(const SearchFilter& filter)
 {
-	if(filter.ms.target == TARGET_ROOT) {
-		filter.callback(this, MATCH_ROOT);
+	if(filter.ms.target() == SearchTarget::ROOT) {
+		filter.callback(this, SearchMatch::ROOT);
 		return;
 	}
 
-	if(filter.ms.target == TARGET_ALL) {
-		filter.callback(this, MATCH_ROOT);
+	if(filter.ms.target() == SearchTarget::ALL) {
+		filter.callback(this, SearchMatch::ROOT);
 	}
 
 	Device::search(filter);

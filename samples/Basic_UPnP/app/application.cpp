@@ -76,10 +76,9 @@ void initUPnP()
 	auto timer = new AutoDeleteTimer;
 	timer->initializeMs<1000>(InterruptCallback([]() {
 		Serial.println();
-		auto ms = new SSDP::MessageSpec(SSDP::MESSAGE_MSEARCH);
-		ms->object = &deviceFinder;
-		ms->repeat = 2;
-		ms->target = SSDP::TARGET_ROOT; // Will get overridden by our custom search handler
+		// Default to ROOT search, will get overridden by our custom search handler
+		auto ms = new SSDP::MessageSpec(SSDP::MessageType::MSEARCH, SSDP::SearchTarget::ROOT, &deviceFinder);
+		ms->setRepeat(2);
 		SSDP::server.messageQueue.add(ms, 1000);
 	}));
 	timer->startOnce();

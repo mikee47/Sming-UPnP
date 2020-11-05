@@ -173,26 +173,26 @@ ItemEnumerator* Device::getList(unsigned index, String& name)
 
 void Device::search(const SearchFilter& filter)
 {
-	switch(filter.ms.target) {
-	case TARGET_ALL:
-		filter.callback(this, MATCH_UUID);
-		filter.callback(this, MATCH_TYPE);
+	switch(filter.ms.target()) {
+	case SearchTarget::ALL:
+		filter.callback(this, SearchMatch::UUID);
+		filter.callback(this, SearchMatch::TYPE);
 		break;
-	case TARGET_TYPE:
+	case SearchTarget::TYPE:
 		if(filter.targetString == getField(Field::deviceType)) {
-			filter.callback(this, MATCH_TYPE);
+			filter.callback(this, SearchMatch::TYPE);
 		}
 		break;
-	case TARGET_UUID:
+	case SearchTarget::UUID:
 		if(filter.targetString == getField(Field::UDN)) {
-			filter.callback(this, MATCH_UUID);
+			filter.callback(this, SearchMatch::UUID);
 		}
 		break;
 	default:
 		assert(false);
 	}
 
-	if(filter.ms.target != TARGET_UUID) {
+	if(filter.ms.target() != SearchTarget::UUID) {
 		for(auto service = services_.head(); service != nullptr; service = service->getNext()) {
 			service->search(filter);
 		}
@@ -210,18 +210,18 @@ bool Device::formatMessage(Message& msg, MessageSpec& ms)
 
 	String st;
 	String usn = getField(Field::UDN);
-	switch(ms.match) {
-	case MATCH_ROOT:
+	switch(ms.match()) {
+	case SearchMatch::ROOT:
 		st = SSDP::UPNP_ROOTDEVICE;
 		usn += "::";
 		usn += st;
 		break;
-	case MATCH_TYPE:
+	case SearchMatch::TYPE:
 		st = getField(Field::deviceType);
 		usn += "::";
 		usn += st;
 		break;
-	case MATCH_UUID:
+	case SearchMatch::UUID:
 		st = getField(Field::UDN);
 		break;
 	default:
@@ -229,7 +229,7 @@ bool Device::formatMessage(Message& msg, MessageSpec& ms)
 		return false;
 	}
 
-	if(msg.type == MESSAGE_NOTIFY) {
+	if(msg.type == MessageType::NOTIFY) {
 		msg["NT"] = st;
 	} else {
 		msg["ST"] = st;
