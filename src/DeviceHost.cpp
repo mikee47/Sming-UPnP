@@ -65,7 +65,12 @@ void DeviceHost::onSearchRequest(const BasicMessage& request)
 	} else if(delay > 5) {
 		delay = 5;
 	}
-	delay = random(100, delay * 1000);
+
+	auto osrand = os_random();
+	delay = osrand / (std::numeric_limits<decltype(osrand)>::max() / 1000U / delay);
+	if(delay < 100) {
+		delay = 100;
+	}
 
 	MessageSpec ms(MessageType::RESPONSE);
 	SearchFilter filter(ms, delay);
