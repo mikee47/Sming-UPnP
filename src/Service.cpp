@@ -187,7 +187,7 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 
 	auto printRequest = [&](bool verbose = false) {
 		debug_i("[UPnP] %s:%u %s %s for '%s'", connection.getRemoteIp().toString().c_str(), connection.getRemotePort(),
-				http_method_str(request.method), uri.Path.c_str(), getField(Field::type).c_str());
+				toString(request.method).c_str(), uri.Path.c_str(), getField(Field::type).c_str());
 
 #if DEBUG_VERBOSE_LEVEL >= DBG
 		if(verbose) {
