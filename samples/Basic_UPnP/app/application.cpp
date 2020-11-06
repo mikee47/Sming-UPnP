@@ -77,7 +77,7 @@ void initUPnP()
 	timer->initializeMs<1000>(InterruptCallback([]() {
 		Serial.println();
 		// Default to ROOT search, will get overridden by our custom search handler
-		auto ms = new SSDP::MessageSpec(SSDP::MessageType::MSEARCH, SSDP::SearchTarget::ROOT, &deviceFinder);
+		auto ms = new SSDP::MessageSpec(SSDP::MessageType::msearch, SSDP::SearchTarget::root, &deviceFinder);
 		ms->setRepeat(2);
 		SSDP::server.messageQueue.add(ms, 1000);
 	}));

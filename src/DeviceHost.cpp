@@ -72,18 +72,18 @@ void DeviceHost::onSearchRequest(const BasicMessage& request)
 		delay = 100;
 	}
 
-	MessageSpec ms(MessageType::RESPONSE);
+	MessageSpec ms(MessageType::response);
 	SearchFilter filter(ms, delay);
 
 	filter.targetString = request["ST"];
 	if(filter.targetString == SSDP::UPNP_ROOTDEVICE) {
-		ms.setTarget(SearchTarget::ROOT);
+		ms.setTarget(SearchTarget::root);
 	} else if(filter.targetString == SSDP::SSDP_ALL) {
-		ms.setTarget(SearchTarget::ALL);
+		ms.setTarget(SearchTarget::all);
 	} else if(filter.targetString.startsWith("urn:")) {
-		ms.setTarget(SearchTarget::TYPE);
+		ms.setTarget(SearchTarget::type);
 	} else if(filter.targetString.startsWith("uuid:")) {
-		ms.setTarget(SearchTarget::UUID);
+		ms.setTarget(SearchTarget::uuid);
 	} else {
 		debug_e("[UPnP] Invalid ST field: %s", filter.targetString.c_str());
 		return;
@@ -126,9 +126,9 @@ void DeviceHost::search(SearchFilter& filter, Device* device)
 	s += filter.ms.remotePort();
 	s += ' ';
 
-	if(filter.ms.type() == MessageType::RESPONSE) {
+	if(filter.ms.type() == MessageType::response) {
 		s += toString(filter.ms.target());
-	} else if(filter.ms.type() == MessageType::NOTIFY) {
+	} else if(filter.ms.type() == MessageType::notify) {
 		s += toString(filter.ms.notifySubtype());
 	} else {
 		s += filter.targetString;
@@ -145,7 +145,7 @@ void DeviceHost::search(SearchFilter& filter, Device* device)
 
 void DeviceHost::notify(Device* device, NotifySubtype subtype)
 {
-	MessageSpec ms(subtype, SearchTarget::ALL);
+	MessageSpec ms(subtype, SearchTarget::all);
 	ms.setRemote(SSDP_MULTICAST_IP, SSDP_MULTICAST_PORT);
 	SearchFilter filter(ms, 500);
 	search(filter, device);
@@ -155,7 +155,7 @@ bool DeviceHost::begin()
 {
 	return SSDP::server.begin(
 		[this](BasicMessage& msg) {
-			if(msg.type == MessageType::MSEARCH) {
+			if(msg.type == MessageType::msearch) {
 				onSearchRequest(msg);
 			} else {
 				for(auto cp = controlPoints.head(); cp != nullptr; cp = cp->getNext()) {
@@ -193,7 +193,7 @@ bool DeviceHost::registerDevice(RootDevice* device)
 
 	if(isActive()) {
 		// TODO: If device already registered we should return true but not advertise
-		notify(device, NotifySubtype::ALIVE);
+		notify(device, NotifySubtype::alive);
 	}
 
 	return true;
@@ -207,7 +207,7 @@ bool DeviceHost::unRegisterDevice(RootDevice* device)
 	}
 
 	if(isActive()) {
-		notify(device, NotifySubtype::BYEBYE);
+		notify(device, NotifySubtype::byebye);
 	}
 
 	// TODO: When last notification has been sent, inform application
