@@ -22,6 +22,7 @@
 #include <WString.h>
 
 #define UPNP_URN_KIND_MAP(XX)                                                                                          \
+	XX(none)                                                                                                           \
 	XX(device)                                                                                                         \
 	XX(service)
 
@@ -30,22 +31,36 @@ namespace UPnP
 /**
  * @brief Structure for UPnP URNs
  */
-struct Urn {
+class Urn
+{
+public:
 	enum class Kind {
 #define XX(tag) tag,
 		UPNP_URN_KIND_MAP(XX)
 #undef XX
 	};
 
+	Urn()
+	{
+	}
+
+	Urn(Urn&& urn) : kind(urn.kind), domain(std::move(urn.domain)), type(std::move(urn.type)), version(urn.version)
+	{
+	}
+
 	Urn(Kind kind, const String& domain, const String& type, uint8_t version)
 		: kind(kind), domain(domain), type(type), version(version ?: 1)
 	{
 	}
 
-	Kind kind;
-	String domain;   ///< e.g. PnP::schemas_upnp_org
-	String type;	 ///< e.g. "Basic"
-	uint8_t version; ///< e.g. 1
+	Urn& operator=(const Urn& urn)
+	{
+		kind = urn.kind;
+		domain = urn.domain;
+		type = urn.type;
+		version = urn.version;
+		return *this;
+	}
 
 	/**
 	 * @brief Get URN string
@@ -58,13 +73,31 @@ struct Urn {
 	{
 		return toString();
 	}
+
+	/**
+	 * @brief Determine if URN is valid
+	 */
+	operator bool() const
+	{
+		return kind != Kind::none;
+	}
+
+	Kind kind{};
+	String domain;		///< e.g. PnP::schemas_upnp_org
+	String type;		///< e.g. "Basic"
+	uint8_t version{1}; ///< e.g. 1
 };
 
 /**
  * @brief A UPnP Device URN
  */
-struct DeviceUrn : public Urn {
+class DeviceUrn : public Urn
+{
 public:
+	DeviceUrn() : Urn()
+	{
+	}
+
 	DeviceUrn(const String& domain, const String& type, const String& version)
 		: Urn(Urn::Kind::device, domain, type, version.toInt())
 	{
@@ -80,13 +113,17 @@ public:
  */
 struct ServiceUrn : public Urn {
 public:
+	ServiceUrn() : Urn()
+	{
+	}
+
 	ServiceUrn(const String& domain, const String& type, const String& version)
 		: Urn(Urn::Kind::device, domain, type, version.toInt())
 	{
 	}
 
 	ServiceUrn(const String& domain, const String& type, uint8_t version)
-		: Urn{Urn::Kind::service, domain, type, version}
+		: Urn(Urn::Kind::service, domain, type, version)
 	{
 	}
 };
