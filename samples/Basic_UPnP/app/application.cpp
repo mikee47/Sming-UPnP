@@ -1,11 +1,10 @@
 #include <SmingCore.h>
 #include <Network/UPnP/DeviceHost.h>
+#include <Network/UPnP/ControlPoint.h>
 #include <Network/SSDP/Server.h>
 #include <TeaPot.h>
 #include <Wemo.h>
-#include <DeviceFinder.h>
 #include <malloc_count.h>
-#include <Data/Stream/MemoryDataStream.h>
 
 // If you want, you can define WiFi settings globally in Eclipse Environment Variables
 #ifndef WIFI_SSID
@@ -20,7 +19,7 @@ HttpServer server;
 TeaPot teapot(1);
 Wemo::Controllee wemo1(1, "Socket #1");
 Wemo::Controllee wemo2(2, "Socket #2");
-DeviceFinder deviceFinder;
+UPnP::ControlPoint controlPoint;
 
 void connectFail(const String& ssid, MacAddress bssid, WifiDisconnectReason reason)
 {
@@ -50,6 +49,28 @@ int onHttpRequest(HttpServerConnection& connection, HttpRequest& request, HttpRe
 	return 0;
 }
 
+void simpleSearch()
+{
+	UPnP::ServiceUrn urn("dial-multiscreen-org", "dial", 1);
+	controlPoint.beginSearch(urn, [](HttpConnection& connection, XML::Document& description) {
+		debug_e("Found service!");
+		auto node = XML::getNode(description, F("/device/friendlyName"));
+		if(node == nullptr) {
+			Serial.println(_F("UNEXPECTED! friendlyName missing from device description"));
+		} else {
+			Serial.print(_F("Friendly name '"));
+			Serial.print(node->value());
+			Serial.println('\'');
+		}
+
+		// Print the response headers
+		auto& headers = connection.getResponse()->headers;
+		for(unsigned i = 0; i < headers.count(); ++i) {
+			Serial.print(headers[i]);
+		}
+	});
+}
+
 void initUPnP()
 {
 	// Configure our HTTP Server to listen for HTTP requests
@@ -71,17 +92,7 @@ void initUPnP()
 	UPnP::deviceHost.registerDevice(&wemo2);
 
 	// Simple search for devices
-	UPnP::deviceHost.registerControlPoint(&deviceFinder);
-
-	auto timer = new AutoDeleteTimer;
-	timer->initializeMs<1000>(InterruptCallback([]() {
-		Serial.println();
-		// Default to ROOT search, will get overridden by our custom search handler
-		auto ms = new SSDP::MessageSpec(SSDP::MessageType::msearch, SSDP::SearchTarget::root, &deviceFinder);
-		ms->setRepeat(2);
-		SSDP::server.messageQueue.add(ms, 1000);
-	}));
-	timer->startOnce();
+	simpleSearch();
 }
 
 void gotIP(IpAddress ip, IpAddress netmask, IpAddress gateway)
