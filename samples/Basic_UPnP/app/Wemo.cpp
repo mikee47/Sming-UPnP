@@ -10,7 +10,7 @@ String BasicEventService::getField(Field desc)
 {
 	switch(desc) {
 	case Field::type:
-		return F("basicevent:1");
+		return F("basicevent");
 	case Field::serviceId:
 		return F("urn:Belkin:serviceId:basicevent1");
 	default:
@@ -43,7 +43,7 @@ String MetaInfoService::getField(Field desc)
 {
 	switch(desc) {
 	case Field::type:
-		return F("metainfo:1");
+		return F("metainfo");
 	case Field::serviceId:
 		return F("urn:Belkin:serviceId:metainfo1");
 	default:
@@ -66,7 +66,7 @@ String Controllee::getField(Field desc)
 		return F("Belkin");
 
 	case Field::type:
-		return F("controllee:1");
+		return F("controllee");
 
 	case Field::friendlyName:
 		return name_;

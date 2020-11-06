@@ -35,6 +35,7 @@
 	XX(presentationURL, recommended)                                                                                   \
 	XX(domain, custom)                                                                                                 \
 	XX(type, custom_required)                                                                                          \
+	XX(version, custom)                                                                                                \
 	XX(serverId, custom)                                                                                               \
 	XX(baseURL, custom)                                                                                                \
 	XX(descriptionURL, custom)
@@ -44,9 +45,6 @@ namespace UPnP
 class Device;
 class Request;
 using DeviceList = ObjectList<Device>;
-
-DECLARE_FSTR(upnp_org);
-DECLARE_FSTR(schemas_upnp_org);
 
 /**
  * @brief Represents any kind of device, including a root device

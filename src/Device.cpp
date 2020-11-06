@@ -26,12 +26,6 @@
 #include <SystemClock.h>
 #include <FlashString/Vector.hpp>
 
-namespace UPnP
-{
-DEFINE_FSTR(upnp_org, "upnp-org");
-DEFINE_FSTR(schemas_upnp_org, "schemas-upnp-org");
-} // namespace UPnP
-
 namespace
 {
 #define XX(name, req) DEFINE_FSTR_LOCAL(fn_##name, #name);
@@ -42,22 +36,6 @@ UPNP_DEVICE_FIELD_MAP(XX);
 DEFINE_FSTR_VECTOR(fieldNames, FlashString, UPNP_DEVICE_FIELD_MAP(XX))
 #undef XX
 } // namespace
-
-String toString(UPnP::Device::Field& field)
-{
-	return fieldNames[unsigned(field)];
-}
-
-bool fromString(const char* name, UPnP::Device::Field& field)
-{
-	int i = fieldNames.indexOf(name);
-	if(i < 0) {
-		return false;
-	}
-
-	field = UPnP::Device::Field(i);
-	return true;
-}
 
 namespace UPnP
 {
@@ -121,15 +99,10 @@ String Device::getField(Field desc)
 {
 	// Provide defaults for required fields
 	switch(desc) {
-	case Field::deviceType: {
-		String s("urn:");
-		s += getField(Field::domain);
-		s += _F(":device:");
-		s += getField(Field::type);
-		return s;
-	}
+	case Field::deviceType:
+		return DeviceUrn(getField(Field::domain), getField(Field::type), getField(Field::version));
 	case Field::type:
-		return F("Basic:1");
+		return DeviceType::Basic;
 	case Field::friendlyName:
 	case Field::manufacturer:
 	case Field::modelName:
@@ -279,3 +252,19 @@ void Device::sendXml(HttpResponse& response, IDataSourceStream* content)
 }
 
 } // namespace UPnP
+
+String toString(UPnP::Device::Field& field)
+{
+	return fieldNames[unsigned(field)];
+}
+
+bool fromString(const char* name, UPnP::Device::Field& field)
+{
+	int i = fieldNames.indexOf(name);
+	if(i < 0) {
+		return false;
+	}
+
+	field = UPnP::Device::Field(i);
+	return true;
+}

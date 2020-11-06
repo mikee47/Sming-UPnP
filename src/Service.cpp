@@ -85,17 +85,17 @@ String Service::getField(Field desc)
 {
 	// Provide defaults for required fields
 	switch(desc) {
-	case Field::serviceType: {
-		String s = F("urn:");
-		s += getField(Field::domain);
-		s += _F(":service:");
-		s += getField(Field::type);
-		return s;
-	}
+	case Field::serviceType:
+		return ServiceUrn(getField(Field::domain), getField(Field::type), getField(Field::version));
 
 	case Field::type:
+		return F("{type REQUIRED}");
+
 	case Field::serviceId:
-		return F("REQUIRED FIELD");
+		return F("{serviceId REQUIRED}");
+
+	case Field::version:
+		return String('1');
 
 	case Field::SCPDURL:
 		return getField(Field::baseURL) + _F("desc.xml");

@@ -22,6 +22,8 @@
 #include "Object.h"
 #include "ObjectList.h"
 #include <Network/SSDP/Message.h>
+#include "Urn.h"
+#include "Constants.h"
 
 namespace UPnP
 {
