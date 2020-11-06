@@ -39,10 +39,18 @@ public:
 	}
 
 	/**
+	 * @brief Searches for UPnP device or service and fetches its description
+	 * @param urn unique identifier of the service or device to find
+	 * @param callback Invoked with device description document
+	 * @retval bool true on success, false if request queue is full
+	 */
+	bool beginSearch(const Urn& urn, DescriptionCallback callback);
+
+	/**
 	 * @brief Called by framework to handle an incoming SSDP message
 	 * @param msg
 	 */
-	virtual void onNotify(BasicMessage& msg) = 0;
+	virtual void onNotify(BasicMessage& msg);
 
 	/* Object */
 
@@ -55,10 +63,7 @@ public:
 	{
 	}
 
-	bool formatMessage(Message& msg, MessageSpec& ms) override
-	{
-		return true;
-	}
+	bool formatMessage(Message& msg, MessageSpec& ms) override;
 
 	bool onHttpRequest(HttpServerConnection& connection) override
 	{
@@ -93,6 +98,9 @@ private:
 
 	static HttpClient http;
 	size_t maxDescriptionSize; // <<< Maximum size of XML description that can be processed
+	UPnP::Urn searchUrn;
+	DescriptionCallback searchCallback;
+	CStringArray uniqueServiceNames;
 };
 
 using ControlPointList = ObjectList<ControlPoint>;
