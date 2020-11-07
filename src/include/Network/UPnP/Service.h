@@ -22,6 +22,8 @@
 #include "Object.h"
 #include "ObjectList.h"
 #include "Action.h"
+#include "Constants.h"
+#include "Urn.h"
 
 #define UPNP_SERVICE_FIELD_MAP(XX)                                                                                     \
 	XX(serviceType, required)                                                                                          \
@@ -31,7 +33,8 @@
 	XX(eventSubURL, required)                                                                                          \
 	XX(domain, custom)                                                                                                 \
 	XX(baseURL, custom)                                                                                                \
-	XX(type, custom)
+	XX(type, custom)                                                                                                   \
+	XX(version, custom)
 
 namespace UPnP
 {
@@ -94,3 +97,5 @@ private:
 };
 
 } // namespace UPnP
+
+String toString(UPnP::Service::Field field);

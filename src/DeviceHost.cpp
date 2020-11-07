@@ -23,6 +23,7 @@
 #include <Network/SSDP/Server.h>
 #include <WMath.h>
 #include <Platform/Station.h>
+#include <Data/Stream/MemoryDataStream.h>
 
 namespace UPnP
 {
@@ -64,27 +65,31 @@ void DeviceHost::onSearchRequest(const BasicMessage& request)
 	} else if(delay > 5) {
 		delay = 5;
 	}
-	delay = random(100, delay * 1000);
 
-	MessageSpec ms(MESSAGE_RESPONSE);
+	auto osrand = os_random();
+	delay = osrand / (std::numeric_limits<decltype(osrand)>::max() / 1000U / delay);
+	if(delay < 100) {
+		delay = 100;
+	}
+
+	MessageSpec ms(MessageType::response);
 	SearchFilter filter(ms, delay);
 
 	filter.targetString = request["ST"];
 	if(filter.targetString == SSDP::UPNP_ROOTDEVICE) {
-		ms.target = TARGET_ROOT;
+		ms.setTarget(SearchTarget::root);
 	} else if(filter.targetString == SSDP::SSDP_ALL) {
-		ms.target = TARGET_ALL;
+		ms.setTarget(SearchTarget::all);
 	} else if(filter.targetString.startsWith("urn:")) {
-		ms.target = TARGET_TYPE;
+		ms.setTarget(SearchTarget::type);
 	} else if(filter.targetString.startsWith("uuid:")) {
-		ms.target = TARGET_UUID;
+		ms.setTarget(SearchTarget::uuid);
 	} else {
 		debug_e("[UPnP] Invalid ST field: %s", filter.targetString.c_str());
 		return;
 	}
 
-	ms.remoteIP = request.remoteIP;
-	ms.remotePort = request.remotePort;
+	ms.setRemote(request.remoteIP, request.remotePort);
 
 	search(filter, nullptr);
 }
@@ -92,9 +97,7 @@ void DeviceHost::onSearchRequest(const BasicMessage& request)
 void DeviceHost::search(SearchFilter& filter, Device* device)
 {
 	filter.callback = [&](Object* object, SearchMatch match) {
-		auto item = new MessageSpec(filter.ms);
-		item->object = object;
-		item->match = match;
+		auto item = new MessageSpec(filter.ms, match, object);
 		server.messageQueue.add(item, filter.delayMs);
 		filter.delayMs += 100;
 	};
@@ -113,20 +116,20 @@ void DeviceHost::search(SearchFilter& filter, Device* device)
 
 #if DEBUG_VERBOSE_LEVEL == DBG
 	unsigned count = server.messageQueue.count();
-	String s = toString(filter.ms.messageType);
+	String s = toString(filter.ms.type());
 	if(!s) {
 		s = _F("**BAD**  ");
 	}
 	s += ' ';
-	s += IpAddress(filter.ms.remoteIP).toString();
+	s += filter.ms.remoteIp().toString();
 	s += ':';
-	s += filter.ms.remotePort;
+	s += filter.ms.remotePort();
 	s += ' ';
 
-	if(filter.ms.messageType == MESSAGE_RESPONSE) {
-		s += toString(filter.ms.target);
-	} else if(filter.ms.messageType == MESSAGE_NOTIFY) {
-		s += toString(filter.ms.notifySubtype);
+	if(filter.ms.type() == MessageType::response) {
+		s += toString(filter.ms.target());
+	} else if(filter.ms.type() == MessageType::notify) {
+		s += toString(filter.ms.notifySubtype());
 	} else {
 		s += filter.targetString;
 	}
@@ -142,10 +145,8 @@ void DeviceHost::search(SearchFilter& filter, Device* device)
 
 void DeviceHost::notify(Device* device, NotifySubtype subtype)
 {
-	MessageSpec ms(subtype);
-	ms.target = TARGET_ALL;
-	ms.remoteIP = SSDP_MULTICAST_IP;
-	ms.remotePort = SSDP_MULTICAST_PORT;
+	MessageSpec ms(subtype, SearchTarget::all);
+	ms.setRemote(SSDP_MULTICAST_IP, SSDP_MULTICAST_PORT);
 	SearchFilter filter(ms, 500);
 	search(filter, device);
 }
@@ -154,7 +155,7 @@ bool DeviceHost::begin()
 {
 	return SSDP::server.begin(
 		[this](BasicMessage& msg) {
-			if(msg.type == MESSAGE_MSEARCH) {
+			if(msg.type == MessageType::msearch) {
 				onSearchRequest(msg);
 			} else {
 				for(auto cp = controlPoints.head(); cp != nullptr; cp = cp->getNext()) {
@@ -163,7 +164,7 @@ bool DeviceHost::begin()
 			}
 		},
 		[](Message& msg, MessageSpec& ms) {
-			auto object = static_cast<Object*>(ms.object);
+			auto object = ms.object<Object>();
 			if(object == nullptr) {
 				// Send directly
 				// TODO: This is ControlPoint stuff
@@ -192,7 +193,7 @@ bool DeviceHost::registerDevice(RootDevice* device)
 
 	if(isActive()) {
 		// TODO: If device already registered we should return true but not advertise
-		notify(device, NTS_ALIVE);
+		notify(device, NotifySubtype::alive);
 	}
 
 	return true;
@@ -206,7 +207,7 @@ bool DeviceHost::unRegisterDevice(RootDevice* device)
 	}
 
 	if(isActive()) {
-		notify(device, NTS_BYEBYE);
+		notify(device, NotifySubtype::byebye);
 	}
 
 	// TODO: When last notification has been sent, inform application
@@ -230,6 +231,35 @@ bool DeviceHost::onHttpRequest(HttpServerConnection& connection)
 		device = device->getNext();
 	}
 	return false;
+}
+
+IDataSourceStream* DeviceHost::generateDebugPage(const String& title)
+{
+	auto mem = new MemoryDataStream;
+	mem->print(F("<html lang=\"en\"><head><title>"));
+	mem->print(title);
+	mem->print(F("</title></head><body><h1>"));
+	mem->print(title);
+	mem->println(F("</h1>"
+				   "The following devices are being advertised:<p>"
+				   "<ul>"));
+
+	for(auto dev = firstRootDevice(); dev != nullptr; dev = dev->getNext()) {
+		String fn = dev->getField(UPnP::Device::Field::friendlyName);
+		String url = dev->getField(UPnP::Device::Field::presentationURL);
+		mem->print(_F("<li><a href=\""));
+		mem->print(url);
+		mem->print(_F("\">"));
+		mem->print(fn);
+		mem->print(_F("</>"));
+		mem->println("</li>");
+	}
+
+	mem->println(_F("</ul>"
+					"</body>"
+					"</html>"));
+
+	return mem;
 }
 
 } // namespace UPnP

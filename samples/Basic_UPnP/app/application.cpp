@@ -1,11 +1,10 @@
 #include <SmingCore.h>
 #include <Network/UPnP/DeviceHost.h>
+#include <Network/UPnP/ControlPoint.h>
 #include <Network/SSDP/Server.h>
 #include <TeaPot.h>
 #include <Wemo.h>
-#include <DeviceFinder.h>
 #include <malloc_count.h>
-#include <Data/Stream/MemoryDataStream.h>
 
 // If you want, you can define WiFi settings globally in Eclipse Environment Variables
 #ifndef WIFI_SSID
@@ -20,7 +19,7 @@ HttpServer server;
 TeaPot teapot(1);
 Wemo::Controllee wemo1(1, "Socket #1");
 Wemo::Controllee wemo2(2, "Socket #2");
-DeviceFinder deviceFinder;
+UPnP::ControlPoint controlPoint;
 
 void connectFail(const String& ssid, MacAddress bssid, WifiDisconnectReason reason)
 {
@@ -38,30 +37,8 @@ int onHttpRequest(HttpServerConnection& connection, HttpRequest& request, HttpRe
 
 	auto path = request.uri.getRelativePath();
 	if(path.length() == 0 || path == F("index.html")) {
-		// Generate landing page
-		auto mem = new MemoryDataStream;
-		mem->println(F("<html lang=\"en\">"
-					 "<head><title>Basic UPnP</title></head>"
-					 "<body>"
-					 "<h1>Basic UPnP</h1>"
-					 "The following devices are being advertised:<p>"
-					 "<ul>"));
-
-		for(auto dev = UPnP::deviceHost.firstRootDevice(); dev != nullptr; dev = dev->getNext()) {
-			String fn = dev->getField(UPnP::Device::Field::friendlyName);
-			String url = dev->getField(UPnP::Device::Field::presentationURL);
-			mem->print(_F("<li><a href=\""));
-			mem->print(url);
-			mem->print(_F("\">"));
-			mem->print(fn);
-			mem->print(_F("</>"));
-			mem->println("</li>");
-		}
-
-		mem->println(_F("</ul>"
-					  "</body>"
-					  "</html>"));
-		response.sendDataStream(mem, MIME_HTML);
+		auto stream = UPnP::deviceHost.generateDebugPage(F("Basic UPnP"));
+		response.sendDataStream(stream, MIME_HTML);
 		return 0;
 	}
 
@@ -70,6 +47,28 @@ int onHttpRequest(HttpServerConnection& connection, HttpRequest& request, HttpRe
 
 	response.code = HTTP_STATUS_NOT_FOUND;
 	return 0;
+}
+
+void simpleSearch()
+{
+	UPnP::ServiceUrn urn("dial-multiscreen-org", "dial", 1);
+	controlPoint.beginSearch(urn, [](HttpConnection& connection, XML::Document& description) {
+		debug_e("Found service!");
+		auto node = XML::getNode(description, F("/device/friendlyName"));
+		if(node == nullptr) {
+			Serial.println(_F("UNEXPECTED! friendlyName missing from device description"));
+		} else {
+			Serial.print(_F("Friendly name '"));
+			Serial.print(node->value());
+			Serial.println('\'');
+		}
+
+		// Print the response headers
+		auto& headers = connection.getResponse()->headers;
+		for(unsigned i = 0; i < headers.count(); ++i) {
+			Serial.print(headers[i]);
+		}
+	});
 }
 
 void initUPnP()
@@ -93,18 +92,7 @@ void initUPnP()
 	UPnP::deviceHost.registerDevice(&wemo2);
 
 	// Simple search for devices
-	UPnP::deviceHost.registerControlPoint(&deviceFinder);
-
-	auto timer = new AutoDeleteTimer;
-	timer->initializeMs<1000>(InterruptCallback([]() {
-		Serial.println();
-		auto ms = new SSDP::MessageSpec(SSDP::MESSAGE_MSEARCH);
-		ms->object = &deviceFinder;
-		ms->repeat = 2;
-		ms->target = SSDP::TARGET_ROOT; // Will get overridden by our custom search handler
-		SSDP::server.messageQueue.add(ms, 1000);
-	}));
-	timer->startOnce();
+	simpleSearch();
 }
 
 void gotIP(IpAddress ip, IpAddress netmask, IpAddress gateway)

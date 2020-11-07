@@ -26,11 +26,8 @@
 #include <SystemClock.h>
 #include <FlashString/Vector.hpp>
 
-namespace UPnP
+namespace
 {
-DEFINE_FSTR(upnp_org, "upnp-org");
-DEFINE_FSTR(schemas_upnp_org, "schemas-upnp-org");
-
 #define XX(name, req) DEFINE_FSTR_LOCAL(fn_##name, #name);
 UPNP_DEVICE_FIELD_MAP(XX);
 #undef XX
@@ -38,18 +35,10 @@ UPNP_DEVICE_FIELD_MAP(XX);
 #define XX(name, req) &fn_##name,
 DEFINE_FSTR_VECTOR(fieldNames, FlashString, UPNP_DEVICE_FIELD_MAP(XX))
 #undef XX
+} // namespace
 
-bool fromString(const char* name, Device::Field& field)
+namespace UPnP
 {
-	int i = fieldNames.indexOf(name);
-	if(i < 0) {
-		return false;
-	}
-
-	field = Device::Field(i);
-	return true;
-}
-
 RootDevice* Device::getRoot()
 {
 	assert(parent_ != nullptr);
@@ -110,15 +99,10 @@ String Device::getField(Field desc)
 {
 	// Provide defaults for required fields
 	switch(desc) {
-	case Field::deviceType: {
-		String s("urn:");
-		s += getField(Field::domain);
-		s += _F(":device:");
-		s += getField(Field::type);
-		return s;
-	}
+	case Field::deviceType:
+		return DeviceUrn(getField(Field::domain), getField(Field::type), getField(Field::version));
 	case Field::type:
-		return F("Basic:1");
+		return DeviceType::Basic;
 	case Field::friendlyName:
 	case Field::manufacturer:
 	case Field::modelName:
@@ -162,26 +146,26 @@ ItemEnumerator* Device::getList(unsigned index, String& name)
 
 void Device::search(const SearchFilter& filter)
 {
-	switch(filter.ms.target) {
-	case TARGET_ALL:
-		filter.callback(this, MATCH_UUID);
-		filter.callback(this, MATCH_TYPE);
+	switch(filter.ms.target()) {
+	case SearchTarget::all:
+		filter.callback(this, SearchMatch::uuid);
+		filter.callback(this, SearchMatch::type);
 		break;
-	case TARGET_TYPE:
+	case SearchTarget::type:
 		if(filter.targetString == getField(Field::deviceType)) {
-			filter.callback(this, MATCH_TYPE);
+			filter.callback(this, SearchMatch::type);
 		}
 		break;
-	case TARGET_UUID:
+	case SearchTarget::uuid:
 		if(filter.targetString == getField(Field::UDN)) {
-			filter.callback(this, MATCH_UUID);
+			filter.callback(this, SearchMatch::uuid);
 		}
 		break;
 	default:
 		assert(false);
 	}
 
-	if(filter.ms.target != TARGET_UUID) {
+	if(filter.ms.target() != SearchTarget::uuid) {
 		for(auto service = services_.head(); service != nullptr; service = service->getNext()) {
 			service->search(filter);
 		}
@@ -199,18 +183,18 @@ bool Device::formatMessage(Message& msg, MessageSpec& ms)
 
 	String st;
 	String usn = getField(Field::UDN);
-	switch(ms.match) {
-	case MATCH_ROOT:
+	switch(ms.match()) {
+	case SearchMatch::root:
 		st = SSDP::UPNP_ROOTDEVICE;
 		usn += "::";
 		usn += st;
 		break;
-	case MATCH_TYPE:
+	case SearchMatch::type:
 		st = getField(Field::deviceType);
 		usn += "::";
 		usn += st;
 		break;
-	case MATCH_UUID:
+	case SearchMatch::uuid:
 		st = getField(Field::UDN);
 		break;
 	default:
@@ -218,7 +202,7 @@ bool Device::formatMessage(Message& msg, MessageSpec& ms)
 		return false;
 	}
 
-	if(msg.type == MESSAGE_NOTIFY) {
+	if(msg.type == MessageType::notify) {
 		msg["NT"] = st;
 	} else {
 		msg["ST"] = st;
@@ -268,3 +252,19 @@ void Device::sendXml(HttpResponse& response, IDataSourceStream* content)
 }
 
 } // namespace UPnP
+
+String toString(UPnP::Device::Field& field)
+{
+	return fieldNames[unsigned(field)];
+}
+
+bool fromString(const char* name, UPnP::Device::Field& field)
+{
+	int i = fieldNames.indexOf(name);
+	if(i < 0) {
+		return false;
+	}
+
+	field = UPnP::Device::Field(i);
+	return true;
+}

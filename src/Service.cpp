@@ -22,21 +22,29 @@
 #include "include/Network/UPnP/DescriptionStream.h"
 #include <Data/Stream/MemoryDataStream.h>
 #include <Data/Stream/FlashMemoryStream.h>
+#include <FlashString/Vector.hpp>
 #include <RapidXML.h>
 #include <Network/SSDP/UUID.h>
 
-namespace UPnP
+namespace
 {
 #define XX(name, req) DEFINE_FSTR_LOCAL(fn_##name, #name);
 UPNP_SERVICE_FIELD_MAP(XX);
 #undef XX
 
-static FSTR_TABLE(fieldNames) = {
-#define XX(name, req) FSTR_PTR(fn_##name),
-	UPNP_SERVICE_FIELD_MAP(XX)
+#define XX(name, req) &fn_##name,
+DEFINE_FSTR_VECTOR(fieldNames, FlashString, UPNP_SERVICE_FIELD_MAP(XX))
 #undef XX
-};
 
+} // namespace
+
+String toString(UPnP::Service::Field field)
+{
+	return fieldNames[unsigned(field)];
+}
+
+namespace UPnP
+{
 RootDevice* Service::getRoot()
 {
 	return (device_ == nullptr) ? nullptr : device_->getRoot();
@@ -57,7 +65,7 @@ XML::Node* Service::getDescription(XML::Document& doc, DescType descType)
 		for(unsigned i = 0; i < unsigned(Field::customStart); ++i) {
 			s = getField(Field(i));
 			if(s) {
-				XML::appendNode(service, *fieldNames[i], s);
+				XML::appendNode(service, fieldNames[i], s);
 			}
 		}
 		return service;
@@ -77,17 +85,17 @@ String Service::getField(Field desc)
 {
 	// Provide defaults for required fields
 	switch(desc) {
-	case Field::serviceType: {
-		String s = F("urn:");
-		s += getField(Field::domain);
-		s += _F(":service:");
-		s += getField(Field::type);
-		return s;
-	}
+	case Field::serviceType:
+		return ServiceUrn(getField(Field::domain), getField(Field::type), getField(Field::version));
 
 	case Field::type:
+		return F("{type REQUIRED}");
+
 	case Field::serviceId:
-		return F("REQUIRED FIELD");
+		return F("{serviceId REQUIRED}");
+
+	case Field::version:
+		return String('1');
 
 	case Field::SCPDURL:
 		return getField(Field::baseURL) + _F("desc.xml");
@@ -132,13 +140,13 @@ ItemEnumerator* Service::getList(unsigned index, String& name)
 
 void Service::search(const SearchFilter& filter)
 {
-	switch(filter.ms.target) {
-	case TARGET_ALL:
-		filter.callback(this, MATCH_TYPE);
+	switch(filter.ms.target()) {
+	case SearchTarget::all:
+		filter.callback(this, SearchMatch::type);
 		break;
-	case TARGET_TYPE:
+	case SearchTarget::type:
 		if(filter.targetString == getField(Field::serviceType)) {
-			filter.callback(this, MATCH_TYPE);
+			filter.callback(this, SearchMatch::type);
 		}
 		break;
 	default:
@@ -148,7 +156,7 @@ void Service::search(const SearchFilter& filter)
 
 bool Service::formatMessage(Message& msg, MessageSpec& ms)
 {
-	if(ms.match != MATCH_TYPE) {
+	if(ms.match() != SearchMatch::type) {
 		debug_e("[UPnP] Invalid search match value");
 		return false;
 	}
@@ -161,7 +169,7 @@ bool Service::formatMessage(Message& msg, MessageSpec& ms)
 	usn += "::";
 	usn += st;
 
-	if(msg.type == MESSAGE_NOTIFY) {
+	if(msg.type == MessageType::notify) {
 		msg["NT"] = st;
 	} else {
 		msg["ST"] = st;
@@ -179,7 +187,7 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 
 	auto printRequest = [&](bool verbose = false) {
 		debug_i("[UPnP] %s:%u %s %s for '%s'", connection.getRemoteIp().toString().c_str(), connection.getRemotePort(),
-				http_method_str(request.method), uri.Path.c_str(), getField(Field::type).c_str());
+				toString(request.method).c_str(), uri.Path.c_str(), getField(Field::type).c_str());
 
 #if DEBUG_VERBOSE_LEVEL >= DBG
 		if(verbose) {
@@ -223,6 +231,7 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 		device_->sendXml(response, stream);
 
 #if DEBUG_VERBOSE_LEVEL >= DBG
+		String s;
 		XML::serialize(info.envelope.doc, s, true);
 		m_puts(s.c_str());
 		m_puts("\r\n");
@@ -275,6 +284,8 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 }
 
 /*
+ * Simple examples
+ *
 REQUEST:
 
 	<?xml version="1.0" encoding="utf-8"?>
