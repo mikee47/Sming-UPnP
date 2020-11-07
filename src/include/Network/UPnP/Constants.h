@@ -38,7 +38,8 @@ UPNP_DEVICETYPE_MAP(XX)
 #define UPNP_SERVICETYPE_MAP(XX)                                                                                       \
 	XX(ContentDirectory, "ContentDirectory")                                                                           \
 	XX(ConnectionManager, "ConnectionManager")                                                                         \
-	XX(X_MS_MediaReceiverRegistrar, "X_MS_MediaReceiverRegistrar")
+	XX(X_MS_MediaReceiverRegistrar, "X_MS_MediaReceiverRegistrar")                                                     \
+	XX(RenderingControl, "RenderingControl")
 
 namespace ServiceType
 {
