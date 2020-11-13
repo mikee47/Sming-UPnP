@@ -121,8 +121,11 @@ bool ControlPoint::sendRequest(HttpRequest* request)
 	return http.send(request);
 }
 
-bool ControlPoint::sendDescriptionRequest(HttpRequest* request, DescriptionCallback callback)
+bool ControlPoint::requestDescription(const String& url, DescriptionCallback callback)
 {
+	debug_d("Fetching description from URL: '%s'", url.c_str());
+	auto request = new HttpRequest(url);
+
 	request->onRequestComplete([this, callback](HttpConnection& connection, bool success) -> int {
 		if(!success) {
 			debug_e("Fetch failed");
@@ -131,13 +134,7 @@ bool ControlPoint::sendDescriptionRequest(HttpRequest* request, DescriptionCallb
 		}
 		return 0;
 	});
-	return sendRequest(request);
-}
 
-bool ControlPoint::requestDescription(const String& url, DescriptionCallback callback)
-{
-	debug_d("Fetching description from URL: '%s'", url.c_str());
-	auto request = new HttpRequest(url);
-	return sendDescriptionRequest(request, callback);
+	return sendRequest(request);
 }
 } // namespace UPnP
