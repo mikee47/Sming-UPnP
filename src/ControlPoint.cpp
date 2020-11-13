@@ -110,11 +110,13 @@ void ControlPoint::processDescriptionResponse(HttpConnection& connection, Descri
 
 bool ControlPoint::sendRequest(HttpRequest* request)
 {
-	// Don't create reponse stream until headers are in: this allows requests to be queued
-	request->onHeadersComplete([this](HttpConnection& client, HttpResponse& response) -> int {
-		client.getRequest()->setResponseStream(new LimitedMemoryStream(maxDescriptionSize));
-		return 0;
-	});
+	// Don't create response stream until headers are in: this allows requests to be queued
+	if(request != nullptr && request->getResponseStream() == nullptr) {
+		request->onHeadersComplete([this](HttpConnection& client, HttpResponse& response) -> int {
+			client.getRequest()->setResponseStream(new LimitedMemoryStream(maxDescriptionSize));
+			return 0;
+		});
+	}
 
 	return http.send(request);
 }
