@@ -79,14 +79,6 @@ public:
 
 	/**
 	 * @brief Send a request for description document
-	 * @param request Completed request (response stream unassigned)
-	 * @param callback To be invoked with requested document
-	 * @retval bool true on success, false if queue is full
-	 */
-	bool sendDescriptionRequest(HttpRequest* request, DescriptionCallback callback);
-
-	/**
-	 * @brief Send a request for description document
 	 * @param request Description URL
 	 * @param callback To be invoked with requested document
 	 * @retval bool true on success, false if queue is full
