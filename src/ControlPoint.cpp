@@ -110,17 +110,22 @@ void ControlPoint::processDescriptionResponse(HttpConnection& connection, Descri
 
 bool ControlPoint::sendRequest(HttpRequest* request)
 {
-	// Don't create reponse stream until headers are in: this allows requests to be queued
-	request->onHeadersComplete([this](HttpConnection& client, HttpResponse& response) -> int {
-		client.getRequest()->setResponseStream(new LimitedMemoryStream(maxDescriptionSize));
-		return 0;
-	});
+	// Don't create response stream until headers are in: this allows requests to be queued
+	if(request != nullptr && request->getResponseStream() == nullptr) {
+		request->onHeadersComplete([this](HttpConnection& client, HttpResponse& response) -> int {
+			client.getRequest()->setResponseStream(new LimitedMemoryStream(maxDescriptionSize));
+			return 0;
+		});
+	}
 
 	return http.send(request);
 }
 
-bool ControlPoint::sendDescriptionRequest(HttpRequest* request, DescriptionCallback callback)
+bool ControlPoint::requestDescription(const String& url, DescriptionCallback callback)
 {
+	debug_d("Fetching description from URL: '%s'", url.c_str());
+	auto request = new HttpRequest(url);
+
 	request->onRequestComplete([this, callback](HttpConnection& connection, bool success) -> int {
 		if(!success) {
 			debug_e("Fetch failed");
@@ -129,13 +134,7 @@ bool ControlPoint::sendDescriptionRequest(HttpRequest* request, DescriptionCallb
 		}
 		return 0;
 	});
-	return sendRequest(request);
-}
 
-bool ControlPoint::requestDescription(const String& url, DescriptionCallback callback)
-{
-	debug_d("Fetching description from URL: '%s'", url.c_str());
-	auto request = new HttpRequest(url);
-	return sendDescriptionRequest(request, callback);
+	return sendRequest(request);
 }
 } // namespace UPnP
