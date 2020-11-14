@@ -19,13 +19,13 @@
  ****/
 
 #include "include/Network/UPnP/ControlPoint.h"
-#include "include/Network/UPnP/DeviceHost.h"
 #include <Network/SSDP/Server.h>
+#include "main.h"
 
 namespace UPnP
 {
+ControlPoint::List ControlPoint::controlPoints;
 HttpClient ControlPoint::http;
-bool ControlPoint::initialized = false;
 
 bool ControlPoint::beginSearch(const UPnP::Urn& urn, DescriptionCallback callback)
 {
@@ -34,19 +34,12 @@ bool ControlPoint::beginSearch(const UPnP::Urn& urn, DescriptionCallback callbac
 		return false;
 	}
 
-	if(!initialized) {
-		if(!deviceHost.begin()) {
-			debug_e("UPnP initialisation failed");
-			return false;
-		}
-
-		initialized = true;
+	if(!initialize()) {
+		return false;
 	}
 
 	searchUrn = urn;
 	searchCallback = callback;
-
-	deviceHost.registerControlPoint(this);
 
 	auto message = new SSDP::MessageSpec(SSDP::MessageType::msearch, SSDP::SearchTarget::root, this);
 	message->setRepeat(2);
@@ -60,6 +53,13 @@ bool ControlPoint::formatMessage(SSDP::Message& message, SSDP::MessageSpec& ms)
 	// Override the search target
 	message["ST"] = searchUrn;
 	return true;
+}
+
+void ControlPoint::onSsdpMessage(BasicMessage& msg)
+{
+	for(auto cp = controlPoints.head(); cp != nullptr; cp = cp->getNext()) {
+		cp->onNotify(msg);
+	}
 }
 
 void ControlPoint::onNotify(SSDP::BasicMessage& message)
