@@ -12,18 +12,17 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along with FlashString.
+ * You should have received a copy of the GNU General Public License along with Sming UPnP.
  * If not, see <https://www.gnu.org/licenses/>.
  *
  ****/
 
 #include "include/Network/UPnP/DeviceHost.h"
 #include "include/Network/UPnP/DescriptionStream.h"
-#include "include/Network/UPnP/ControlPoint.h"
 #include <Network/SSDP/Server.h>
-#include <WMath.h>
 #include <Platform/Station.h>
 #include <Data/Stream/MemoryDataStream.h>
+#include "main.h"
 
 namespace UPnP
 {
@@ -153,31 +152,12 @@ void DeviceHost::notify(Device* device, NotifySubtype subtype)
 
 bool DeviceHost::begin()
 {
-	return SSDP::server.begin(
-		[this](BasicMessage& msg) {
-			if(msg.type == MessageType::msearch) {
-				onSearchRequest(msg);
-			} else {
-				for(auto cp = controlPoints.head(); cp != nullptr; cp = cp->getNext()) {
-					cp->onNotify(msg);
-				}
-			}
-		},
-		[](Message& msg, MessageSpec& ms) {
-			auto object = ms.object<Object>();
-			if(object == nullptr) {
-				// Send directly
-				// TODO: This is ControlPoint stuff
-				server.sendMessage(msg);
-			} else {
-				object->sendMessage(msg, ms);
-			}
-		});
+	return UPnP::initialize();
 }
 
 void DeviceHost::end()
 {
-	SSDP::server.end();
+	return UPnP::finalize();
 }
 
 bool DeviceHost::isActive() const

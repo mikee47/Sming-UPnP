@@ -1,7 +1,7 @@
 /**
- * Object.cpp
+ * main.cpp
  *
- * Copyright 2019 mikee47 <mike@sillyhouse.net>
+ * Copyright 2020 mikee47 <mike@sillyhouse.net>
  *
  * This file is part of the Sming UPnP Library
  *
@@ -17,43 +17,44 @@
  *
  ****/
 
-#include "include/Network/UPnP/Object.h"
-#include "include/Network/UPnP/DescriptionStream.h"
 #include "include/Network/UPnP/DeviceHost.h"
+#include "include/Network/UPnP/ControlPoint.h"
 #include <Network/SSDP/Server.h>
 
 namespace UPnP
 {
-String Object::splitTypeVersion(String& type)
+static bool initialized;
+
+bool initialize()
 {
-	String ver;
-	int i = type.indexOf(':');
-	if(i >= 0) {
-		ver = type.substring(i + 1);
-		type.remove(i);
+	if(!initialized) {
+		initialized = SSDP::server.begin(
+			[](BasicMessage& msg) {
+				if(msg.type == MessageType::msearch) {
+					deviceHost.onSearchRequest(msg);
+				} else {
+					ControlPoint::onSsdpMessage(msg);
+				}
+			},
+			[](Message& msg, MessageSpec& ms) {
+				auto object = ms.object<Object>();
+				if(object == nullptr) {
+					server.sendMessage(msg);
+				} else {
+					object->sendMessage(msg, ms);
+				}
+			});
 	}
-	return ver;
+
+	return initialized;
 }
 
-const char* Object::getTypeVersion(const char* type)
+void finalize()
 {
-	auto p = strchr(type, ':');
-	if(p != nullptr) {
-		++p;
+	if(initialized) {
+		SSDP::server.end();
+		initialized = false;
 	}
-	return p;
-}
-
-void Object::sendMessage(Message& msg, MessageSpec& ms)
-{
-	if(formatMessage(msg, ms)) {
-		server.sendMessage(msg);
-	}
-}
-
-IDataSourceStream* Object::createDescription()
-{
-	return new DescriptionStream(this);
 }
 
 } // namespace UPnP

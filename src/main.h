@@ -1,7 +1,7 @@
 /**
- * ObjectList.h
+ * main.h
  *
- * Copyright 2019 mikee47 <mike@sillyhouse.net>
+ * Copyright 2020 mikee47 <mike@sillyhouse.net>
  *
  * This file is part of the Sming UPnP Library
  *
@@ -19,20 +19,16 @@
 
 #pragma once
 
-#include "LinkedItemList.h"
-
 namespace UPnP
 {
 /**
- * @brief Class template for singly-linked list of objects
+ * @brief Initialize the UPnP stack. May be called multiple times.
  */
-template <typename ObjectType> class ObjectList : public LinkedItemList
-{
-public:
-	ObjectType* head()
-	{
-		return reinterpret_cast<ObjectType*>(LinkedItemList::head());
-	}
-};
+bool initialize();
+
+/**
+ * @brief Un-intialize the UPnP stack and release the SSDP server.
+ */
+void finalize();
 
 } // namespace UPnP

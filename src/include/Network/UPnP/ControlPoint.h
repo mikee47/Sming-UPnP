@@ -13,7 +13,7 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along with FlashString.
+ * You should have received a copy of the GNU General Public License along with Sming UPnP.
  * If not, see <https://www.gnu.org/licenses/>.
  *
  ****/
@@ -36,6 +36,12 @@ public:
 
 	ControlPoint(size_t maxDescriptionSize = 2048) : maxDescriptionSize(maxDescriptionSize)
 	{
+		controlPoints.add(this);
+	}
+
+	~ControlPoint()
+	{
+		controlPoints.remove(this);
 	}
 
 	/**
@@ -85,16 +91,22 @@ public:
 	 */
 	bool requestDescription(const String& url, DescriptionCallback callback);
 
+	/**
+	 * @brief Called via SSDP when incoming message received
+	 */
+	static void onSsdpMessage(BasicMessage& msg);
+
 private:
+	using List = ObjectList<ControlPoint>;
+
 	void processDescriptionResponse(HttpConnection& connection, DescriptionCallback callback);
 
+	static List controlPoints;
 	static HttpClient http;
 	size_t maxDescriptionSize; // <<< Maximum size of XML description that can be processed
 	UPnP::Urn searchUrn;
 	DescriptionCallback searchCallback;
 	CStringArray uniqueServiceNames;
 };
-
-using ControlPointList = ObjectList<ControlPoint>;
 
 } // namespace UPnP
