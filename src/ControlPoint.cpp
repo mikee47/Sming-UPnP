@@ -25,12 +25,22 @@
 namespace UPnP
 {
 HttpClient ControlPoint::http;
+bool ControlPoint::initialized = false;
 
 bool ControlPoint::beginSearch(const UPnP::Urn& urn, DescriptionCallback callback)
 {
 	if(searchUrn) {
 		debug_e("Search already in progress");
 		return false;
+	}
+
+	if(!initialized) {
+		if(!deviceHost.begin()) {
+			debug_e("UPnP initialisation failed");
+			return false;
+		}
+
+		initialized = true;
 	}
 
 	searchUrn = urn;
