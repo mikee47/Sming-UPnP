@@ -93,6 +93,8 @@ private:
 	UPnP::Urn searchUrn;
 	DescriptionCallback searchCallback;
 	CStringArray uniqueServiceNames;
+
+	static bool initialized;
 };
 
 using ControlPointList = ObjectList<ControlPoint>;
