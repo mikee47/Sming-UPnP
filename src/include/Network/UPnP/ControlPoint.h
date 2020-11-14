@@ -26,6 +26,8 @@
 #include <Network/HttpClient.h>
 #include "Urn.h"
 #include "Constants.h"
+#include "DeviceControl.h"
+#include "ServiceControl.h"
 
 namespace UPnP
 {
@@ -33,6 +35,18 @@ class ControlPoint : public ObjectTemplate<ControlPoint>
 {
 public:
 	using DescriptionCallback = Delegate<void(HttpConnection& connection, XML::Document& description)>;
+
+	/**
+	 * @brief Callback invoked when device has been located
+	 * @param device Must be deleted when finished with
+	 */
+	using DeviceControlCallback = Delegate<void(DeviceControl* device)>;
+
+	/**
+	 * @brief Callback invoked when service has been located
+	 * @param device Must be deleted when finished with
+	 */
+	using ServiceControlCallback = Delegate<void(ServiceControl* service)>;
 
 	ControlPoint(size_t maxDescriptionSize = 2048) : maxDescriptionSize(maxDescriptionSize)
 	{
@@ -51,6 +65,22 @@ public:
 	 * @retval bool true on success, false if request queue is full
 	 */
 	bool beginSearch(const Urn& urn, DescriptionCallback callback);
+
+	/**
+	 * @brief Searches for UPnP device
+	 * @param cls Device class object
+	 * @param callback Invoked with constructed control object
+	 * @retval bool true on success, false if request queue is full
+	 */
+	bool beginSearch(const DeviceClass& cls, DeviceControlCallback callback);
+
+	/**
+	 * @brief Searches for UPnP service
+	 * @param cls Service class object
+	 * @param callback Invoked with constructed control object
+	 * @retval bool true on success, false if request queue is full
+	 */
+	bool beginSearch(const ServiceClass& cls, ServiceControlCallback callback);
 
 	/**
 	 * @brief Called by framework to handle an incoming SSDP message
@@ -102,6 +132,7 @@ private:
 	void processDescriptionResponse(HttpConnection& connection, DescriptionCallback callback);
 
 	static List controlPoints;
+	static ClassObject::List classObjects;
 	static HttpClient http;
 	size_t maxDescriptionSize; // <<< Maximum size of XML description that can be processed
 	UPnP::Urn searchUrn;

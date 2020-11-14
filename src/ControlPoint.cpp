@@ -22,6 +22,8 @@
 #include <Network/SSDP/Server.h>
 #include "main.h"
 
+#define NOT_IMPL() debug_w("%s: TO BE IMPLEMENTED", __PRETTY_FUNCTION__)
+
 namespace UPnP
 {
 ControlPoint::List ControlPoint::controlPoints;
@@ -46,6 +48,22 @@ bool ControlPoint::beginSearch(const UPnP::Urn& urn, DescriptionCallback callbac
 	SSDP::server.messageQueue.add(message, 0);
 
 	return true;
+}
+
+bool ControlPoint::beginSearch(const DeviceClass& cls, DeviceControlCallback callback)
+{
+	NOT_IMPL();
+	return false;
+
+	//	beginSearch(cls.getUrn(),
+	//			using DescriptionCallback = Delegate<void(HttpConnection& connection, XML::Document& description)>;
+	//
+}
+
+bool ControlPoint::beginSearch(const ServiceClass& cls, ServiceControlCallback callback)
+{
+	NOT_IMPL();
+	return false;
 }
 
 bool ControlPoint::formatMessage(SSDP::Message& message, SSDP::MessageSpec& ms)
