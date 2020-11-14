@@ -20,7 +20,6 @@
 #pragma once
 
 #include "RootDevice.h"
-#include "ControlPoint.h"
 
 namespace UPnP
 {
@@ -40,16 +39,6 @@ public:
 
 	bool unRegisterDevice(RootDevice* device);
 
-	bool registerControlPoint(ControlPoint* cp)
-	{
-		return controlPoints.add(cp);
-	}
-
-	bool unRegisterControlPoint(ControlPoint* cp)
-	{
-		return controlPoints.remove(cp);
-	}
-
 	bool onHttpRequest(HttpServerConnection& connection);
 
 	/**
@@ -64,14 +53,15 @@ public:
 
 	void notify(Device* device, NotifySubtype subype);
 
-private:
+	/**
+	 * @brief Called via SSDP when incoming message received
+	 */
 	void onSearchRequest(const BasicMessage& request);
 
+private:
 	void search(SearchFilter& filter, Device* device);
 
-private:
 	RootDeviceList rootDevices;
-	ControlPointList controlPoints;
 };
 
 extern DeviceHost deviceHost;

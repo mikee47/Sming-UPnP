@@ -36,6 +36,12 @@ public:
 
 	ControlPoint(size_t maxDescriptionSize = 2048) : maxDescriptionSize(maxDescriptionSize)
 	{
+		controlPoints.add(this);
+	}
+
+	~ControlPoint()
+	{
+		controlPoints.remove(this);
 	}
 
 	/**
@@ -85,18 +91,22 @@ public:
 	 */
 	bool requestDescription(const String& url, DescriptionCallback callback);
 
+	/**
+	 * @brief Called via SSDP when incoming message received
+	 */
+	static void onSsdpMessage(BasicMessage& msg);
+
 private:
+	using List = ObjectList<ControlPoint>;
+
 	void processDescriptionResponse(HttpConnection& connection, DescriptionCallback callback);
 
+	static List controlPoints;
 	static HttpClient http;
 	size_t maxDescriptionSize; // <<< Maximum size of XML description that can be processed
 	UPnP::Urn searchUrn;
 	DescriptionCallback searchCallback;
 	CStringArray uniqueServiceNames;
-
-	static bool initialized;
 };
-
-using ControlPointList = ObjectList<ControlPoint>;
 
 } // namespace UPnP
