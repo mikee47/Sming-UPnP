@@ -42,7 +42,7 @@ public:
 	{
 	}
 
-	virtual XML::Node* getDescription(XML::Document& doc, DescType descType)
+	virtual XML::Node* getDescription(XML::Document& doc, DescType descType) const
 	{
 		return nullptr;
 	}
@@ -52,7 +52,7 @@ public:
 		return nullptr;
 	}
 
-	virtual Item* next()
+	virtual Item* next() const
 	{
 		return nullptr;
 	}

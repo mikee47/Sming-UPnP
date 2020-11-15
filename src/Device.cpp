@@ -65,7 +65,7 @@ RootDevice* Device::getRoot()
  *
  * For now, DescriptionStream 'knows' about the above lists.
  */
-XML::Node* Device::getDescription(XML::Document& doc, DescType descType)
+XML::Node* Device::getDescription(XML::Document& doc, DescType descType) const
 {
 	switch(descType) {
 	case DescType::header: {

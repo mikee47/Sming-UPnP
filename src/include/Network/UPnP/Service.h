@@ -77,7 +77,7 @@ public:
 		return getField(Field::serviceId);
 	}
 
-	XML::Node* getDescription(XML::Document& doc, DescType descType) override;
+	XML::Node* getDescription(XML::Document& doc, DescType descType) const override;
 
 	ItemEnumerator* getList(unsigned index, String& name) override;
 

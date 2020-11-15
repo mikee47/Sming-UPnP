@@ -50,9 +50,9 @@ public:
 
 	void search(const SearchFilter& filter) override;
 
-	RootDevice* getNext()
+	RootDevice* getNext() const
 	{
-		return reinterpret_cast<RootDevice*>(Device::next());
+		return reinterpret_cast<RootDevice*>(next());
 	}
 
 	/*

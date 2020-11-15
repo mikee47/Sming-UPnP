@@ -31,12 +31,12 @@ class LinkedItemList;
 class LinkedItem : public Item
 {
 public:
-	LinkedItem* next() override
+	LinkedItem* next() const override
 	{
 		return next_;
 	}
 
-	LinkedItem* getNext()
+	LinkedItem* getNext() const
 	{
 		return next_;
 	}
