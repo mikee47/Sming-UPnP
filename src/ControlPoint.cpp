@@ -74,6 +74,9 @@ bool ControlPoint::formatMessage(SSDP::Message& message, SSDP::MessageSpec& ms)
 {
 	// Override the search target
 	message["ST"] = searchUrn;
+	if(UPNP_VERSION_IS(2.0)) {
+		message[F("CPFN.UPNP.ORG")] = F("Sming ControlPoint");
+	}
 	return true;
 }
 
