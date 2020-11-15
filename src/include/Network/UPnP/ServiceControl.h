@@ -30,6 +30,7 @@ class DeviceControl;
 class ServiceControl : public Service
 {
 public:
+	using List = ObjectList<ServiceControl>;
 	using Field = Service::Field;
 
 	class ArgList
@@ -46,11 +47,21 @@ public:
 		}
 	};
 
-	ServiceControl(DeviceControl& device, const ServiceClass& serviceClass) : device(device), cls(serviceClass)
+	ServiceControl(DeviceControl& device, const ServiceClass& serviceClass) : device(device), serviceClass(serviceClass)
 	{
 	}
 
 	String getField(Field desc) const override;
+
+	const ServiceClass& getClass() const
+	{
+		return serviceClass;
+	}
+
+	ServiceControl* getNext() const
+	{
+		return reinterpret_cast<ServiceControl*>(next());
+	}
 
 	template <typename... ParamTypes> bool DispatchRequest(Delegate<void(ParamTypes...)>, ArgList args);
 
@@ -60,7 +71,7 @@ public:
 
 private:
 	DeviceControl& device;
-	const ServiceClass& cls;
+	const ServiceClass& serviceClass;
 };
 
 } // namespace UPnP

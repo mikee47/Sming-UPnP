@@ -21,6 +21,7 @@
 
 #include "DeviceClass.h"
 #include "ServiceClass.h"
+#include "ServiceControl.h"
 #include <Data/CString.h>
 
 namespace UPnP
@@ -28,9 +29,11 @@ namespace UPnP
 class DeviceControl : public Device
 {
 public:
-	DeviceControl(const DeviceClass& deviceClass) : cls(deviceClass)
+	DeviceControl(const DeviceClass& deviceClass) : deviceClass(deviceClass)
 	{
 	}
+
+	~DeviceControl();
 
 	void parseDescription(XML::Document& description);
 
@@ -38,10 +41,16 @@ public:
 
 	String getField(Field desc) const override;
 
+	const DeviceClass& getClass() const
+	{
+		return deviceClass;
+	}
+
 private:
-	const DeviceClass& cls;
+	const DeviceClass& deviceClass;
 	CString friendlyName_;
 	CString udn_;
+	ServiceControl::List services;
 };
 
 } // namespace UPnP

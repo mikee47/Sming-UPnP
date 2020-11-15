@@ -34,6 +34,7 @@ class DeviceClass;
 class ServiceClass : public ClassObject
 {
 public:
+	using List = ObjectList<ServiceClass>;
 	using Field = Service::Field;
 
 	ServiceClass(const DeviceClass& deviceClass) : devcls(deviceClass)
