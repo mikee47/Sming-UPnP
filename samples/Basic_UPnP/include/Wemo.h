@@ -24,7 +24,7 @@ public:
 class BasicEventService : public WemoService
 {
 public:
-	String getField(Field desc) override;
+	String getField(Field desc) const override;
 
 	IDataSourceStream* createDescription() override
 	{
@@ -37,7 +37,7 @@ public:
 class MetaInfoService : public WemoService
 {
 public:
-	String getField(Field desc) override;
+	String getField(Field desc) const override;
 
 	IDataSourceStream* createDescription() override
 	{
@@ -81,7 +81,7 @@ public:
 		}
 	}
 
-	String getField(Field desc) override;
+	String getField(Field desc) const override;
 	bool formatMessage(Message& msg, MessageSpec& ms) override;
 
 private:

@@ -34,7 +34,7 @@ Url RootDevice::getURL(const String& path)
 	return Url(URI_SCHEME_HTTP, nullptr, nullptr, WifiStation.getIP().toString(), tcpPort, path);
 }
 
-String RootDevice::getField(Field desc)
+String RootDevice::getField(Field desc) const
 {
 	switch(desc) {
 	case Field::presentationURL:

@@ -58,6 +58,11 @@ public:
 
 	virtual RootDevice* getRoot() = 0;
 
+	const RootDevice* getRoot() const
+	{
+		return const_cast<Object*>(this)->getRoot();
+	}
+
 	/**
 	 * @brief Called during SSDP search operation
 	 */

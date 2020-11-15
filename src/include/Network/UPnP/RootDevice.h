@@ -44,7 +44,7 @@ public:
 
 	Url getURL(const String& path);
 
-	String getField(Field desc) override;
+	String getField(Field desc) const override;
 
 	bool onHttpRequest(HttpServerConnection& connection) override;
 

@@ -60,6 +60,8 @@ public:
 		MAX
 	};
 
+	using Object::getRoot;
+
 	RootDevice* getRoot() override;
 
 	bool isRoot() const
@@ -70,7 +72,12 @@ public:
 	void search(const SearchFilter& filter) override;
 	bool formatMessage(Message& msg, MessageSpec& ms) override;
 
-	virtual String getField(Field desc);
+	virtual String getField(Field desc) const;
+
+	String friendlyName() const
+	{
+		return getField(Field::friendlyName);
+	}
 
 	bool onHttpRequest(HttpServerConnection& connection) override;
 

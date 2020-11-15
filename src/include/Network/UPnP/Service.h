@@ -56,6 +56,8 @@ public:
 		MAX
 	};
 
+	using Object::getRoot;
+
 	RootDevice* getRoot() override;
 
 	void search(const SearchFilter& filter) override;
@@ -63,7 +65,7 @@ public:
 
 	bool onHttpRequest(HttpServerConnection& connection) override;
 
-	virtual String getField(Field desc);
+	virtual String getField(Field desc) const;
 
 	XML::Node* getDescription(XML::Document& doc, DescType descType) override;
 
