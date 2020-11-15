@@ -32,6 +32,7 @@ class DeviceControl;
 class DeviceClass : public ClassObject
 {
 public:
+	using List = ObjectList<DeviceClass>;
 	using Field = Device::Field;
 
 	Urn getUrn() const override
@@ -44,7 +45,17 @@ public:
 		return nullptr;
 	}
 
+	const DeviceClass* getNext() const
+	{
+		return reinterpret_cast<const DeviceClass*>(next());
+	}
+
 	DeviceControl* createObject(XML::Document& description) const;
+
+	const ServiceClass* firstService() const
+	{
+		return serviceClasses.head();
+	}
 
 protected:
 	virtual DeviceControl* createObject() const = 0;

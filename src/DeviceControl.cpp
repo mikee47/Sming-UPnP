@@ -21,6 +21,15 @@
 
 namespace UPnP
 {
+DeviceControl::~DeviceControl()
+{
+	ServiceControl* service;
+	while((service = services.head()) != nullptr) {
+		services.remove(service);
+		delete service;
+	}
+}
+
 void DeviceControl::parseDescription(XML::Document& description)
 {
 	auto get = [&](const String& path) -> String {
@@ -34,12 +43,25 @@ void DeviceControl::parseDescription(XML::Document& description)
 
 	friendlyName_ = get(F("/device/friendlyName"));
 	udn_ = get(F("/device/UDN"));
-
-	//	for(auto dc = cls;)
 }
 
 ServiceControl* DeviceControl::getService(const ServiceClass& serviceClass)
 {
+	ServiceControl* service;
+	for(service = services.head(); service != nullptr; service = service->getNext()) {
+		if(service->getClass() == serviceClass) {
+			return service;
+		}
+	}
+
+	const ServiceClass* cls;
+	for(cls = deviceClass.firstService(); cls != nullptr; cls = cls->getNext()) {
+		if(*cls == serviceClass) {
+			auto service = cls->createObject(*this);
+			services.add(service);
+			return service;
+		}
+	}
 	return nullptr;
 }
 
@@ -51,7 +73,7 @@ String DeviceControl::getField(Field desc) const
 	case Field::UDN:
 		return String(udn_);
 	default:
-		return cls.getField(desc) ?: Device::getField(desc);
+		return deviceClass.getField(desc) ?: Device::getField(desc);
 	}
 }
 
