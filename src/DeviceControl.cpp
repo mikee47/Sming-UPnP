@@ -30,6 +30,19 @@ DeviceControl::~DeviceControl()
 	}
 }
 
+String DeviceControl::getField(Field desc) const
+{
+	switch(desc) {
+	case Field::UDN:
+		return toString(udn);
+//	case Field::baseURL:
+//		re;
+	default:
+		String s = deviceClass.getField(desc);
+		return s ?: Device::getField(desc);
+	}
+}
+
 ServiceControl* DeviceControl::getService(const ServiceClass& serviceClass)
 {
 	ServiceControl* service;

@@ -19,14 +19,16 @@
 
 #include "include/Network/UPnP/DeviceClass.h"
 #include "include/Network/UPnP/DeviceControl.h"
+#include "include/Network/UPnP/Usn.h"
 
 namespace UPnP
 {
-DeviceControl* DeviceClass::createObject(const char* location, const char* usn) const
+DeviceControl* DeviceClass::createObject(const char* location, const char* uniqueServiceName) const
 {
+	Usn usn(uniqueServiceName);
 	auto obj = createObject();
 	obj->location = location;
-	obj->usn = usn;
+	obj->udn = usn.uuid;
 	return obj;
 }
 
