@@ -56,6 +56,11 @@ public:
 	{
 		return nullptr;
 	}
+
+	bool operator==(const Item& other) const
+	{
+		return this == &other;
+	}
 };
 
 } // namespace UPnP
