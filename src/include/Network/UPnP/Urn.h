@@ -118,7 +118,7 @@ public:
 	}
 
 	ServiceUrn(const String& domain, const String& type, const String& version)
-		: Urn(Urn::Kind::device, domain, type, version.toInt())
+		: Urn(Urn::Kind::service, domain, type, version.toInt())
 	{
 	}
 
