@@ -145,7 +145,7 @@ void DeviceHost::search(SearchFilter& filter, Device* device)
 void DeviceHost::notify(Device* device, NotifySubtype subtype)
 {
 	MessageSpec ms(subtype, SearchTarget::all);
-	ms.setRemote(SSDP_MULTICAST_IP, SSDP_MULTICAST_PORT);
+	ms.setRemote(SSDP::multicastIp, SSDP::multicastPort);
 	SearchFilter filter(ms, 500);
 	search(filter, device);
 }
