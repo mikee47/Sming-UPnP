@@ -36,6 +36,8 @@ public:
 
 	ServiceControl* getService(const ServiceClass& serviceClass);
 
+	String getField(Field desc) const override;
+
 private:
 	const DeviceClass& cls;
 	CString friendlyName_;

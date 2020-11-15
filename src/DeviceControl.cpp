@@ -23,14 +23,35 @@ namespace UPnP
 {
 void DeviceControl::parseDescription(XML::Document& description)
 {
-	auto node = XML::getNode(description, F("/device/friendlyName"));
-	if(node != nullptr) {
-		friendlyName_ = node->value();
-	}
+	auto get = [&](const String& path) -> String {
+		auto node = XML::getNode(description, path);
+		if(node == nullptr) {
+			debug_e("[UPnP] Not found: %s", path.c_str());
+			return nullptr;
+		}
+		return node->value();
+	};
 
-	node = XML::getNode(description, F("/device/UDN"));
-	if(node != nullptr) {
-		udn_ = node->value();
+	friendlyName_ = get(F("/device/friendlyName"));
+	udn_ = get(F("/device/UDN"));
+
+	//	for(auto dc = cls;)
+}
+
+ServiceControl* DeviceControl::getService(const ServiceClass& serviceClass)
+{
+	return nullptr;
+}
+
+String DeviceControl::getField(Field desc) const
+{
+	switch(desc) {
+	case Field::friendlyName:
+		return String(friendlyName_);
+	case Field::UDN:
+		return String(udn_);
+	default:
+		return cls.getField(desc) ?: Device::getField(desc);
 	}
 }
 
