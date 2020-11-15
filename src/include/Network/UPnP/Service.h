@@ -40,7 +40,6 @@ namespace UPnP
 {
 class Device;
 class Service;
-using ServiceList = ObjectList<Service>;
 
 /**
  * @brief Represents any kind of device, including a root device
@@ -56,6 +55,7 @@ public:
 		MAX
 	};
 
+	using List = ObjectList<Service>;
 	using Object::getRoot;
 
 	RootDevice* getRoot() override;

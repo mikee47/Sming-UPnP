@@ -61,7 +61,7 @@ public:
 private:
 	void search(SearchFilter& filter, Device* device);
 
-	RootDeviceList rootDevices;
+	RootDevice::List rootDevices;
 };
 
 extern DeviceHost deviceHost;

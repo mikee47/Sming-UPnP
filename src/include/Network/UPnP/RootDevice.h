@@ -32,6 +32,8 @@ struct SpecVersion {
 class RootDevice : public Device
 {
 public:
+	using List = ObjectList<RootDevice>;
+
 	virtual SpecVersion getSpecVersion()
 	{
 		return {1, 0};
@@ -71,7 +73,5 @@ public:
 private:
 	uint16_t tcpPort{80};
 };
-
-using RootDeviceList = ObjectList<RootDevice>;
 
 } // namespace UPnP

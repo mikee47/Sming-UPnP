@@ -44,7 +44,6 @@ namespace UPnP
 {
 class Device;
 class Request;
-using DeviceList = ObjectList<Device>;
 
 /**
  * @brief Represents any kind of device, including a root device
@@ -60,6 +59,7 @@ public:
 		MAX
 	};
 
+	using List = ObjectList<Device>;
 	using Object::getRoot;
 
 	RootDevice* getRoot() override;
@@ -105,8 +105,8 @@ public:
 	void sendXml(HttpResponse& response, IDataSourceStream* content);
 
 private:
-	ServiceList services_;
-	DeviceList devices_;
+	Service::List services_;
+	Device::List devices_;
 	Device* parent_{nullptr};
 };
 
