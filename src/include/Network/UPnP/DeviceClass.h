@@ -55,7 +55,7 @@ public:
 		return serviceClasses.head();
 	}
 
-	DeviceControl* createObject(const char* location, const char* usn) const;
+	DeviceControl* createObject(const char* location, const char* uniqueServiceName) const;
 
 protected:
 	virtual DeviceControl* createObject() const = 0;

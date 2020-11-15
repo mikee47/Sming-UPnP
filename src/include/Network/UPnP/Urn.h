@@ -98,16 +98,12 @@ public:
 class DeviceUrn : public Urn
 {
 public:
-	DeviceUrn() : Urn()
+	DeviceUrn(const String& domain, const String& type, uint8_t version) : Urn(Urn::Kind::device, domain, type, version)
 	{
 	}
 
 	DeviceUrn(const String& domain, const String& type, const String& version)
-		: Urn(Urn::Kind::device, domain, type, version.toInt())
-	{
-	}
-
-	DeviceUrn(const String& domain, const String& type, uint8_t version) : Urn(Urn::Kind::device, domain, type, version)
+		: DeviceUrn(domain, type, version.toInt())
 	{
 	}
 };
@@ -117,17 +113,13 @@ public:
  */
 struct ServiceUrn : public Urn {
 public:
-	ServiceUrn() : Urn()
+	ServiceUrn(const String& domain, const String& type, uint8_t version)
+		: Urn(Urn::Kind::service, domain, type, version)
 	{
 	}
 
 	ServiceUrn(const String& domain, const String& type, const String& version)
-		: Urn(Urn::Kind::service, domain, type, version.toInt())
-	{
-	}
-
-	ServiceUrn(const String& domain, const String& type, uint8_t version)
-		: Urn(Urn::Kind::service, domain, type, version)
+		: ServiceUrn(domain, type, version.toInt())
 	{
 	}
 };

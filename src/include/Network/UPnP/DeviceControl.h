@@ -23,6 +23,7 @@
 #include "ServiceClass.h"
 #include "ServiceControl.h"
 #include <Data/CString.h>
+#include <Network/SSDP/UUID.h>
 
 namespace UPnP
 {
@@ -41,11 +42,7 @@ public:
 
 	ServiceControl* getService(const ServiceClass& serviceClass);
 
-	String getField(Field desc) const override
-	{
-		String s = deviceClass.getField(desc);
-		return s ?: Device::getField(desc);
-	}
+	String getField(Field desc) const override;
 
 	const DeviceClass& getClass() const
 	{
@@ -56,7 +53,7 @@ private:
 	const DeviceClass& deviceClass;
 	ServiceControl::List services;
 	String location;
-	String usn;
+	UUID udn;
 };
 
 } // namespace UPnP
