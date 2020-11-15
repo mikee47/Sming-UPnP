@@ -95,7 +95,7 @@ XML::Node* Device::getDescription(XML::Document& doc, DescType descType)
 	}
 }
 
-String Device::getField(Field desc)
+String Device::getField(Field desc) const
 {
 	// Provide defaults for required fields
 	switch(desc) {

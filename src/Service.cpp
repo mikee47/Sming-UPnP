@@ -81,7 +81,7 @@ XML::Node* Service::getDescription(XML::Document& doc, DescType descType)
 	}
 }
 
-String Service::getField(Field desc)
+String Service::getField(Field desc) const
 {
 	// Provide defaults for required fields
 	switch(desc) {

@@ -7,7 +7,7 @@ public:
 	{
 	}
 
-	String getField(Field desc) override
+	String getField(Field desc) const override
 	{
 		switch(desc) {
 		case Field::deviceType:

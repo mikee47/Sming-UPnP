@@ -6,7 +6,7 @@ IMPORT_FSTR(WEMO_METAINFO_SCPD, COMPONENT_PATH "/config/wemo-metainfo.xml");
 
 namespace Wemo
 {
-String BasicEventService::getField(Field desc)
+String BasicEventService::getField(Field desc) const
 {
 	switch(desc) {
 	case Field::type:
@@ -39,7 +39,7 @@ void BasicEventService::handleAction(ActionInfo& info)
 	}
 }
 
-String MetaInfoService::getField(Field desc)
+String MetaInfoService::getField(Field desc) const
 {
 	switch(desc) {
 	case Field::type:
@@ -59,7 +59,7 @@ void MetaInfoService::handleAction(ActionInfo& info)
 	//	return res;
 }
 
-String Controllee::getField(Field desc)
+String Controllee::getField(Field desc) const
 {
 	switch(desc) {
 	case Field::domain:
