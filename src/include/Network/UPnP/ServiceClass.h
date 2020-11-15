@@ -24,6 +24,10 @@
 
 namespace UPnP
 {
+class DeviceControl;
+class ServiceControl;
+class DeviceClass;
+
 /**
  * @brief Provides all information required for UPnP to construct a ServiceControl object
  */
@@ -32,10 +36,29 @@ class ServiceClass : public ClassObject
 public:
 	using Field = Service::Field;
 
+	ServiceClass(const DeviceClass& deviceClass) : devcls(deviceClass)
+	{
+	}
+
+	Urn getUrn() const override
+	{
+		return ServiceUrn(getField(Field::domain), getField(Field::type), getField(Field::version));
+	}
+
 	virtual String getField(Field desc) const
 	{
 		return nullptr;
 	}
+
+	const DeviceClass& deviceClass() const
+	{
+		return devcls;
+	}
+
+	virtual ServiceControl* createObject(DeviceControl& device) const = 0;
+
+private:
+	const DeviceClass& devcls;
 };
 
 } // namespace UPnP

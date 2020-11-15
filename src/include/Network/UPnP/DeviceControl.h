@@ -20,11 +20,26 @@
 #pragma once
 
 #include "DeviceClass.h"
+#include "ServiceClass.h"
+#include <Data/CString.h>
 
 namespace UPnP
 {
 class DeviceControl : public Device
 {
+public:
+	DeviceControl(const DeviceClass& deviceClass) : cls(deviceClass)
+	{
+	}
+
+	void parseDescription(XML::Document& description);
+
+	ServiceControl* getService(const ServiceClass& serviceClass);
+
+private:
+	const DeviceClass& cls;
+	CString friendlyName_;
+	CString udn_;
 };
 
 } // namespace UPnP

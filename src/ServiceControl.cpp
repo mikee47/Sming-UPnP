@@ -1,5 +1,5 @@
 /**
- * ClassObject.h
+ * ServiceControl.cpp
  *
  * Copyright 2020 mikee47 <mike@sillyhouse.net>
  *
@@ -17,39 +17,13 @@
  *
  ****/
 
-#pragma once
-
-#include "Object.h"
-#include "ObjectList.h"
-#include "Urn.h"
+#include "include/Network/UPnP/ServiceControl.h"
 
 namespace UPnP
 {
-class ClassObject : public ObjectTemplate<ClassObject>
+String ServiceControl::getField(Field desc) const
 {
-public:
-	using List = ObjectList<ClassObject>;
-
-	virtual Urn getUrn() const = 0;
-
-	RootDevice* getRoot() override
-	{
-		return nullptr;
-	}
-
-	void search(const SearchFilter& filter) override
-	{
-	}
-
-	bool formatMessage(Message& msg, MessageSpec& ms) override
-	{
-		return false;
-	}
-
-	bool onHttpRequest(HttpServerConnection& connection) override
-	{
-		return false;
-	}
-};
+	return Service::getField(desc);
+}
 
 } // namespace UPnP

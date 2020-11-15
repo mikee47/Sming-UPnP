@@ -12,12 +12,7 @@ namespace
 {
 NtpClient* ntpClient;
 UPnP::ControlPoint controlPoint;
-
-namespace Class
-{
 DeviceClass_MediaRenderer mediaRenderer;
-ServiceClass_RenderingControl renderingControl;
-} // namespace Class
 
 void connectFail(const String& ssid, MacAddress bssid, WifiDisconnectReason reason)
 {
@@ -26,13 +21,19 @@ void connectFail(const String& ssid, MacAddress bssid, WifiDisconnectReason reas
 
 void initUPnP()
 {
-//	controlPoint.registerClass(Class::mediaRenderer);
-//	controlPoint.registerClass(Class::renderingControl);
-	controlPoint.beginSearch(Class::renderingControl, [](UPnP::ServiceControl* service) {
-		Serial.print("Found: ");
-		Serial.println(service->device()->friendlyName());
-		delete service;
-	});
+	controlPoint.beginSearch(
+		mediaRenderer.RenderingControl, [](UPnP::DeviceControl* device, UPnP::ServiceControl* service) {
+			Serial.print("Found: ");
+			Serial.println(device->friendlyName());
+
+			if(service == nullptr) {
+				debug_e("Service %s missing from %s",
+						mediaRenderer.RenderingControl.getField(UPnP::Service::Field::serviceType).c_str(),
+						device->deviceType().c_str());
+			}
+
+			delete device;
+		});
 }
 
 void gotIP(IpAddress ip, IpAddress netmask, IpAddress gateway)
