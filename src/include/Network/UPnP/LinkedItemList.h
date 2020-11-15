@@ -43,6 +43,11 @@ public:
 		return head_;
 	}
 
+	const LinkedItem* head() const
+	{
+		return head_;
+	}
+
 private:
 	LinkedItem* head_{nullptr};
 };

@@ -50,7 +50,7 @@ RootDevice* Service::getRoot()
 	return (device_ == nullptr) ? nullptr : device_->getRoot();
 }
 
-XML::Node* Service::getDescription(XML::Document& doc, DescType descType)
+XML::Node* Service::getDescription(XML::Document& doc, DescType descType) const
 {
 	switch(descType) {
 	case DescType::header: {

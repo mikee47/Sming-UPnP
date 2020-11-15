@@ -33,6 +33,11 @@ public:
 	{
 		return reinterpret_cast<ObjectType*>(LinkedItemList::head());
 	}
+
+	const ObjectType* head() const
+	{
+		return reinterpret_cast<const ObjectType*>(LinkedItemList::head());
+	}
 };
 
 } // namespace UPnP

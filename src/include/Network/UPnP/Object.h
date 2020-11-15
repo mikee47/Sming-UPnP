@@ -51,7 +51,7 @@ struct SearchFilter {
 class Object : public LinkedItem
 {
 public:
-	Object* getNext()
+	Object* getNext() const
 	{
 		return reinterpret_cast<Object*>(LinkedItem::next());
 	}
@@ -124,7 +124,7 @@ public:
 template <typename ObjectType> class ObjectTemplate : public Object
 {
 public:
-	ObjectType* getNext()
+	ObjectType* getNext() const
 	{
 		return reinterpret_cast<ObjectType*>(Object::next());
 	}

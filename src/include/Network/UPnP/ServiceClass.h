@@ -50,6 +50,11 @@ public:
 		return nullptr;
 	}
 
+	const ServiceClass* getNext() const
+	{
+		return reinterpret_cast<const ServiceClass*>(next());
+	}
+
 	const DeviceClass& deviceClass() const
 	{
 		return devcls;
