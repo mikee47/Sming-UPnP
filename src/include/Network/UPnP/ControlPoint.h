@@ -46,7 +46,7 @@ public:
 	 * @brief Callback invoked when service has been located
 	 * @param device Must be deleted when finished with
 	 */
-	using ServiceControlCallback = Delegate<void(ServiceControl* service)>;
+	using ServiceControlCallback = Delegate<void(DeviceControl* device, ServiceControl* service)>;
 
 	ControlPoint(size_t maxDescriptionSize = 2048) : maxDescriptionSize(maxDescriptionSize)
 	{

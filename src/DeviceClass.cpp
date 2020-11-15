@@ -1,5 +1,5 @@
 /**
- * ClassObject.h
+ * DeviceClass.cpp
  *
  * Copyright 2020 mikee47 <mike@sillyhouse.net>
  *
@@ -17,39 +17,16 @@
  *
  ****/
 
-#pragma once
-
-#include "Object.h"
-#include "ObjectList.h"
-#include "Urn.h"
+#include "include/Network/UPnP/DeviceClass.h"
+#include "include/Network/UPnP/DeviceControl.h"
 
 namespace UPnP
 {
-class ClassObject : public ObjectTemplate<ClassObject>
+DeviceControl* DeviceClass::createObject(XML::Document& description) const
 {
-public:
-	using List = ObjectList<ClassObject>;
-
-	virtual Urn getUrn() const = 0;
-
-	RootDevice* getRoot() override
-	{
-		return nullptr;
-	}
-
-	void search(const SearchFilter& filter) override
-	{
-	}
-
-	bool formatMessage(Message& msg, MessageSpec& ms) override
-	{
-		return false;
-	}
-
-	bool onHttpRequest(HttpServerConnection& connection) override
-	{
-		return false;
-	}
-};
+	auto obj = createObject();
+	obj->parseDescription(description);
+	return obj;
+}
 
 } // namespace UPnP

@@ -20,12 +20,18 @@
 #pragma once
 
 #include "ServiceClass.h"
+#include <Data/CString.h>
+#include <memory>
 
 namespace UPnP
 {
+class DeviceControl;
+
 class ServiceControl : public Service
 {
 public:
+	using Field = Service::Field;
+
 	class ArgList
 	{
 	public:
@@ -40,11 +46,21 @@ public:
 		}
 	};
 
+	ServiceControl(DeviceControl& device, const ServiceClass& serviceClass) : device(device), cls(serviceClass)
+	{
+	}
+
+	String getField(Field desc) const override;
+
 	template <typename... ParamTypes> bool DispatchRequest(Delegate<void(ParamTypes...)>, ArgList args);
 
 	void handleAction(ActionInfo& info) override
 	{
 	}
+
+private:
+	DeviceControl& device;
+	const ServiceClass& cls;
 };
 
 } // namespace UPnP

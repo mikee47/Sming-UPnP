@@ -1,5 +1,5 @@
 /**
- * ClassObject.h
+ * DeviceControl.h
  *
  * Copyright 2020 mikee47 <mike@sillyhouse.net>
  *
@@ -17,39 +17,21 @@
  *
  ****/
 
-#pragma once
-
-#include "Object.h"
-#include "ObjectList.h"
-#include "Urn.h"
+#include "include/Network/UPnP/DeviceControl.h"
 
 namespace UPnP
 {
-class ClassObject : public ObjectTemplate<ClassObject>
+void DeviceControl::parseDescription(XML::Document& description)
 {
-public:
-	using List = ObjectList<ClassObject>;
-
-	virtual Urn getUrn() const = 0;
-
-	RootDevice* getRoot() override
-	{
-		return nullptr;
+	auto node = XML::getNode(description, F("/device/friendlyName"));
+	if(node != nullptr) {
+		friendlyName_ = node->value();
 	}
 
-	void search(const SearchFilter& filter) override
-	{
+	node = XML::getNode(description, F("/device/UDN"));
+	if(node != nullptr) {
+		udn_ = node->value();
 	}
-
-	bool formatMessage(Message& msg, MessageSpec& ms) override
-	{
-		return false;
-	}
-
-	bool onHttpRequest(HttpServerConnection& connection) override
-	{
-		return false;
-	}
-};
+}
 
 } // namespace UPnP

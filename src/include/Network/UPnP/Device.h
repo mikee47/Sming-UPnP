@@ -74,6 +74,11 @@ public:
 
 	virtual String getField(Field desc) const;
 
+	String deviceType() const
+	{
+		return getField(Field::deviceType);
+	}
+
 	String friendlyName() const
 	{
 		return getField(Field::friendlyName);

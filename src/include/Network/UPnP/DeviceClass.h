@@ -19,11 +19,13 @@
 
 #pragma once
 
-#include "ClassObject.h"
+#include "ServiceClass.h"
 #include "Device.h"
 
 namespace UPnP
 {
+class DeviceControl;
+
 /**
  * @brief Provides all information required for UPnP to construct a DeviceControl object
  */
@@ -32,10 +34,22 @@ class DeviceClass : public ClassObject
 public:
 	using Field = Device::Field;
 
+	Urn getUrn() const override
+	{
+		return DeviceUrn(getField(Field::domain), getField(Field::type), getField(Field::version));
+	}
+
 	virtual String getField(Field desc) const
 	{
 		return nullptr;
 	}
+
+	DeviceControl* createObject(XML::Document& description) const;
+
+protected:
+	virtual DeviceControl* createObject() const = 0;
+
+	ServiceClass::List serviceClasses;
 };
 
 } // namespace UPnP

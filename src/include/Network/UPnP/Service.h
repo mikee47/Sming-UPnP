@@ -67,6 +67,16 @@ public:
 
 	virtual String getField(Field desc) const;
 
+	String serviceType() const
+	{
+		return getField(Field::serviceType);
+	}
+
+	String serviceId() const
+	{
+		return getField(Field::serviceId);
+	}
+
 	XML::Node* getDescription(XML::Document& doc, DescType descType) override;
 
 	ItemEnumerator* getList(unsigned index, String& name) override;

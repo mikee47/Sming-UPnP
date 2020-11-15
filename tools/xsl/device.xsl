@@ -25,17 +25,35 @@
 
 #pragma once
 
-#include &lt;Network/UPnP/ControlPoint.h>
+#include &lt;Network/UPnP/DeviceControl.h>
+#include &lt;Network/UPnP/ServiceControl.h>
 
-<xsl:variable name="deviceType" select="substring-before(substring-after(u:deviceType, ':device:'), ':')"/>
+<xsl:variable name="type" select="substring-before(substring-after(u:deviceType, ':device:'), ':')"/>
+<xsl:variable name="deviceClass">DeviceClass_<xsl:value-of select="$type"/></xsl:variable>
 
-class DeviceClass_<xsl:value-of select="$deviceType"/>: public UPnP::DeviceClass
+<xsl:for-each select="u:serviceList/u:service">
+<xsl:call-template name="service">
+<xsl:with-param name="deviceClass" select="$deviceClass"/>
+</xsl:call-template>
+</xsl:for-each>
+
+class <xsl:value-of select="$deviceClass"/>: public UPnP::DeviceClass
 {
 public:
+	<xsl:value-of select="$deviceClass"/>():
+		<xsl:for-each select="u:serviceList/u:service">
+		<xsl:if test="position() > 1">,
+		</xsl:if><xsl:call-template name="serviceType"/>(*this)</xsl:for-each>
+	{<xsl:text/>
+		<xsl:for-each select="u:serviceList/u:service">
+		serviceClasses.add(&amp;<xsl:call-template name="serviceType"/>);<xsl:text/>
+		</xsl:for-each>
+	}
+
 	/**
 	 * @brief Core field definitions
 	 */
-	String getField(Field desc) const
+	String getField(Field desc) const override
 	{
 		switch(desc) {
 		case Field::domain:
@@ -43,7 +61,7 @@ public:
 		case Field::friendlyName:
 			return F("<xsl:value-of select="u:friendlyName"/>");
 		case Field::type:
-			return F("<xsl:value-of select="$deviceType"/>");
+			return F("<xsl:value-of select="$type"/>");
 		case Field::version:
 			return F("<xsl:value-of select="substring-after(substring-after(u:deviceType, ':device:'), ':')"/>");
 		case Field::manufacturer:
@@ -58,26 +76,51 @@ public:
 			return DeviceClass::getField(desc);
 		}
 	}
-};
 
-<xsl:apply-templates select="u:serviceList/u:service"/>
+	UPnP::DeviceControl* createObject() const override
+	{
+		return new UPnP::DeviceControl(*this);
+	}
+
+	<xsl:for-each select="u:serviceList/u:service">
+	const <xsl:call-template name="serviceClass"/><xsl:text> </xsl:text><xsl:call-template name="serviceType"/>;<xsl:text/>
+	</xsl:for-each>
+};
 
 </xsl:template>
 
 
-<xsl:template match="u:service">
+<xsl:template name="serviceType"><xsl:value-of select="substring-before(substring-after(u:serviceType, ':service:'), ':')"/></xsl:template>
+<xsl:template name="serviceClass">ServiceClass_<xsl:call-template name="serviceType"/></xsl:template>
+<xsl:template name="serviceControl">Service_<xsl:call-template name="serviceType"/></xsl:template>
+
+<xsl:template name="service">
+<xsl:param name="deviceClass"/>
 <xsl:variable name="SCPDURL" select="concat($DOC_ROOT,u:SCPDURL)"/>
-<xsl:variable name="serviceType" select="substring-before(substring-after(u:serviceType, ':service:'), ':')"/>
-class ServiceClass_<xsl:value-of select="$serviceType"/>: public UPnP::ServiceClass
+<xsl:variable name="type"><xsl:call-template name="serviceType"/></xsl:variable>
+<xsl:variable name="serviceClass"><xsl:call-template name="serviceClass"/></xsl:variable>
+<xsl:variable name="serviceControl"><xsl:call-template name="serviceControl"/></xsl:variable>
+
+class Service_<xsl:value-of select="$type"/>: public UPnP::ServiceControl
 {
 public:
-	String getField(Field desc) const
+	using ServiceControl::ServiceControl;
+ 	<xsl:apply-templates select="document($SCPDURL)/s:scpd/s:serviceStateTable/s:stateVariable"/>
+	<xsl:apply-templates select="document($SCPDURL)/s:scpd/s:actionList/s:action"/>
+};
+
+class <xsl:value-of select="$serviceClass"/>: public UPnP::ServiceClass
+{
+public:
+	using ServiceClass::ServiceClass;
+
+	String getField(Field desc) const override
 	{
 		switch(desc) {
 		case Field::domain:
 			return F("<xsl:value-of select="substring-before(substring-after(u:serviceType, ':'), ':')"/>");
-		case Field::serviceType:
-			return F("<xsl:value-of select="$serviceType"/>");
+		case Field::type:
+			return F("<xsl:value-of select="$type"/>");
 		case Field::version:
 			return F("<xsl:value-of select="substring-after(substring-after(u:serviceType, ':service:'), ':')"/>");
 		case Field::serviceId:
@@ -92,15 +135,11 @@ public:
 			return ServiceClass::getField(desc);
 		}
 	}
-};
 
-
-class Service_<xsl:value-of select="$serviceType"/>: public UPnP::ServiceControl
-{
-public:
-	using ServiceControl::ServiceControl;
- 	<xsl:apply-templates select="document($SCPDURL)/s:scpd/s:serviceStateTable/s:stateVariable"/>
-	<xsl:apply-templates select="document($SCPDURL)/s:scpd/s:actionList/s:action"/>
+	UPnP::ServiceControl* createObject(UPnP::DeviceControl&amp; device) const override
+	{
+		return new <xsl:value-of select="$serviceControl"/>(device, *this);
+	}
 };
 
 </xsl:template>

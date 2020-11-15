@@ -31,6 +31,11 @@ class LinkedItemList
 public:
 	bool add(LinkedItem* item);
 
+	bool add(const LinkedItem* item)
+	{
+		return add(const_cast<LinkedItem*>(item));
+	}
+
 	bool remove(LinkedItem* item);
 
 	LinkedItem* head()
