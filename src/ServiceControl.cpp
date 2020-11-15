@@ -23,7 +23,7 @@ namespace UPnP
 {
 String ServiceControl::getField(Field desc) const
 {
-	return Service::getField(desc);
+	return cls.getField(desc) ?: Service::getField(desc);
 }
 
 } // namespace UPnP

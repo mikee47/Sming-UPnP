@@ -41,9 +41,10 @@ bool ControlPoint::beginSearch(const UPnP::Urn& urn, DescriptionCallback callbac
 	searchUrn = urn;
 	searchCallback = callback;
 
-	auto message = new SSDP::MessageSpec(SSDP::MessageType::msearch, SSDP::SearchTarget::root, this);
+	auto message = new SSDP::MessageSpec(SSDP::MessageType::msearch, SSDP::SearchTarget::type, this);
 	message->setRepeat(2);
 	SSDP::server.messageQueue.add(message, 0);
+	debug_i("Searching for %s", toString(urn).c_str());
 
 	return true;
 }
@@ -117,6 +118,7 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 void ControlPoint::processDescriptionResponse(HttpConnection& connection, DescriptionCallback callback)
 {
 	debug_i("Received description");
+
 	auto response = connection.getResponse();
 	if(response->stream == nullptr) {
 		debug_e("No body");
@@ -129,7 +131,14 @@ void ControlPoint::processDescriptionResponse(HttpConnection& connection, Descri
 	}
 
 	String content;
-	response->stream->moveString(content);
+	if(!response->stream->moveString(content)) {
+		// TODO: Implement XML streaming parser
+		debug_e("Description too big for buffer: Increase maxDescriptionSize");
+		return;
+	}
+
+	m_nputs(content.c_str(), content.length());
+
 	XML::Document doc;
 	if(!XML::deserialize(doc, content)) {
 		debug_w("Failed to deserialize XML");

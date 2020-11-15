@@ -11,7 +11,7 @@
 namespace
 {
 NtpClient* ntpClient;
-UPnP::ControlPoint controlPoint;
+UPnP::ControlPoint controlPoint(8192);
 DeviceClass_MediaRenderer mediaRenderer;
 
 void connectFail(const String& ssid, MacAddress bssid, WifiDisconnectReason reason)
