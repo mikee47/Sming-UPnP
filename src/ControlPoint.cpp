@@ -57,6 +57,7 @@ bool ControlPoint::cancelSearch()
 
 	debug_i("Cancelling search for %s", activeSearch->toString().c_str());
 
+	SSDP::server.messageQueue.remove(this);
 	activeSearch = nullptr;
 	return true;
 }
