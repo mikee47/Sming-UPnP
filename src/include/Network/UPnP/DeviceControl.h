@@ -43,7 +43,8 @@ public:
 
 	String getField(Field desc) const override
 	{
-		return deviceClass.getField(desc) ?: Device::getField(desc);
+		String s = deviceClass.getField(desc);
+		return s ?: Device::getField(desc);
 	}
 
 	const DeviceClass& getClass() const

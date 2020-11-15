@@ -53,7 +53,8 @@ public:
 
 	String getField(Field desc) const override
 	{
-		return serviceClass.getField(desc) ?: Service::getField(desc);
+		String s = serviceClass.getField(desc);
+		return s ?: Service::getField(desc);
 	}
 
 	const ServiceClass& getClass() const
