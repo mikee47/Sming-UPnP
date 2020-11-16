@@ -101,11 +101,6 @@ public:
 	DeviceUrn(const String& domain, const String& type, uint8_t version) : Urn(Urn::Kind::device, domain, type, version)
 	{
 	}
-
-	DeviceUrn(const String& domain, const String& type, const String& version)
-		: DeviceUrn(domain, type, version.toInt())
-	{
-	}
 };
 
 /**
@@ -115,11 +110,6 @@ struct ServiceUrn : public Urn {
 public:
 	ServiceUrn(const String& domain, const String& type, uint8_t version)
 		: Urn(Urn::Kind::service, domain, type, version)
-	{
-	}
-
-	ServiceUrn(const String& domain, const String& type, const String& version)
-		: ServiceUrn(domain, type, version.toInt())
 	{
 	}
 };

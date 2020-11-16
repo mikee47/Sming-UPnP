@@ -23,7 +23,7 @@
 #include "ServiceClass.h"
 #include "ServiceControl.h"
 #include <Data/CString.h>
-#include <Network/SSDP/UUID.h>
+#include <Network/SSDP/Uuid.h>
 
 namespace UPnP
 {
@@ -32,7 +32,8 @@ class DeviceControl : public Device
 	friend DeviceClass;
 
 public:
-	DeviceControl(const DeviceClass& deviceClass) : deviceClass(deviceClass)
+	DeviceControl(const DeviceClass& deviceClass, ControlPoint& controlPoint)
+		: deviceClass(deviceClass), controlPoint(controlPoint)
 	{
 	}
 
@@ -47,11 +48,17 @@ public:
 		return deviceClass;
 	}
 
+	const Uuid udn() const
+	{
+		return udn_;
+	}
+
 private:
 	const DeviceClass& deviceClass;
+	ControlPoint& controlPoint;
 	ServiceControl::OwnedList services;
-	String location;
-	UUID udn;
+	String baseUrl_; ///< Includes trailing path separator, e.g. "http://192.168.1.1/"
+	Uuid udn_;
 };
 
 } // namespace UPnP

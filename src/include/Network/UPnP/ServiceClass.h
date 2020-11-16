@@ -45,7 +45,7 @@ public:
 
 	Urn getUrn() const override
 	{
-		return ServiceUrn(getField(Field::domain), getField(Field::type), getField(Field::version));
+		return ServiceUrn(getField(Field::domain), getField(Field::type), version());
 	}
 
 	virtual String getField(Field desc) const

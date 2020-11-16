@@ -24,7 +24,7 @@
 #include <Data/Stream/FlashMemoryStream.h>
 #include <FlashString/Vector.hpp>
 #include <RapidXML.h>
-#include <Network/SSDP/UUID.h>
+#include <Network/SSDP/Uuid.h>
 
 namespace
 {
@@ -86,7 +86,7 @@ String Service::getField(Field desc) const
 	// Provide defaults for required fields
 	switch(desc) {
 	case Field::serviceType:
-		return ServiceUrn(getField(Field::domain), getField(Field::type), getField(Field::version));
+		return ServiceUrn(getField(Field::domain), getField(Field::type), version());
 
 	case Field::type:
 		return F("{type REQUIRED}");
@@ -95,7 +95,7 @@ String Service::getField(Field desc) const
 		return F("{serviceId REQUIRED}");
 
 	case Field::version:
-		return String('1');
+		return String(version());
 
 	case Field::SCPDURL:
 		return getField(Field::baseURL) + _F("desc.xml");
@@ -239,7 +239,7 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 	};
 
 	auto handleSubscribe = [&]() {
-		UUID uuid;
+		Uuid uuid;
 		uuid.generate();
 
 		response.headers[HTTP_HEADER_SERVER] = device_->getField(Device::Field::serverId);

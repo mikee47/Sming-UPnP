@@ -19,16 +19,44 @@
 
 #include "include/Network/UPnP/DeviceClass.h"
 #include "include/Network/UPnP/DeviceControl.h"
-#include "include/Network/UPnP/Usn.h"
+#include <Network/SSDP/Usn.h>
 
 namespace UPnP
 {
-DeviceControl* DeviceClass::createObject(const char* location, const char* uniqueServiceName) const
+DeviceControl* DeviceClass::createObject(ControlPoint& controlPoint, const char* location,
+										 const char* uniqueServiceName) const
 {
+	/*
+	 * Don't need the description name so throw it away.
+	 *
+	 * Note: UPnP 1.0 has URLBase but this is not permitted for later revisions.
+	 * If ths is encountered we should alert the use.
+	 */
+	const char* p = strrchr(location, '/');
+	String baseUrl;
+	if(p == nullptr) {
+		debug_e("[UPnP] Location invalid: %s", location);
+		return nullptr;
+	}
+	baseUrl.setString(location, 1 + p - location);
+
 	Usn usn(uniqueServiceName);
-	auto obj = createObject(*this);
-	obj->location = location;
-	obj->udn = usn.uuid;
+	if(usn.domain != getField(Field::domain)) {
+		debug_e("[UPnP] Domain mismatch");
+		return nullptr;
+	}
+	if(usn.kind != Usn::Kind::deviceType || usn.type != getField(Field::type)) {
+		debug_e("[UPnP] Device type mismatch");
+		return nullptr;
+	}
+	if(usn.version != version()) {
+		debug_e("[UPnP] Device version mismatch");
+		return nullptr;
+	}
+
+	auto obj = createObject(controlPoint);
+	obj->baseUrl_ = baseUrl;
+	obj->udn_ = usn.uuid;
 	return obj;
 }
 
