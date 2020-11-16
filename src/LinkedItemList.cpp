@@ -62,12 +62,13 @@ bool LinkedItemList::remove(LinkedItem* item)
 	while(it->next_ != nullptr) {
 		if(it->next_ == item) {
 			it->next_ = item->next_;
-			break;
+			item->next_ = nullptr;
+			return true;
 		}
 		it = it->next_;
 	}
-	item->next_ = nullptr;
-	return true;
+
+	return false;
 }
 
 } // namespace UPnP

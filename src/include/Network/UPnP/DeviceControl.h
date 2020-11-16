@@ -36,8 +36,6 @@ public:
 	{
 	}
 
-	~DeviceControl();
-
 	void parseDescription(XML::Document& description);
 
 	ServiceControl* getService(const ServiceClass& serviceClass);
@@ -49,11 +47,9 @@ public:
 		return deviceClass;
 	}
 
-protected:
-	const DeviceClass& deviceClass;
-
 private:
-	ServiceControl::List services;
+	const DeviceClass& deviceClass;
+	ServiceControl::OwnedList services;
 	String location;
 	UUID udn;
 };

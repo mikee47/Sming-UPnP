@@ -92,6 +92,15 @@ public:
 		return submitSearch(new Search(cls, callback));
 	}
 
+	template <typename Device> bool beginSearch(Delegate<void(Device*)> callback)
+	{
+		// TODO: Keep owned list of these
+		// TODO: Create OwnedObjectList<>
+		return submitSearch(new Search(
+			getDeviceClass<typename Device::Class>(),
+			DeviceControlCallback([callback](DeviceControl* device) { callback(reinterpret_cast<Device*>(device)); })));
+	}
+
 	/**
 	 * @brief Determine if there's an active search in progress
 	 */
@@ -237,12 +246,27 @@ private:
 		Desc desc;
 	};
 
-	bool submitSearch(Search* search);
+	template <typename Class> const DeviceClass& getDeviceClass()
+	{
+		const DeviceClass* c = deviceClasses.head();
+		while(c != nullptr) {
+			if(c->equals<Class>()) {
+				return *c;
+			}
 
+			c = c->getNext();
+		}
+
+		c = new Class;
+		deviceClasses.add(c);
+		return *c;
+	}
+
+	bool submitSearch(Search* search);
 	bool processDescriptionResponse(HttpConnection& connection, XML::Document& description);
 
 	static List controlPoints;
-	static ClassObject::List classObjects;
+	static DeviceClass::OwnedList deviceClasses;
 	static HttpClient http;
 	size_t maxDescriptionSize; // <<< Maximum size of XML description that can be processed
 	CStringArray uniqueServiceNames;

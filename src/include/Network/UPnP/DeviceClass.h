@@ -33,6 +33,7 @@ class DeviceClass : public ClassObject
 {
 public:
 	using List = ObjectList<DeviceClass>;
+	using OwnedList = OwnedObjectList<DeviceClass>;
 	using Field = Device::Field;
 
 	Urn getUrn() const override
@@ -57,8 +58,14 @@ public:
 
 	DeviceControl* createObject(const char* location, const char* uniqueServiceName) const;
 
-protected:
-	virtual DeviceControl* createObject() const = 0;
+	template <typename Other> bool equals() const
+	{
+		return getField(Field::domain) == Other::domain && getField(Field::type) == Other::type &&
+			   getField(Field::version) == String(Other::version);
+	}
+
+	//protected:
+	virtual DeviceControl* createObject(const DeviceClass& deviceClass) const = 0;
 
 	ServiceClass::List serviceClasses;
 };

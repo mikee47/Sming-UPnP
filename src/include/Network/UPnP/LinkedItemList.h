@@ -24,7 +24,8 @@
 namespace UPnP
 {
 /**
- * @brief Singly-linked list of objects
+ * @brief Singly-linked list of items
+ * @note We don't own the items, just keep references to them
  */
 class LinkedItemList
 {
@@ -38,6 +39,11 @@ public:
 
 	bool remove(LinkedItem* item);
 
+	void clear()
+	{
+		head_ = nullptr;
+	}
+
 	LinkedItem* head()
 	{
 		return head_;
@@ -46,6 +52,25 @@ public:
 	const LinkedItem* head() const
 	{
 		return head_;
+	}
+
+	LinkedItem* find(LinkedItem* item)
+	{
+		auto p = head_;
+		while(p != nullptr && p != item) {
+			p = p->next();
+		}
+		return p;
+	}
+
+	const LinkedItem* find(LinkedItem* item) const
+	{
+		return const_cast<LinkedItemList*>(this)->find(item);
+	}
+
+	bool contains(LinkedItem* item) const
+	{
+		return find(item) != nullptr;
 	}
 
 private:

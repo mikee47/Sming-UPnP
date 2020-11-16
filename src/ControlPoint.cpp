@@ -25,6 +25,7 @@
 namespace UPnP
 {
 ControlPoint::List ControlPoint::controlPoints;
+DeviceClass::OwnedList ControlPoint::deviceClasses;
 HttpClient ControlPoint::http;
 
 bool ControlPoint::submitSearch(Search* search)

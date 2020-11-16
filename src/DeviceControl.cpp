@@ -21,22 +21,13 @@
 
 namespace UPnP
 {
-DeviceControl::~DeviceControl()
-{
-	ServiceControl* service;
-	while((service = services.head()) != nullptr) {
-		services.remove(service);
-		delete service;
-	}
-}
-
 String DeviceControl::getField(Field desc) const
 {
 	switch(desc) {
 	case Field::UDN:
 		return toString(udn);
-//	case Field::baseURL:
-//		re;
+		//	case Field::baseURL:
+		//		re;
 	default:
 		String s = deviceClass.getField(desc);
 		return s ?: Device::getField(desc);
@@ -54,8 +45,11 @@ ServiceControl* DeviceControl::getService(const ServiceClass& serviceClass)
 
 	const ServiceClass* cls;
 	for(cls = deviceClass.firstService(); cls != nullptr; cls = cls->getNext()) {
-		if(*cls == serviceClass) {
-			auto service = cls->createObject(*this);
+		auto c1 = static_cast<const ServiceClass*>(cls);
+		auto c2 = static_cast<const ServiceClass*>(&serviceClass);
+		if(c1 == c2) {
+			//		if(*cls == serviceClass) {
+			auto service = cls->createObject(*this, *cls);
 			services.add(service);
 			return service;
 		}

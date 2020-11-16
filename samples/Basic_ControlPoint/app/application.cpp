@@ -12,7 +12,6 @@ namespace
 {
 NtpClient* ntpClient;
 UPnP::ControlPoint controlPoint(8192);
-DeviceClass_MediaRenderer mediaRenderer;
 
 void connectFail(const String& ssid, MacAddress bssid, WifiDisconnectReason reason)
 {
@@ -21,30 +20,24 @@ void connectFail(const String& ssid, MacAddress bssid, WifiDisconnectReason reas
 
 void initUPnP()
 {
-	controlPoint.beginSearch(
-		mediaRenderer.RenderingControl, [](UPnP::DeviceControl* device, UPnP::ServiceControl* service) {
-			// Stop at the first response
-			controlPoint.cancelSearch();
+	controlPoint.beginSearch(Delegate<void(Device_MediaRenderer*)>([](Device_MediaRenderer* device) {
+		// Stop at the first response
+		controlPoint.cancelSearch();
 
-			Serial.print(F("Found: "));
-			Serial.println(device->friendlyName());
+		Serial.print(F("Found: "));
+		Serial.println(device->friendlyName());
 
-			if(service == nullptr) {
-				debug_e("Service %s missing from %s",
-						mediaRenderer.RenderingControl.getField(UPnP::Service::Field::serviceType).c_str(),
-						device->deviceType().c_str());
-			} else {
-				auto renderer = reinterpret_cast<Service_RenderingControl*>(service);
-				renderer->action_GetVolume(
-					[](Service_RenderingControl::Volume CurrentVolume) {
-						Serial.print("Current Volume: ");
-						Serial.println(CurrentVolume);
-					},
-					0, 0);
-			}
+		auto service = device->getRenderingControl();
 
-			delete device;
-		});
+		service.action_GetVolume(
+			[](Service_RenderingControl::Volume CurrentVolume) {
+				Serial.print("Current Volume: ");
+				Serial.println(CurrentVolume);
+			},
+			0, 0);
+
+		delete device;
+	}));
 }
 
 void gotIP(IpAddress ip, IpAddress netmask, IpAddress gateway)

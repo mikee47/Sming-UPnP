@@ -85,29 +85,25 @@ public:
 		</xsl:for-each>
 
 	protected:
-		UPnP::DeviceControl* createObject() const override
+		UPnP::DeviceControl* createObject(const UPnP::DeviceClass&amp; deviceClass) const override
 		{
-			return new <xsl:value-of select="$deviceControl"/>(static_cast&lt;const UPnP::DeviceClass&amp;>(*this));
+			return new <xsl:value-of select="$deviceControl"/>(deviceClass);
 		}
 	}; // Class
 
-	<xsl:value-of select="$deviceControl"/>(const UPnP::DeviceClass&amp; deviceClass) :
-		UPnP::DeviceControl(deviceClass)<xsl:for-each select="u:serviceList/u:service">,
-		<xsl:call-template name="serviceType"/>_class(deviceClass)</xsl:for-each>
+	using DeviceControl::DeviceControl;
+	
+	const Class&amp; getClass() const
 	{
+		return reinterpret_cast&lt;const Class&amp;>(DeviceControl::getClass());
 	}
-
-	// Service classes
-	<xsl:for-each select="u:serviceList/u:service">
-	<xsl:call-template name="serviceControl"/>::Class <xsl:call-template name="serviceType"/>_class;
-	</xsl:for-each>
 
 	<xsl:for-each select="u:serviceList/u:service">
 	<xsl:text>
 	</xsl:text>
 	<xsl:call-template name="serviceControl"/>&amp; get<xsl:call-template name="serviceType"/>()
 	{
-		auto service = getService(<xsl:call-template name="serviceType"/>_class);
+		auto service = getService(getClass().<xsl:call-template name="serviceType"/>);
 		return *reinterpret_cast&lt;<xsl:call-template name="serviceControl"/>*>(service);
 	}
 	</xsl:for-each>
@@ -124,7 +120,7 @@ public:
 <xsl:variable name="type"><xsl:call-template name="serviceType"/></xsl:variable>
 <xsl:variable name="serviceControl"><xsl:call-template name="serviceControl"/></xsl:variable>
 
-class Service_<xsl:value-of select="$type"/>: public UPnP::ServiceControl
+class <xsl:value-of select="$serviceControl"/>: public UPnP::ServiceControl
 {
 public:
 	class Class: public UPnP::ServiceClass
@@ -163,14 +159,16 @@ public:
 		DEFINE_FSTR_LOCAL(eventSubURL, "<xsl:value-of select="u:eventSubURL"/>");
 
 	protected:
-		UPnP::ServiceControl* createObject(UPnP::DeviceControl&amp; device) const override
+		UPnP::ServiceControl* createObject(UPnP::DeviceControl&amp; device, const ServiceClass&amp; serviceClass) const override
 		{
-			return new <xsl:value-of select="$serviceControl"/>(device, *this);
+			return new <xsl:value-of select="$serviceControl"/>(device, serviceClass);
 		}
 	}; // Class
 	
-	using ServiceControl::ServiceControl;
  	<xsl:apply-templates select="document($SCPDURL)/s:scpd/s:serviceStateTable/s:stateVariable"/>
+
+	using ServiceControl::ServiceControl;
+
 	<xsl:apply-templates select="document($SCPDURL)/s:scpd/s:actionList/s:action"/>
 };
 

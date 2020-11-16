@@ -26,7 +26,7 @@ namespace UPnP
 DeviceControl* DeviceClass::createObject(const char* location, const char* uniqueServiceName) const
 {
 	Usn usn(uniqueServiceName);
-	auto obj = createObject();
+	auto obj = createObject(*this);
 	obj->location = location;
 	obj->udn = usn.uuid;
 	return obj;
