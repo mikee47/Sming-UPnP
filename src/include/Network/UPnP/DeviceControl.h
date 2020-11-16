@@ -49,8 +49,10 @@ public:
 		return deviceClass;
 	}
 
-private:
+protected:
 	const DeviceClass& deviceClass;
+
+private:
 	ServiceControl::List services;
 	String location;
 	UUID udn;

@@ -34,8 +34,6 @@
 class <xsl:value-of select="$deviceControl"/>: public UPnP::DeviceControl
 {
 public:
-	using DeviceControl::DeviceControl;
-
 	class Class: public UPnP::DeviceClass
 	{
 	public:
@@ -56,25 +54,31 @@ public:
 		{
 			switch(desc) {
 			case Field::domain:
-				return F("<xsl:value-of select="substring-before(substring-after(u:deviceType, ':'), ':')"/>");
+				return domain;
 			case Field::friendlyName:
-				return F("<xsl:value-of select="u:friendlyName"/>");
+				return friendlyName;
 			case Field::type:
-				return F("<xsl:value-of select="$type"/>");
+				return type;
 			case Field::version:
-				return F("<xsl:value-of select="substring-after(substring-after(u:deviceType, ':device:'), ':')"/>");
+				return String(version);
 			case Field::manufacturer:
-				return F("<xsl:value-of select="u:manufacturer"/>");
+				return manufacturer;
 			case Field::modelName:
-				return F("<xsl:value-of select="u:modelName"/>");
+				return modelName;
 			case Field::modelNumber:
-				return F("<xsl:value-of select="u:modelNumber"/>");
-			case Field::UDN:
-				return F("<xsl:value-of select="u:UDN"/>");
+				return modelNumber;
 			default:
 				return DeviceClass::getField(desc);
 			}
 		}
+
+		DEFINE_FSTR_LOCAL(domain, "<xsl:value-of select="substring-before(substring-after(u:deviceType, ':'), ':')"/>");
+		DEFINE_FSTR_LOCAL(friendlyName,"<xsl:value-of select="u:friendlyName"/>");
+		DEFINE_FSTR_LOCAL(type, "<xsl:value-of select="$type"/>");
+		static constexpr uint8_t version = <xsl:value-of select="substring-after(substring-after(u:deviceType, ':device:'), ':')"/>;
+		DEFINE_FSTR_LOCAL(manufacturer, "<xsl:value-of select="u:manufacturer"/>");
+		DEFINE_FSTR_LOCAL(modelName, "<xsl:value-of select="u:modelName"/>");
+		DEFINE_FSTR_LOCAL(modelNumber, "<xsl:value-of select="u:modelNumber"/>");
 
 		<xsl:for-each select="u:serviceList/u:service">
 		const <xsl:call-template name="serviceControl"/>::Class <xsl:call-template name="serviceType"/>;<xsl:text/>
@@ -86,6 +90,27 @@ public:
 			return new <xsl:value-of select="$deviceControl"/>(static_cast&lt;const UPnP::DeviceClass&amp;>(*this));
 		}
 	}; // Class
+
+	<xsl:value-of select="$deviceControl"/>(const UPnP::DeviceClass&amp; deviceClass) :
+		UPnP::DeviceControl(deviceClass)<xsl:for-each select="u:serviceList/u:service">,
+		<xsl:call-template name="serviceType"/>_class(deviceClass)</xsl:for-each>
+	{
+	}
+
+	// Service classes
+	<xsl:for-each select="u:serviceList/u:service">
+	<xsl:call-template name="serviceControl"/>::Class <xsl:call-template name="serviceType"/>_class;
+	</xsl:for-each>
+
+	<xsl:for-each select="u:serviceList/u:service">
+	<xsl:text>
+	</xsl:text>
+	<xsl:call-template name="serviceControl"/>&amp; get<xsl:call-template name="serviceType"/>()
+	{
+		auto service = getService(<xsl:call-template name="serviceType"/>_class);
+		return *reinterpret_cast&lt;<xsl:call-template name="serviceControl"/>*>(service);
+	}
+	</xsl:for-each>
 };
 
 </xsl:template>
@@ -111,24 +136,32 @@ public:
 		{
 			switch(desc) {
 			case Field::domain:
-				return F("<xsl:value-of select="substring-before(substring-after(u:serviceType, ':'), ':')"/>");
+				return domain;
 			case Field::type:
-				return F("<xsl:value-of select="$type"/>");
+				return type;
 			case Field::version:
-				return F("<xsl:value-of select="substring-after(substring-after(u:serviceType, ':service:'), ':')"/>");
+				return String(version);
 			case Field::serviceId:
-				return F("<xsl:value-of select="u:serviceId"/>");
+				return serviceId;
 			case Field::SCPDURL:
-				return F("<xsl:value-of select="u:SCPDURL"/>");
+				return SCPDURL;
 			case Field::controlURL:
-				return F("<xsl:value-of select="u:controlURL"/>");
+				return controlURL;
 			case Field::eventSubURL:
-				return F("<xsl:value-of select="u:eventSubURL"/>");
+				return eventSubURL;
 			default:
 				return ServiceClass::getField(desc);
 			}
 		}
 	
+		DEFINE_FSTR_LOCAL(domain, "<xsl:value-of select="substring-before(substring-after(u:serviceType, ':'), ':')"/>");
+		DEFINE_FSTR_LOCAL(type, "<xsl:value-of select="$type"/>");
+		static constexpr uint8_t version = <xsl:value-of select="substring-after(substring-after(u:serviceType, ':service:'), ':')"/>;
+		DEFINE_FSTR_LOCAL(serviceId, "<xsl:value-of select="u:serviceId"/>");
+		DEFINE_FSTR_LOCAL(SCPDURL, "<xsl:value-of select="u:SCPDURL"/>");
+		DEFINE_FSTR_LOCAL(controlURL, "<xsl:value-of select="u:controlURL"/>");
+		DEFINE_FSTR_LOCAL(eventSubURL, "<xsl:value-of select="u:eventSubURL"/>");
+
 	protected:
 		UPnP::ServiceControl* createObject(UPnP::DeviceControl&amp; device) const override
 		{
