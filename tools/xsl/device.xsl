@@ -221,9 +221,10 @@ public:
 
 	<!-- Action execution -->
 	bool action_<xsl:value-of select="s:name"/>(
-			<xsl:value-of select="s:name"/>_ResultCallback callback<xsl:for-each select="s:argumentList/s:argument[s:direction='in']">,
-			<xsl:value-of select="s:relatedStateVariable"/><xsl:text> </xsl:text><xsl:value-of select="s:name"/>
-			</xsl:for-each>)
+			<xsl:for-each select="s:argumentList/s:argument[s:direction='in']">
+			<xsl:value-of select="s:relatedStateVariable"/><xsl:text> </xsl:text><xsl:value-of select="s:name"/>,
+			</xsl:for-each>
+			<xsl:value-of select="s:name"/>_ResultCallback callback)
 	{
 		<!-- Build request and send it, using a lambda wrapper for response handling -->
 		UPnP::ActionInfo request(*this);
