@@ -31,19 +31,15 @@ void initUPnP()
 
 		auto service = device->getRenderingControl();
 
-		service.action_ListPresets(
-			[](auto& result) {
-				Serial.print("Current presets: ");
-				Serial.println(result.CurrentPresetNameList);
-			},
-			0);
+		service.action_ListPresets(0, [](auto& result) {
+			Serial.print("Current presets: ");
+			Serial.println(result.CurrentPresetNameList);
+		});
 
-		service.action_GetVolume(
-			[](auto& result) {
-				Serial.print("Current Volume: ");
-				Serial.println(result.CurrentVolume);
-			},
-			0, 0);
+		service.action_GetVolume(0, nullptr, [](auto& result) {
+			Serial.print("Current Volume: ");
+			Serial.println(result.CurrentVolume);
+		});
 
 		//		delete device;
 	}));
