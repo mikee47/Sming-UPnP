@@ -1,5 +1,5 @@
 /**
- * Action.cpp
+ * ActionInfo.cpp
  *
  * Copyright 2019 mikee47 <mike@sillyhouse.net>
  *
@@ -17,7 +17,7 @@
  *
  ****/
 
-#include "include/Network/UPnP/Action.h"
+#include "include/Network/UPnP/ActionInfo.h"
 #include "include/Network/UPnP/Service.h"
 
 namespace UPnP

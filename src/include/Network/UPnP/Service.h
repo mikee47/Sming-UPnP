@@ -21,7 +21,7 @@
 
 #include "Object.h"
 #include "ObjectList.h"
-#include "Action.h"
+#include "ActionInfo.h"
 #include "Constants.h"
 #include "Urn.h"
 
