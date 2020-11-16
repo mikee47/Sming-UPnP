@@ -51,6 +51,11 @@ struct SearchFilter {
 class Object : public LinkedItem
 {
 public:
+	/**
+	 * @brief Interface version number
+	 */
+	using Version = uint8_t;
+
 	Object* getNext() const
 	{
 		return reinterpret_cast<Object*>(LinkedItem::next());
@@ -61,6 +66,11 @@ public:
 	const RootDevice* getRoot() const
 	{
 		return const_cast<Object*>(this)->getRoot();
+	}
+
+	virtual Version version() const
+	{
+		return 1;
 	}
 
 	/**

@@ -60,6 +60,15 @@ public:
 	}
 
 	/**
+	 * @brief Cancel any outstanding search and reset the list of known unique service names
+	 */
+	void reset()
+	{
+		cancelSearch();
+		uniqueServiceNames.clear();
+	}
+
+	/**
 	 * @brief Searches for UPnP device or service and fetches its description
 	 * @param urn unique identifier of the service or device to find
 	 * @param callback Invoked with device description document

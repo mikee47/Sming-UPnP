@@ -60,7 +60,7 @@ public:
 			case Field::type:
 				return type;
 			case Field::version:
-				return String(version);
+				return String(version_);
 			case Field::manufacturer:
 				return manufacturer;
 			case Field::modelName:
@@ -71,11 +71,27 @@ public:
 				return DeviceClass::getField(desc);
 			}
 		}
+		
+		Version version() const override
+		{
+			return version_;
+		} 
+		
+		<xsl:if test="u:URLBase">
+		<xsl:message terminate="yes">URLBase NOT PERMITTED</xsl:message>
+		</xsl:if>
 
+		/*
+		 * Interface specification
+		 */
 		DEFINE_FSTR_LOCAL(domain, "<xsl:value-of select="substring-before(substring-after(u:deviceType, ':'), ':')"/>");
 		DEFINE_FSTR_LOCAL(friendlyName,"<xsl:value-of select="u:friendlyName"/>");
 		DEFINE_FSTR_LOCAL(type, "<xsl:value-of select="$type"/>");
-		static constexpr uint8_t version = <xsl:value-of select="substring-after(substring-after(u:deviceType, ':device:'), ':')"/>;
+		static constexpr uint8_t version_ = <xsl:value-of select="substring-after(substring-after(u:deviceType, ':device:'), ':')"/>;
+
+		/*
+		 * Common properties
+		 */
 		DEFINE_FSTR_LOCAL(manufacturer, "<xsl:value-of select="u:manufacturer"/>");
 		DEFINE_FSTR_LOCAL(modelName, "<xsl:value-of select="u:modelName"/>");
 		DEFINE_FSTR_LOCAL(modelNumber, "<xsl:value-of select="u:modelNumber"/>");
@@ -85,9 +101,9 @@ public:
 		</xsl:for-each>
 
 	protected:
-		UPnP::DeviceControl* createObject(const UPnP::DeviceClass&amp; deviceClass) const override
+		UPnP::DeviceControl* createObject(UPnP::ControlPoint&amp; controlPoint) const override
 		{
-			return new <xsl:value-of select="$deviceControl"/>(deviceClass);
+			return new <xsl:value-of select="$deviceControl"/>(*this, controlPoint);
 		}
 	}; // Class
 
@@ -136,7 +152,7 @@ public:
 			case Field::type:
 				return type;
 			case Field::version:
-				return String(version);
+				return String(version_);
 			case Field::serviceId:
 				return serviceId;
 			case Field::SCPDURL:
@@ -149,10 +165,22 @@ public:
 				return ServiceClass::getField(desc);
 			}
 		}
-	
+
+		Version version() const override
+		{
+			return version_;
+		} 
+
+		/*
+		 * Interface specification
+		 */
 		DEFINE_FSTR_LOCAL(domain, "<xsl:value-of select="substring-before(substring-after(u:serviceType, ':'), ':')"/>");
 		DEFINE_FSTR_LOCAL(type, "<xsl:value-of select="$type"/>");
-		static constexpr uint8_t version = <xsl:value-of select="substring-after(substring-after(u:serviceType, ':service:'), ':')"/>;
+		static constexpr uint8_t version_ = <xsl:value-of select="substring-after(substring-after(u:serviceType, ':service:'), ':')"/>;
+
+		/*
+		 * Common properties
+		 */
 		DEFINE_FSTR_LOCAL(serviceId, "<xsl:value-of select="u:serviceId"/>");
 		DEFINE_FSTR_LOCAL(SCPDURL, "<xsl:value-of select="u:SCPDURL"/>");
 		DEFINE_FSTR_LOCAL(controlURL, "<xsl:value-of select="u:controlURL"/>");

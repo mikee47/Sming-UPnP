@@ -21,9 +21,11 @@
 
 #include "ServiceClass.h"
 #include "Device.h"
+#include <Network/SSDP/Uuid.h>
 
 namespace UPnP
 {
+class ControlPoint;
 class DeviceControl;
 
 /**
@@ -38,7 +40,7 @@ public:
 
 	Urn getUrn() const override
 	{
-		return DeviceUrn(getField(Field::domain), getField(Field::type), getField(Field::version));
+		return DeviceUrn(getField(Field::domain), getField(Field::type), version());
 	}
 
 	virtual String getField(Field desc) const
@@ -56,16 +58,24 @@ public:
 		return serviceClasses.head();
 	}
 
-	DeviceControl* createObject(const char* location, const char* uniqueServiceName) const;
+	/**
+	 * @brief When SSDP discovery notification received we pass location and USN fields here
+	 * to construct a device instance.
+	 * @param controlPoint Device will use this to service requests
+	 * @param location URL of XML description file
+	 * @param uniqueServiceName Composite of UDN and device/service type
+	 * @retval DeviceControl* Constructed device object
+	 */
+	DeviceControl* createObject(ControlPoint& controlPoint, const char* location, const char* uniqueServiceName) const;
 
 	template <typename Other> bool equals() const
 	{
 		return getField(Field::domain) == Other::domain && getField(Field::type) == Other::type &&
-			   getField(Field::version) == String(Other::version);
+			   version() == Other::version_;
 	}
 
-	//protected:
-	virtual DeviceControl* createObject(const DeviceClass& deviceClass) const = 0;
+protected:
+	virtual DeviceControl* createObject(ControlPoint& controlPoint) const = 0;
 
 	ServiceClass::List serviceClasses;
 };

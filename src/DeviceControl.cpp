@@ -25,9 +25,9 @@ String DeviceControl::getField(Field desc) const
 {
 	switch(desc) {
 	case Field::UDN:
-		return toString(udn);
-		//	case Field::baseURL:
-		//		re;
+		return toString(udn_);
+	case Field::baseURL:
+		return baseUrl_;
 	default:
 		String s = deviceClass.getField(desc);
 		return s ?: Device::getField(desc);

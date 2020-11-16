@@ -19,6 +19,7 @@
  ****/
 
 #include "include/Network/UPnP/ControlPoint.h"
+#include <Network/SSDP/Usn.h>
 #include <Network/SSDP/Server.h>
 #include "main.h"
 
@@ -101,33 +102,33 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 		return;
 	}
 
-	auto usn = message["USN"];
-	if(usn == nullptr) {
+	auto uniqueServiceName = message["USN"];
+	if(uniqueServiceName == nullptr) {
 		debug_d("CP: No valid USN header found.");
 		return;
 	}
 
-	if(uniqueServiceNames.contains(usn)) {
+	if(uniqueServiceNames.contains(uniqueServiceName)) {
 		return; // Already found
 	}
 
 	debug_w("Found match for %s", activeSearch->toString().c_str());
 	debug_w("  location: %s", location);
-	debug_w("  usn: %s", usn);
+	debug_w("  usn: %s", uniqueServiceName);
 
 	switch(activeSearch->kind) {
 	case Search::Kind::desc: {
 		debug_d("Fetching description from URL: '%s'", location);
 		auto request = new HttpRequest(location);
 
-		request->onRequestComplete([this, usn](HttpConnection& connection, bool success) -> int {
+		request->onRequestComplete([this, uniqueServiceName](HttpConnection& connection, bool success) -> int {
 			if(!success) {
 				debug_e("Fetch failed");
 			} else if(activeSearch == nullptr) {
 				// Looks like search was cancelled
-			} else if(!uniqueServiceNames.contains(usn)) {
+			} else if(!uniqueServiceNames.contains(uniqueServiceName)) {
 				// Don't retry
-				uniqueServiceNames += usn;
+				uniqueServiceNames += uniqueServiceName;
 				// Process and invoke callback
 				XML::Document doc;
 				processDescriptionResponse(connection, doc);
@@ -147,10 +148,12 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 
 	case Search::Kind::device: {
 		auto& search = activeSearch->device;
-		uniqueServiceNames += usn;
+		uniqueServiceNames += uniqueServiceName;
 		if(search.callback) {
-			auto device = search.cls->createObject(location, usn);
-			search.callback(device);
+			auto device = search.cls->createObject(*this, location, uniqueServiceName);
+			if(device != nullptr) {
+				search.callback(device);
+			}
 		} else {
 			debug_w("[UPnP]: No device callback provided");
 		}
@@ -159,11 +162,12 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 
 	case Search::Kind::service: {
 		auto& search = activeSearch->service;
-		uniqueServiceNames += usn;
-		auto device = search.cls->deviceClass().createObject(location, usn);
+		uniqueServiceNames += uniqueServiceName;
 		if(search.callback) {
-			auto service = device->getService(*search.cls);
-			search.callback(device, service);
+			auto device = search.cls->deviceClass().createObject(*this, location, uniqueServiceName);
+			if(device != nullptr) {
+				search.callback(device, device->getService(*search.cls));
+			}
 		} else {
 			debug_w("[UPnP]: No service callback provided");
 		}
