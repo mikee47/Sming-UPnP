@@ -64,7 +64,7 @@ public:
 	}
 
 protected:
-	virtual ServiceControl* createObject(DeviceControl& device) const = 0;
+	virtual ServiceControl* createObject(DeviceControl& device, const ServiceClass& serviceClass) const = 0;
 
 private:
 	const DeviceClass& devcls;

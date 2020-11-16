@@ -31,6 +31,7 @@ class ServiceControl : public Service
 {
 public:
 	using List = ObjectList<ServiceControl>;
+	using OwnedList = OwnedObjectList<ServiceControl>;
 	using Field = Service::Field;
 
 	class ArgList

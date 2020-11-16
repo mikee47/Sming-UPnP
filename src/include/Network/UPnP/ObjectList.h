@@ -25,6 +25,7 @@ namespace UPnP
 {
 /**
  * @brief Class template for singly-linked list of objects
+ * @note We don't own the objects, just keep references to them
  */
 template <typename ObjectType> class ObjectList : public LinkedItemList
 {
@@ -37,6 +38,28 @@ public:
 	const ObjectType* head() const
 	{
 		return reinterpret_cast<const ObjectType*>(LinkedItemList::head());
+	}
+};
+
+/**
+ * @brief Class template for singly-linked list of objects
+ * @note We own the objects so are responsible for destroying them when removed
+ */
+template <typename ObjectType> class OwnedObjectList : public ObjectList<ObjectType>
+{
+public:
+	bool remove(ObjectType* object)
+	{
+		bool res = LinkedItemList::remove(object);
+		delete object;
+		return res;
+	}
+
+	void clear()
+	{
+		while(remove(this->head())) {
+			//
+		}
 	}
 };
 
