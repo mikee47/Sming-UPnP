@@ -1,6 +1,6 @@
 #include <SmingCore.h>
 #include <Network/UPnP/ControlPoint.h>
-#include <device/dmr.h>
+#include <device/hg1.h>
 
 // If you want, you can define WiFi settings globally in Eclipse Environment Variables
 #ifndef WIFI_SSID
@@ -22,21 +22,30 @@ void initUPnP()
 {
 	controlPoint.beginSearch(Delegate<void(Device_MediaRenderer*)>([](Device_MediaRenderer* device) {
 		// Stop at the first response
-		controlPoint.cancelSearch();
+		//		controlPoint.cancelSearch();
 
 		Serial.print(F("Found: "));
 		Serial.println(device->friendlyName());
+		Serial.print(F("  UDN: "));
+		Serial.println(device->udn());
 
 		auto service = device->getRenderingControl();
 
+		service.action_ListPresets(
+			[](auto& result) {
+				Serial.print("Current presets: ");
+				Serial.println(result.CurrentPresetNameList);
+			},
+			0);
+
 		service.action_GetVolume(
-			[](Service_RenderingControl::Volume CurrentVolume) {
+			[](auto& result) {
 				Serial.print("Current Volume: ");
-				Serial.println(CurrentVolume);
+				Serial.println(result.CurrentVolume);
 			},
 			0, 0);
 
-		delete device;
+		//		delete device;
 	}));
 }
 

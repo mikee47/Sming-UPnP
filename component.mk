@@ -6,4 +6,11 @@ COMPONENT_PYTHON_REQUIREMENTS := requirements.txt
 
 UPNP_TOOLS		:= $(COMPONENT_PATH)/tools
 
-UPNP_GENERATE_DEVICE = $(python) $(UPNP_TOOLS)/gen.py -t $(UPNP_TOOLS)/xsl/device.xsl
+#
+# $1 -> Base directory
+# $2 -> Source .xml file path relative to base
+# $3 -> Output .h file
+define upnp_generate_device
+@echo Generating $3
+$(Q) $(UPNP_TOOLS)/gen.py -t $(UPNP_TOOLS)/xsl/device.xsl -b $1 -i $2 -o $3
+endef

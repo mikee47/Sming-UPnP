@@ -8,7 +8,7 @@ App-build: $(XML_INCFILES)
 
 .PHONY: xml
 xml: ##@Generate headers from XML descriptions
-	$(Q) $(MAKE) -B $(XML_INCFILES)
+	$(Q) $(MAKE) -B $(XML_INCFILES) include/device/hg1.h
 
 clean: xml-clean
 
@@ -17,8 +17,11 @@ xml-clean:
 	-$(Q) rm $(XML_INCFILES)
 
 $(XML_INCFILES): | include/device
-	@echo Generating $@
-	$(Q) $(UPNP_GENERATE_DEVICE) -i config/$(@F:.h=)/ddd.xml -o $@
+	$(call upnp_generate_device,config/viera,$(@F:.h=)/ddd.xml,$@)
+
+include/device/hg1.h:
+	$(call upnp_generate_device,config/hg1,ddd.xml,$@)
+
 
 include/device:
 	$(Q) mkdir -p $@
