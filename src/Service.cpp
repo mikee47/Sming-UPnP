@@ -86,7 +86,7 @@ String Service::getField(Field desc) const
 	// Provide defaults for required fields
 	switch(desc) {
 	case Field::serviceType:
-		return ServiceUrn(getField(Field::domain), getField(Field::type), version());
+		return ServiceUrn(getField(Field::domain), getField(Field::type), version()).toString();
 
 	case Field::type:
 		return F("{type REQUIRED}");

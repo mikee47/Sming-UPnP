@@ -22,4 +22,14 @@
 
 namespace UPnP
 {
+String ServiceClass::getField(Field desc) const
+{
+	switch(desc) {
+	case Field::serviceType:
+		return String(getServiceType());
+	default:
+		return nullptr;
+	}
 }
+
+} // namespace UPnP

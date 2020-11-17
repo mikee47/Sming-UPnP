@@ -23,7 +23,7 @@
 #include "ObjectList.h"
 #include "ActionInfo.h"
 #include "Constants.h"
-#include "Urn.h"
+#include <Network/SSDP/Urn.h>
 
 #define UPNP_SERVICE_FIELD_MAP(XX)                                                                                     \
 	XX(serviceType, required)                                                                                          \

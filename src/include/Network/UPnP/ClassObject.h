@@ -21,7 +21,7 @@
 
 #include "Object.h"
 #include "ObjectList.h"
-#include "Urn.h"
+#include <Network/SSDP/Urn.h>
 
 namespace UPnP
 {
@@ -29,8 +29,6 @@ class ClassObject : public ObjectTemplate<ClassObject>
 {
 public:
 	using List = ObjectList<ClassObject>;
-
-	virtual Urn getUrn() const = 0;
 
 	RootDevice* getRoot() override
 	{

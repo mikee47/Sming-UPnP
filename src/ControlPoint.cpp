@@ -19,7 +19,6 @@
  ****/
 
 #include "include/Network/UPnP/ControlPoint.h"
-#include <Network/SSDP/Usn.h>
 #include <Network/SSDP/Server.h>
 #include "include/Network/UPnP/ActionInfo.h"
 #include "main.h"
@@ -71,7 +70,7 @@ bool ControlPoint::formatMessage(SSDP::Message& message, SSDP::MessageSpec& ms)
 		assert(false);
 		return false;
 	}
-	message["ST"] = activeSearch->getUrn();
+	message["ST"] = activeSearch->urn;
 	if(UPNP_VERSION_IS(2.0)) {
 		message[F("CPFN.UPNP.ORG")] = F("Sming ControlPoint");
 	}
@@ -91,7 +90,7 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 		return;
 	}
 
-	String st = activeSearch->getUrn();
+	auto st = activeSearch->urn;
 	if(st != message["NT"] && st != message["ST"]) {
 		return;
 	}

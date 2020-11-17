@@ -43,15 +43,12 @@ public:
 	{
 	}
 
-	Urn getUrn() const override
+	Urn getServiceType() const
 	{
 		return ServiceUrn(getField(Field::domain), getField(Field::type), version());
 	}
 
-	virtual String getField(Field desc) const
-	{
-		return nullptr;
-	}
+	virtual String getField(Field desc) const;
 
 	const ServiceClass* getNext() const
 	{
