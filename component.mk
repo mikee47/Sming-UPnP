@@ -12,5 +12,5 @@ UPNP_TOOLS		:= $(COMPONENT_PATH)/tools
 # $3 -> Output .h file
 define upnp_generate_device
 @echo Generating $3
-$(Q) $(UPNP_TOOLS)/gen.py -t $(UPNP_TOOLS)/xsl/device.xsl -b $1 -i $2 -o $3
+$(Q) $(UPNP_TOOLS)/gen.py -t $(UPNP_TOOLS)/xsl/DeviceControl.xsl -s $1 -i $2 -o $3
 endef
