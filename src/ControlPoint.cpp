@@ -32,7 +32,6 @@ bool ControlPoint::submitSearch(Search* search)
 {
 	if(bool(activeSearch)) {
 		debug_e("Search already in progress");
-		delete search;
 		return false;
 	}
 
@@ -59,7 +58,7 @@ bool ControlPoint::cancelSearch()
 	debug_i("Cancelling search for %s", activeSearch->toString().c_str());
 
 	SSDP::server.messageQueue.remove(this);
-	activeSearch = nullptr;
+	activeSearch.reset();
 	return true;
 }
 
@@ -116,14 +115,15 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 	debug_w("  usn: %s", uniqueServiceName);
 
 	switch(activeSearch->kind) {
-	case Search::Kind::desc: {
+	case Search::Kind::desc:
+	case Search::Kind::descWithSsdp: {
 		debug_d("Fetching description from URL: '%s'", location);
 		auto request = new HttpRequest(location);
 
 		request->onRequestComplete([this, uniqueServiceName](HttpConnection& connection, bool success) -> int {
 			if(!success) {
 				debug_e("Fetch failed");
-			} else if(activeSearch == nullptr) {
+			} else if(!bool(activeSearch)) {
 				// Looks like search was cancelled
 			} else if(!uniqueServiceNames.contains(uniqueServiceName)) {
 				// Don't retry
@@ -131,14 +131,32 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 				// Process and invoke callback
 				XML::Document doc;
 				processDescriptionResponse(connection, doc);
-				if(activeSearch->desc.callback) {
-					activeSearch->desc.callback(connection, doc);
+				if(activeSearch->kind == Search::Kind::desc) {
+					auto& search = *reinterpret_cast<DescriptionSearch*>(activeSearch.get());
+					if(search.callback) {
+						search.callback(connection, doc);
+					} else {
+						debug_w("[UPnP]: No description callback provided");
+					}
+				} else if(activeSearch->kind == Search::Kind::descWithSsdp) {
+					auto& search = *reinterpret_cast<DescriptionWithSsdpSearch*>(activeSearch.get());
+					if(search.callback) {
+						search.callback(connection, doc, search.message);
+					} else {
+						debug_w("[UPnP]: No description callback provided");
+					}
+					search.message.clear();
 				} else {
-					debug_w("[UPnP]: No description callback provided");
+					assert(false);
 				}
 			}
 			return 0;
 		});
+
+		if(activeSearch->kind == Search::Kind::descWithSsdp) {
+			auto& search = *reinterpret_cast<DescriptionWithSsdpSearch*>(activeSearch.get());
+			search.message = message;
+		}
 
 		// If request queue is full we can try again later
 		sendRequest(request);
@@ -146,10 +164,10 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 	}
 
 	case Search::Kind::device: {
-		auto& search = activeSearch->device;
+		auto& search = *reinterpret_cast<DeviceSearch*>(activeSearch.get());
 		uniqueServiceNames += uniqueServiceName;
 		if(search.callback) {
-			auto device = search.cls->createObject(*this, location, uniqueServiceName);
+			auto device = search.cls.createObject(*this, location, uniqueServiceName);
 			if(device != nullptr) {
 				if(search.callback(*device)) {
 					devices.add(device);
@@ -164,12 +182,12 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 	}
 
 	case Search::Kind::service: {
-		auto& search = activeSearch->service;
+		auto& search = *reinterpret_cast<ServiceSearch*>(activeSearch.get());
 		uniqueServiceNames += uniqueServiceName;
 		if(search.callback) {
-			auto device = search.cls->deviceClass().createObject(*this, location, uniqueServiceName);
+			auto device = search.cls.deviceClass().createObject(*this, location, uniqueServiceName);
 			if(device != nullptr) {
-				if(search.callback(*device, *device->getService(*search.cls))) {
+				if(search.callback(*device, *device->getService(search.cls))) {
 					devices.add(device);
 				} else {
 					delete device;
@@ -269,7 +287,7 @@ bool ControlPoint::sendRequest(HttpRequest* request)
 	return http.send(request);
 }
 
-bool ControlPoint::requestDescription(const String& url, DescriptionCallback callback)
+bool ControlPoint::requestDescription(const String& url, DescriptionSearch::Callback callback)
 {
 	debug_d("Fetching description from URL: '%s'", url.c_str());
 	auto request = new HttpRequest(url);
@@ -290,4 +308,5 @@ bool ControlPoint::requestDescription(const String& url, DescriptionCallback cal
 
 	return sendRequest(request);
 }
+
 } // namespace UPnP

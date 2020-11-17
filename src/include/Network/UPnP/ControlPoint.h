@@ -27,6 +27,7 @@
 #include "Constants.h"
 #include "DeviceControl.h"
 #include "ServiceControl.h"
+#include "Search.h"
 #include <memory>
 
 namespace UPnP
@@ -34,25 +35,6 @@ namespace UPnP
 class ControlPoint : public ObjectTemplate<ControlPoint>
 {
 public:
-	using DescriptionCallback = Delegate<void(HttpConnection& connection, XML::Document& description)>;
-
-	/**
-	 * @brief Callback invoked when device has been located
-	 * @param device
-	 * @retval bool Return true to keep the device, false to destroy it
-	 * @note If callback sends out action requests then must return true
-	 */
-	using DeviceControlCallback = Delegate<bool(DeviceControl& device)>;
-
-	/**
-	 * @brief Callback invoked when service has been located
-	 * @param device
-	 * @param service Requested service
-	 * @retval bool Return true to keep the device, false to destroy it
-	 * @note If callback sends out action requests then must return true
-	 */
-	using ServiceControlCallback = Delegate<bool(DeviceControl& device, ServiceControl& service)>;
-
 	/**
 	 * @brief Constructor
 	 * @param maxResponseSize Limits size of stream used to receive HTTP responses
@@ -92,9 +74,20 @@ public:
 	 * @param callback Invoked with device description document
 	 * @retval bool true on success, false if request queue is full
 	 */
-	bool beginSearch(const Urn& urn, DescriptionCallback callback)
+	bool beginSearch(const Urn& urn, DescriptionSearch::Callback callback)
 	{
-		return submitSearch(new Search(urn, callback));
+		return submitSearch(new DescriptionSearch(urn, callback));
+	}
+
+	/**
+	 * @brief Searches for UPnP device or service and fetches its description, with SSDP headers
+	 * @param urn unique identifier of the service or device to find
+	 * @param callback Invoked with device description document and SSDP response message
+	 * @retval bool true on success, false if request queue is full
+	 */
+	bool beginSearch(const Urn& urn, DescriptionWithSsdpSearch::Callback callback)
+	{
+		return submitSearch(new DescriptionWithSsdpSearch(urn, callback));
 	}
 
 	/**
@@ -103,9 +96,9 @@ public:
 	 * @param callback Invoked with constructed control object
 	 * @retval bool true on success, false if request queue is full
 	 */
-	bool beginSearch(const DeviceClass& cls, DeviceControlCallback callback)
+	bool beginSearch(const DeviceClass& cls, DeviceSearch::Callback callback)
 	{
-		return submitSearch(new Search(cls, callback));
+		return submitSearch(new DeviceSearch(cls, callback));
 	}
 
 	/**
@@ -114,16 +107,16 @@ public:
 	 * @param callback Invoked with constructed control object
 	 * @retval bool true on success, false if request queue is full
 	 */
-	bool beginSearch(const ServiceClass& cls, ServiceControlCallback callback)
+	bool beginSearch(const ServiceClass& cls, ServiceSearch::Callback callback)
 	{
-		return submitSearch(new Search(cls, callback));
+		return submitSearch(new ServiceSearch(cls, callback));
 	}
 
 	template <typename Device> bool beginSearch(Delegate<bool(Device&)> callback)
 	{
 		auto& deviceClass = getDeviceClass<typename Device::Class>();
-		return submitSearch(new Search(
-			deviceClass, [callback](DeviceControl& device) { return callback(reinterpret_cast<Device&>(device)); }));
+		return beginSearch(deviceClass,
+						   [callback](DeviceControl& device) { return callback(reinterpret_cast<Device&>(device)); });
 	}
 
 	/**
@@ -181,7 +174,7 @@ public:
 	 * @param callback To be invoked with requested document
 	 * @retval bool true on success, false if queue is full
 	 */
-	bool requestDescription(const String& url, DescriptionCallback callback);
+	bool requestDescription(const String& url, DescriptionSearch::Callback callback);
 
 	/**
 	 * @brief Called via SSDP when incoming message received
@@ -190,75 +183,6 @@ public:
 
 private:
 	using List = ObjectList<ControlPoint>;
-
-	struct Search {
-		struct Device {
-			const DeviceClass* cls;
-			DeviceControlCallback callback;
-		};
-		struct Service {
-			const ServiceClass* cls;
-			ServiceControlCallback callback;
-		};
-		struct Desc {
-			DescriptionCallback callback;
-		};
-		enum class Kind {
-			desc,	///< Fetch description for any matching urn
-			device,  ///< Searching for pre-defined device class
-			service, ///< Searching for pre-defined service class
-		};
-
-		Search(const Urn& urn, DescriptionCallback callback) : kind(Kind::desc)
-		{
-			this->urn = String(urn);
-			desc.callback = callback;
-		}
-
-		Search(const DeviceClass& cls, DeviceControlCallback callback) : kind(Kind::device)
-		{
-			urn = String(cls.getDeviceType());
-			device.cls = &cls;
-			device.callback = callback;
-		}
-
-		Search(const ServiceClass& cls, ServiceControlCallback callback) : kind(Kind::service)
-		{
-			urn = String(cls.getServiceType());
-			service.cls = &cls;
-			service.callback = callback;
-		}
-
-		String toString(Search::Kind kind) const
-		{
-			switch(kind) {
-			case Kind::desc:
-				return F("Description");
-			case Kind::device:
-				return F("Device");
-			case Kind::service:
-				return F("Service");
-			default:
-				assert(false);
-				return nullptr;
-			}
-		}
-
-		String toString() const
-		{
-			String s = toString(kind);
-			s += " {";
-			s += urn;
-			s += '}';
-			return s;
-		}
-
-		Kind kind;
-		String urn;
-		Device device;
-		Service service;
-		Desc desc;
-	};
 
 	template <typename Class> const DeviceClass& getDeviceClass()
 	{
