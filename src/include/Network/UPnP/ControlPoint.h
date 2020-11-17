@@ -69,6 +69,17 @@ public:
 	}
 
 	/**
+	 * @brief Searches for UPnP device or service and returns SSDP response messages
+	 * @param urn unique identifier of the service or device to find
+	 * @param callback Invoked with SSDP response message
+	 * @retval bool true on success, false if request queue is full
+	 */
+	bool beginSearch(const Urn& urn, SsdpSearch::Callback callback)
+	{
+		return submitSearch(new SsdpSearch(urn, callback));
+	}
+
+	/**
 	 * @brief Searches for UPnP device or service and fetches its description
 	 * @param urn unique identifier of the service or device to find
 	 * @param callback Invoked with device description document
@@ -77,17 +88,6 @@ public:
 	bool beginSearch(const Urn& urn, DescriptionSearch::Callback callback)
 	{
 		return submitSearch(new DescriptionSearch(urn, callback));
-	}
-
-	/**
-	 * @brief Searches for UPnP device or service and fetches its description, with SSDP headers
-	 * @param urn unique identifier of the service or device to find
-	 * @param callback Invoked with device description document and SSDP response message
-	 * @retval bool true on success, false if request queue is full
-	 */
-	bool beginSearch(const Urn& urn, DescriptionWithSsdpSearch::Callback callback)
-	{
-		return submitSearch(new DescriptionWithSsdpSearch(urn, callback));
 	}
 
 	/**
@@ -201,7 +201,7 @@ private:
 	}
 
 	bool submitSearch(Search* search);
-	bool processDescriptionResponse(HttpConnection& connection, XML::Document& description);
+	static bool processDescriptionResponse(HttpConnection& connection, XML::Document& description);
 
 	static List controlPoints;
 	DeviceClass::OwnedList deviceClasses;
