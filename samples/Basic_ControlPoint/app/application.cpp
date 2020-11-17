@@ -29,7 +29,7 @@ void initUPnP()
 		Serial.print(F("  UDN: "));
 		Serial.println(device->udn());
 
-		auto service = device->getRenderingControl();
+		auto& service = device->getRenderingControl();
 
 		service.action_ListPresets(0, [](auto& result) {
 			Serial.print("Current presets: ");
