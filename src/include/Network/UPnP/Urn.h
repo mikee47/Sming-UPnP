@@ -44,6 +44,10 @@ public:
 	{
 	}
 
+	Urn(const Urn& urn) : kind(urn.kind), domain(urn.domain), type(urn.type), version(urn.version)
+	{
+	}
+
 	Urn(Urn&& urn) : kind(urn.kind), domain(std::move(urn.domain)), type(std::move(urn.type)), version(urn.version)
 	{
 	}

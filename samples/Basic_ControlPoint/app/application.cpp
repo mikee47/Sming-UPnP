@@ -23,13 +23,24 @@ void initUPnP()
 {
 	controlPoint.beginSearch(
 		mediaRenderer.RenderingControl, [](UPnP::DeviceControl* device, UPnP::ServiceControl* service) {
-			Serial.print("Found: ");
+			// Stop at the first response
+			controlPoint.cancelSearch();
+
+			Serial.print(F("Found: "));
 			Serial.println(device->friendlyName());
 
 			if(service == nullptr) {
 				debug_e("Service %s missing from %s",
 						mediaRenderer.RenderingControl.getField(UPnP::Service::Field::serviceType).c_str(),
 						device->deviceType().c_str());
+			} else {
+				auto renderer = reinterpret_cast<Service_RenderingControl*>(service);
+				renderer->action_GetVolume(
+					[](Service_RenderingControl::Volume CurrentVolume) {
+						Serial.print("Current Volume: ");
+						Serial.println(CurrentVolume);
+					},
+					0, 0);
 			}
 
 			delete device;

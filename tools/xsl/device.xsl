@@ -77,14 +77,15 @@ public:
 		}
 	}
 
+	<xsl:for-each select="u:serviceList/u:service">
+	const <xsl:call-template name="serviceClass"/><xsl:text> </xsl:text><xsl:call-template name="serviceType"/>;<xsl:text/>
+	</xsl:for-each>
+
+protected:
 	UPnP::DeviceControl* createObject() const override
 	{
 		return new UPnP::DeviceControl(*this);
 	}
-
-	<xsl:for-each select="u:serviceList/u:service">
-	const <xsl:call-template name="serviceClass"/><xsl:text> </xsl:text><xsl:call-template name="serviceType"/>;<xsl:text/>
-	</xsl:for-each>
 };
 
 </xsl:template>
@@ -136,6 +137,7 @@ public:
 		}
 	}
 
+protected:
 	UPnP::ServiceControl* createObject(UPnP::DeviceControl&amp; device) const override
 	{
 		return new <xsl:value-of select="$serviceControl"/>(device, *this);

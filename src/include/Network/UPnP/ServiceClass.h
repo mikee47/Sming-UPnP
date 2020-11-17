@@ -33,6 +33,8 @@ class DeviceClass;
  */
 class ServiceClass : public ClassObject
 {
+	friend DeviceControl;
+
 public:
 	using List = ObjectList<ServiceClass>;
 	using Field = Service::Field;
@@ -61,6 +63,7 @@ public:
 		return devcls;
 	}
 
+protected:
 	virtual ServiceControl* createObject(DeviceControl& device) const = 0;
 
 private:

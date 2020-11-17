@@ -28,6 +28,8 @@ namespace UPnP
 {
 class DeviceControl : public Device
 {
+	friend DeviceClass;
+
 public:
 	DeviceControl(const DeviceClass& deviceClass) : deviceClass(deviceClass)
 	{
@@ -39,7 +41,10 @@ public:
 
 	ServiceControl* getService(const ServiceClass& serviceClass);
 
-	String getField(Field desc) const override;
+	String getField(Field desc) const override
+	{
+		return deviceClass.getField(desc) ?: Device::getField(desc);
+	}
 
 	const DeviceClass& getClass() const
 	{
@@ -48,9 +53,9 @@ public:
 
 private:
 	const DeviceClass& deviceClass;
-	CString friendlyName_;
-	CString udn_;
 	ServiceControl::List services;
+	String location;
+	String usn;
 };
 
 } // namespace UPnP

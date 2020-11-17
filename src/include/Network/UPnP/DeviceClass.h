@@ -50,12 +50,12 @@ public:
 		return reinterpret_cast<const DeviceClass*>(next());
 	}
 
-	DeviceControl* createObject(XML::Document& description) const;
-
 	const ServiceClass* firstService() const
 	{
 		return serviceClasses.head();
 	}
+
+	DeviceControl* createObject(const char* location, const char* usn) const;
 
 protected:
 	virtual DeviceControl* createObject() const = 0;

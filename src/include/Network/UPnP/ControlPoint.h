@@ -28,6 +28,7 @@
 #include "Constants.h"
 #include "DeviceControl.h"
 #include "ServiceControl.h"
+#include <memory>
 
 namespace UPnP
 {
@@ -64,7 +65,10 @@ public:
 	 * @param callback Invoked with device description document
 	 * @retval bool true on success, false if request queue is full
 	 */
-	bool beginSearch(const Urn& urn, DescriptionCallback callback);
+	bool beginSearch(const Urn& urn, DescriptionCallback callback)
+	{
+		return submitSearch(new Search(urn, callback));
+	}
 
 	/**
 	 * @brief Searches for UPnP device
@@ -72,7 +76,10 @@ public:
 	 * @param callback Invoked with constructed control object
 	 * @retval bool true on success, false if request queue is full
 	 */
-	bool beginSearch(const DeviceClass& cls, DeviceControlCallback callback);
+	bool beginSearch(const DeviceClass& cls, DeviceControlCallback callback)
+	{
+		return submitSearch(new Search(cls, callback));
+	}
 
 	/**
 	 * @brief Searches for UPnP service
@@ -80,7 +87,26 @@ public:
 	 * @param callback Invoked with constructed control object
 	 * @retval bool true on success, false if request queue is full
 	 */
-	bool beginSearch(const ServiceClass& cls, ServiceControlCallback callback);
+	bool beginSearch(const ServiceClass& cls, ServiceControlCallback callback)
+	{
+		return submitSearch(new Search(cls, callback));
+	}
+
+	/**
+	 * @brief Determine if there's an active search in progress
+	 */
+	bool isSearchActive() const
+	{
+		return bool(activeSearch);
+	}
+
+	/**
+	 * @brief Cancel any active search operation
+	 * @retval bool true if a search was active, false if there was no active search
+	 * @todo Set timeout on search operation and call this automatically
+	 * Need to inform application though - perhaps a generic callback on the class?
+	 */
+	bool cancelSearch();
 
 	/**
 	 * @brief Called by framework to handle an incoming SSDP message
@@ -129,15 +155,98 @@ public:
 private:
 	using List = ObjectList<ControlPoint>;
 
-	void processDescriptionResponse(HttpConnection& connection, DescriptionCallback callback);
+	struct Search {
+		struct Device {
+			const DeviceClass* cls;
+			DeviceControlCallback callback;
+		};
+		struct Service {
+			const ServiceClass* cls;
+			ServiceControlCallback callback;
+		};
+		struct Desc {
+			UPnP::Urn urn;
+			DescriptionCallback callback;
+		};
+		enum class Kind {
+			desc,	///< Fetch description for any matching urn
+			device,  ///< Searching for pre-defined device class
+			service, ///< Searching for pre-defined service class
+		};
+
+		Search(const Urn& urn, DescriptionCallback callback) : kind(Kind::desc)
+		{
+			desc.urn = urn;
+			desc.callback = callback;
+		}
+
+		Search(const DeviceClass& cls, DeviceControlCallback callback) : kind(Kind::device)
+		{
+			device.cls = &cls;
+			device.callback = callback;
+		}
+
+		Search(const ServiceClass& cls, ServiceControlCallback callback) : kind(Kind::service)
+		{
+			service.cls = &cls;
+			service.callback = callback;
+		}
+
+		Urn getUrn() const
+		{
+			switch(kind) {
+			case Kind::desc:
+				return desc.urn;
+			case Kind::device:
+				return device.cls->getUrn();
+			case Kind::service:
+				return service.cls->getUrn();
+			default:
+				assert(false);
+				return Urn{};
+			}
+		}
+
+		String toString(Search::Kind kind) const
+		{
+			switch(kind) {
+			case Kind::desc:
+				return F("Description");
+			case Kind::device:
+				return F("Device");
+			case Kind::service:
+				return F("Service");
+			default:
+				assert(false);
+				return nullptr;
+			}
+		}
+
+		String toString() const
+		{
+			String s = toString(kind);
+			s += " {";
+			s += ::toString(getUrn());
+			s += '}';
+			return s;
+		}
+
+		Kind kind;
+		Device device;
+		Service service;
+		Desc desc;
+	};
+
+	bool submitSearch(Search* search);
+
+	bool processDescriptionResponse(HttpConnection& connection, XML::Document& description);
 
 	static List controlPoints;
 	static ClassObject::List classObjects;
 	static HttpClient http;
 	size_t maxDescriptionSize; // <<< Maximum size of XML description that can be processed
-	UPnP::Urn searchUrn;
-	DescriptionCallback searchCallback;
 	CStringArray uniqueServiceNames;
+	std::unique_ptr<Search> activeSearch;
 };
 
 } // namespace UPnP
