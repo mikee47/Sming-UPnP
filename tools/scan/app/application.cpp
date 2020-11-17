@@ -13,15 +13,28 @@ namespace
 {
 NtpClient* ntpClient;
 UPnP::ControlPoint controlPoint(8192);
+Timer timer;
 
 // Fetch one description file at a time to avoid swamping the TCP stack
 struct Fetch {
-	String path;
 	String url;
+	String path;
+
+	bool operator==(const Fetch& other)
+	{
+		return path == other.path;
+	}
 };
-Vector<Fetch> fetchList;
+
+Vector<String> ssdpDoneList;
+Vector<Fetch> descriptionFetchList;
+Vector<Fetch> descriptionDoneList;
+Vector<String> urnFetchList;
+Vector<String> urnDoneList;
 
 static const char* baseOutputDir = "devices";
+
+IMPORT_FSTR(gatedesc_xml, PROJECT_DIR "/devices1/192.168.1.254/1900/gatedesc.xml")
 
 void connectFail(const String& ssid, MacAddress bssid, WifiDisconnectReason reason)
 {
@@ -48,16 +61,27 @@ void checkPath(String& path)
 	path.replace('&', '-');
 }
 
+void parseDescription(XML::Document& doc)
+{
+	// TODO
+}
+
 void fetchNextDescription()
 {
-	if(fetchList.count() == 0) {
+	if(descriptionFetchList.count() == 0) {
 		return;
 	}
 
-	Fetch f = fetchList.at(0);
+	Fetch f = descriptionFetchList.at(0);
 	auto path = f.path;
 
-	controlPoint.requestDescription(f.url, [path](HttpConnection& connection, XML::Document& description) {
+	Serial.print(F("Fetching '"));
+	Serial.print(f.url);
+	Serial.print(F("' to '"));
+	Serial.print(f.path);
+	Serial.println('\'');
+
+	controlPoint.requestDescription(f.url, [path](HttpConnection& connection, XML::Document* description) {
 #if DEBUG_VERBOSE_LEVEL == DBG
 		Serial.println();
 		Serial.println();
@@ -74,22 +98,40 @@ void fetchNextDescription()
 		Serial.println(connection.getResponse()->toString());
 		Serial.println();
 
-		Serial.println(F("Content:"));
-		XML::serialize(description, Serial, true);
-		Serial.println();
-		Serial.println(F("======  END  ======"));
+		if(description != nullptr) {
+			Serial.println(F("Content:"));
+			XML::serialize(*description, Serial, true);
+			Serial.println();
+			Serial.println(F("======  END  ======"));
+		}
 #endif
 
-		// Write description
-		Serial.print(F("Writing "));
-		Serial.println(path);
-		makedirs(path);
-		HostFileStream fs(path, eFO_CreateNewAlways | eFO_WriteOnly);
-		XML::serialize(description, fs, true);
+		Fetch f = descriptionFetchList.at(0);
+		descriptionFetchList.remove(0);
 
-		fetchList.remove(0);
+		if(description == nullptr) {
+			// Fetch failed, move to end of queue
+			Serial.print(F("Fetch '"));
+			Serial.print(f.url);
+			Serial.println("' failed, re-queueing");
+			descriptionFetchList.add(f);
+		} else {
+			// Write description
+			Serial.print(F("Writing "));
+			Serial.println(path);
+			makedirs(path);
+			HostFileStream fs(path, eFO_CreateNewAlways | eFO_WriteOnly);
+			XML::serialize(*description, fs, true);
+
+			descriptionDoneList.add(f);
+
+			parseDescription(*description);
+		}
+
 		fetchNextDescription();
 	});
+
+	//	timer.initializeMs<5000>(fetchNextDescription).startOnce();
 }
 
 void onSsdp(SSDP::BasicMessage& msg)
@@ -98,28 +140,34 @@ void onSsdp(SSDP::BasicMessage& msg)
 	Serial.print("Location: ");
 	Serial.println(location);
 
-	// Create root directory for device
-	Url url(location);
-	String path = url.Host;
-	path += '/';
-	path += url.Port;
-	path += '/';
-	String relPath = url.getRelativePath();
-	int sep = relPath.lastIndexOf('/');
-	if(sep >= 0) {
-		relPath.setLength(sep);
+	if(ssdpDoneList.indexOf(location) >= 0) {
+		Serial.print(F("Ignoring, already processed"));
+		return;
 	}
-	path += relPath;
+	ssdpDoneList.add(location);
 
+	// Create root directory for device
 	String rootDir = baseOutputDir;
 	rootDir += '/';
-	rootDir += path;
+	Url url(location);
+	rootDir += url.Host;
 	rootDir += '/';
+	rootDir += url.Port;
+	rootDir += '/';
+	String path = url.getRelativePath();
+	int sep = path.lastIndexOf('/');
+	if(sep >= 0) {
+		rootDir.concat(path.c_str(), sep);
+		rootDir += '/';
+	}
 	makedirs(rootDir);
 
 	// Write SSDP response
-	String st = msg["ST"];
-	path = rootDir + "ssdp-" + st + ".txt";
+	auto devtype = msg["ST"];
+	if(devtype == nullptr) {
+		devtype = msg["NT"];
+	}
+	path = rootDir + "ssdp-" + devtype + ".txt";
 	checkPath(path);
 	Serial.print(F("Writing "));
 	Serial.println(path);
@@ -133,10 +181,28 @@ void onSsdp(SSDP::BasicMessage& msg)
 
 	path = rootDir + url.getRelativePath();
 	checkPath(path);
-	fetchList.add(Fetch{path, location});
+	Fetch f{location, path};
+	if(descriptionFetchList.contains(f)) {
+		Serial.print(path);
+		Serial.println(F(" already queued"));
+		return;
+	}
+	if(descriptionDoneList.contains(f)) {
+		Serial.print(path);
+		Serial.println(F(" already fetched"));
+		return;
+	}
 
-	if(fetchList.count() == 1) {
+	descriptionFetchList.add(f);
+
+	if(descriptionFetchList.count() == 1) {
 		fetchNextDescription();
+	} else {
+		Serial.print(F("Queuing '"));
+		Serial.print(location);
+		Serial.print(F("', "));
+		Serial.print(descriptionFetchList.count());
+		Serial.println(F(" descriptions queued"));
 	}
 }
 
@@ -163,6 +229,17 @@ Fetch and write each file with path.
 void initUPnP()
 {
 	controlPoint.beginSearch(UPnP::RootDeviceUrn(), onSsdp);
+	timer.initializeMs<20000>(InterruptCallback([]() {
+		controlPoint.cancelSearch();
+		String urn = urnFetchList.at(0);
+		urnFetchList.remove(0);
+		urnDoneList.add(urn);
+		if(urnFetchList.count() > 0) {
+			urn = urnFetchList.at(0);
+			controlPoint.beginSearch(UPnP::Urn(urn), onSsdp);
+		}
+	}));
+	//	timer.start();
 }
 
 void gotIP(IpAddress ip, IpAddress netmask, IpAddress gateway)
@@ -189,7 +266,7 @@ void urnTest(UPnP::Urn::Kind kind, const String& s)
 	assert(kind == urn.kind);
 }
 
-void test()
+void testUrn()
 {
 #define URN_STRING_MAP(XX)                                                                                             \
 	XX(uuid, "uuid:{uuid}", "uuid:{uuid}")                                                                             \
@@ -206,6 +283,14 @@ void test()
 	urnTest(UPnP::Urn::Kind::kind, usnString);
 	URN_STRING_MAP(XX)
 #undef XX
+}
+
+void parseXml()
+{
+	XML::Document doc;
+	XML::deserialize(doc, gatedesc_xml);
+	auto node = XML::getNode(doc, "/device/deviceList");
+	debug_e("Node %s found", node ? "" : "NOT");
 }
 
 } // namespace
