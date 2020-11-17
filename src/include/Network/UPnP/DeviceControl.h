@@ -53,6 +53,8 @@ public:
 		return udn_;
 	}
 
+	bool sendRequest(ActionInfo& request, const ActionInfo::Callback& callback);
+
 private:
 	const DeviceClass& deviceClass;
 	ControlPoint& controlPoint;

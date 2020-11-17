@@ -19,13 +19,14 @@
 
 #include "include/Network/UPnP/Soap.h"
 
-IMPORT_FSTR(soap_envelope_xml, COMPONENT_PATH "/resource/envelope.xml");
-
-DEFINE_FSTR_LOCAL(soap_namespace, "http://schemas.xmlsoap.org/soap/envelope/");
-DEFINE_FSTR_LOCAL(soap_encoding, "http://schemas.xmlsoap.org/soap/encoding/");
-
 namespace SOAP
 {
+namespace
+{
+DEFINE_FSTR_LOCAL(soap_namespace, "http://schemas.xmlsoap.org/soap/envelope/");
+DEFINE_FSTR_LOCAL(soap_encoding, "http://schemas.xmlsoap.org/soap/encoding/");
+} // namespace
+
 bool checkValue(const char* str1, size_t len1, const char* str2, size_t len2)
 {
 	if(len1 == len2 && str1 != nullptr && str2 != nullptr && memcmp(str1, str2, len1) == 0) {
@@ -54,18 +55,24 @@ bool checkAttrValue(XML::Attribute* attr, const String& str)
 	return checkValue(str, attr->value(), attr->value_size());
 }
 
-const char* getNodeValue(XML::Node* parent, const String& name)
+XML::Node* getNode(XML::Node* parent, const String& name)
+{
+	return parent ? parent->first_node(name.c_str(), "", name.length()) : nullptr;
+}
+
+String getNodeValue(XML::Node* parent, const String& name)
+{
+	auto node = getNode(parent, name);
+	return node ? String(node->value(), node->value_size()) : nullptr;
+}
+
+XML::Node* addNodeValue(XML::Node* parent, const String& name, const String& value)
 {
 	if(parent == nullptr) {
 		return nullptr;
 	}
 
-	auto attr = parent->first_node(name.c_str(), "", name.length());
-	if(attr == nullptr) {
-		return nullptr;
-	}
-
-	return attr->value();
+	return XML::appendNode(parent, name, value);
 }
 
 XML::Node* Envelope::findEnvelope()
@@ -130,6 +137,13 @@ bool Envelope::load(const FlashString& content)
 	return body_ != nullptr;
 }
 
+/*
+	<s:Envelope
+		xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"
+		s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+		<s:Body/>
+	</s:Envelope>
+ */
 bool Envelope::initialise()
 {
 	doc.clear();

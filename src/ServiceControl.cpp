@@ -18,7 +18,28 @@
  ****/
 
 #include "include/Network/UPnP/ServiceControl.h"
+#include "include/Network/UPnP/DeviceControl.h"
 
 namespace UPnP
 {
+String ServiceControl::getField(Field desc) const
+{
+	switch(desc) {
+	case Field::baseURL:
+		return device.getField(Device::Field::baseURL);
+	case Field::controlURL:
+		return getField(Field::baseURL) + serviceClass.getField(desc);
+	case Field::eventSubURL:
+		return getField(Field::baseURL) + serviceClass.getField(desc);
+	default:
+		String s = serviceClass.getField(desc);
+		return s ?: Service::getField(desc);
+	}
+}
+
+bool ServiceControl::sendRequest(ActionInfo& request, const ActionInfo::Callback& callback)
+{
+	return device.sendRequest(request, callback);
+}
+
 } // namespace UPnP

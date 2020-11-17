@@ -111,9 +111,7 @@ String Service::getField(Field desc) const
 
 	case Field::baseURL: {
 		String url = device_->getField(Device::Field::baseURL);
-		String s = getField(Field::type);
-		splitTypeVersion(s);
-		url += s;
+		url += getField(Field::type);
 		url += '/';
 		return url;
 	}
@@ -212,7 +210,7 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 		m_puts("\r\n");
 #endif
 
-		ActionInfo info(connection, *this);
+		ActionInfo info(*this);
 		if(!info.load(req)) {
 			return;
 		}
@@ -220,19 +218,18 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 		String actionName = info.actionName();
 		handleAction(info);
 
-		if(info.response == nullptr) {
+		if(!bool(info)) {
 			debug_w("[UPnP] Unhandled action: %s", actionName.c_str());
 			info.createResponse();
 			// TODO: Set an error code in the response
 		}
 
 		auto stream = new MemoryDataStream;
-		XML::serialize(info.envelope.doc, stream);
+		info.serialize(*stream, false);
 		device_->sendXml(response, stream);
 
 #if DEBUG_VERBOSE_LEVEL >= DBG
-		String s;
-		XML::serialize(info.envelope.doc, s, true);
+		String s = info.toString(true);
 		m_puts(s.c_str());
 		m_puts("\r\n");
 #endif

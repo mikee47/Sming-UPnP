@@ -18,6 +18,7 @@
  ****/
 
 #include "include/Network/UPnP/DeviceControl.h"
+#include "include/Network/UPnP/ControlPoint.h"
 
 namespace UPnP
 {
@@ -55,6 +56,11 @@ ServiceControl* DeviceControl::getService(const ServiceClass& serviceClass)
 		}
 	}
 	return nullptr;
+}
+
+bool DeviceControl::sendRequest(ActionInfo& request, const ActionInfo::Callback& callback)
+{
+	return controlPoint.sendRequest(request, callback);
 }
 
 } // namespace UPnP

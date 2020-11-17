@@ -22,12 +22,11 @@
 
 namespace UPnP
 {
-bool ActionInfo::load(String& content)
+bool ActionInfo::load(String& request)
 {
-	action = nullptr;
-	response = nullptr;
+	content = nullptr;
 
-	if(!envelope.load(content)) {
+	if(!envelope.load(request)) {
 		return false;
 	}
 
@@ -35,7 +34,7 @@ bool ActionInfo::load(String& content)
 		return false;
 	}
 
-	auto ns = action->first_attribute("xmlns:u");
+	auto ns = content->first_attribute("xmlns:u");
 	return SOAP::checkAttrValue(ns, service.getField(Service::Field::serviceType));
 }
 
@@ -46,24 +45,73 @@ bool ActionInfo::findAction()
 		return false;
 	}
 
-	action = body->first_node();
-	if(action == nullptr) {
+	content = body->first_node();
+	if(content == nullptr) {
 		debug_e("[UPnP] Action missing");
 		return false;
 	}
 
 	String serviceType = service.getField(Service::Field::serviceType);
-	if(!SOAP::checkValue(serviceType, action->xmlns(), action->xmlns_size())) {
-		action = nullptr;
+	if(!SOAP::checkValue(serviceType, content->xmlns(), content->xmlns_size())) {
+		content = nullptr;
 		return false;
 	}
 
+	name.setString(content->name(), content->name_size());
 	return true;
 }
 
-bool ActionInfo::getArgBool(const String& name, bool& value)
+bool ActionInfo::getArg(const String& name, uint32_t& value, uint32_t defaultValue)
 {
-	auto s = actionArg(name);
+	auto s = getArgValue(name);
+	if(s == nullptr) {
+		value = defaultValue;
+		return false;
+	}
+
+	value = strtoul(s, nullptr, 10);
+	return true;
+}
+
+bool ActionInfo::getArg(const String& name, int32_t& value, int32_t defaultValue)
+{
+	auto s = getArgValue(name);
+	if(s == nullptr) {
+		value = defaultValue;
+		return false;
+	}
+
+	value = strtol(s, nullptr, 10);
+	return true;
+}
+
+bool ActionInfo::getArg(const String& name, float& value, float defaultValue)
+{
+	auto s = getArgValue(name);
+	if(s == nullptr) {
+		value = defaultValue;
+		return false;
+	}
+
+	value = strtod(s, nullptr);
+	return true;
+}
+
+bool ActionInfo::getArg(const String& name, double& value, double defaultValue)
+{
+	auto s = getArgValue(name);
+	if(s == nullptr) {
+		value = defaultValue;
+		return false;
+	}
+
+	value = strtod(s, nullptr);
+	return true;
+}
+
+bool ActionInfo::getArg(const String& name, bool& value, bool defaultValue)
+{
+	auto s = getArgValue(name);
 	if(s != nullptr) {
 		if(strcmp(s, "1") == 0 || strcmp(s, "true") == 0 || strcmp(s, "yes") == 0) {
 			value = true;
@@ -76,32 +124,21 @@ bool ActionInfo::getArgBool(const String& name, bool& value)
 		}
 	}
 
-	debug_e("[UPnP] Bad BOOL action arg '%s'", s ?: "(null)");
+	debug_e("[UPnP] Bad BOOL arg '%s'", s ?: "(null)");
 
+	value = defaultValue;
 	return false;
 }
 
-/**
- * @brief Create a SOAP envelope for a response to the given action
- * @param action The action to respond to
- * @retval XML::Node* nullptr on error
- * @note The response uses the same XML document as the action so be sure to make
- * copies of anything you need from it before calling this method
- */
-bool ActionInfo::createResponse()
+bool ActionInfo::createRequest(const String& name)
 {
-	if(action == nullptr) {
-		debug_e("[UPnP] Unexpected: action not set");
-		return false;
-	}
+	this->name = name;
 
 	String tag;
 	tag += "u:";
-	tag.concat(action->name(), action->name_size());
-	tag += "Response";
+	tag += name;
 
-	action = nullptr;
-	response = nullptr;
+	content = nullptr;
 
 	if(!envelope.initialise()) {
 		return false;
@@ -112,8 +149,36 @@ bool ActionInfo::createResponse()
 		return false;
 	}
 
-	response = XML::appendNode(body, tag);
-	XML::appendAttribute(response, "xmlns:u", service.getField(Service::Field::serviceType));
+	content = XML::appendNode(body, tag);
+	XML::appendAttribute(content, "xmlns:u", service.getField(Service::Field::serviceType));
+	return true;
+}
+
+bool ActionInfo::createResponse()
+{
+	if(content == nullptr) {
+		debug_e("[UPnP] Unexpected: request not set");
+		return false;
+	}
+
+	String tag;
+	tag += "u:";
+	tag.concat(content->name(), content->name_size());
+	tag += "Response";
+
+	content = nullptr;
+
+	if(!envelope.initialise()) {
+		return false;
+	}
+
+	auto body = envelope.body();
+	if(body == nullptr) {
+		return false;
+	}
+
+	content = XML::appendNode(body, tag);
+	XML::appendAttribute(content, "xmlns:u", service.getField(Service::Field::serviceType));
 	return true;
 }
 

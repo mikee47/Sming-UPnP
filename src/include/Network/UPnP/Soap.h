@@ -30,7 +30,7 @@ namespace SOAP
  */
 bool checkValue(const char* str1, size_t len1, const char* str2, size_t len2);
 
-static inline bool checkValue(const String& str, const char* value, size_t len)
+inline bool checkValue(const String& str, const char* value, size_t len)
 {
 	return checkValue(str.c_str(), str.length(), value, len);
 }
@@ -39,7 +39,11 @@ bool checkNodeName(XML::Node* node, const String& str);
 
 bool checkAttrValue(XML::Attribute* attr, const String& str);
 
-const char* getNodeValue(XML::Node* parent, const String& name);
+XML::Node* getNode(XML::Node* parent, const String& name);
+
+String getNodeValue(XML::Node* parent, const String& name);
+
+XML::Node* addNodeValue(XML::Node* parent, const String& name, const String& value);
 
 class Envelope
 {
@@ -52,6 +56,11 @@ public:
 	bool load(String& content);
 
 	bool load(const FlashString& content);
+
+	String toString(bool pretty) const
+	{
+		return XML::serialize(doc, pretty);
+	}
 
 	bool initialise();
 
@@ -67,7 +76,6 @@ private:
 	XML::Node* findEnvelope();
 	XML::Node* findBody();
 
-private:
 	XML::Node* body_{nullptr};
 };
 
