@@ -211,6 +211,16 @@ public:
 		<xsl:for-each select="s:argumentList/s:argument[s:direction='out']">
 		<xsl:value-of select="s:relatedStateVariable"/><xsl:text> </xsl:text><xsl:value-of select="s:name"/>;
 		</xsl:for-each>
+		
+		size_t printTo(Print&amp; p) {
+			size_t n{0};
+			<xsl:for-each select="s:argumentList/s:argument[s:direction='out']">
+			n += p.print("<xsl:value-of select="s:name"/>");
+			n += p.print(" = ");
+			n += p.println(<xsl:value-of select="s:name"/>);
+			</xsl:for-each>
+			return n;
+		}
 	};
 	using <xsl:value-of select="s:name"/>_ResultCallback = Delegate&lt;void(<xsl:value-of select="$ResultArgs"/>&amp; result)>;
 	</xsl:when>

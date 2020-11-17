@@ -39,15 +39,20 @@ public:
 
 	/**
 	 * @brief Callback invoked when device has been located
-	 * @param device Must be deleted when finished with
+	 * @param device
+	 * @retval bool Return true to keep the device, false to destroy it
+	 * @note If callback sends out action requests then must return true
 	 */
-	using DeviceControlCallback = Delegate<void(DeviceControl* device)>;
+	using DeviceControlCallback = Delegate<bool(DeviceControl& device)>;
 
 	/**
 	 * @brief Callback invoked when service has been located
-	 * @param device Must be deleted when finished with
+	 * @param device
+	 * @param service Requested service
+	 * @retval bool Return true to keep the device, false to destroy it
+	 * @note If callback sends out action requests then must return true
 	 */
-	using ServiceControlCallback = Delegate<void(DeviceControl* device, ServiceControl* service)>;
+	using ServiceControlCallback = Delegate<bool(DeviceControl& device, ServiceControl& service)>;
 
 	/**
 	 * @brief Constructor
@@ -70,6 +75,16 @@ public:
 	{
 		cancelSearch();
 		uniqueServiceNames.clear();
+	}
+
+	/**
+	 * @brief Perform a reset and destroy all registered devices and classes
+	 */
+	void clear()
+	{
+		reset();
+		devices.clear();
+		deviceClasses.clear();
 	}
 
 	/**
@@ -105,11 +120,11 @@ public:
 		return submitSearch(new Search(cls, callback));
 	}
 
-	template <typename Device> bool beginSearch(Delegate<void(Device*)> callback)
+	template <typename Device> bool beginSearch(Delegate<bool(Device&)> callback)
 	{
 		auto& deviceClass = getDeviceClass<typename Device::Class>();
 		return submitSearch(new Search(
-			deviceClass, [callback](DeviceControl* device) { callback(reinterpret_cast<Device*>(device)); }));
+			deviceClass, [callback](DeviceControl& device) { return callback(reinterpret_cast<Device&>(device)); }));
 	}
 
 	/**
@@ -279,7 +294,8 @@ private:
 	bool processDescriptionResponse(HttpConnection& connection, XML::Document& description);
 
 	static List controlPoints;
-	static DeviceClass::OwnedList deviceClasses;
+	DeviceClass::OwnedList deviceClasses;
+	Device::OwnedList devices;
 	static HttpClient http;
 	size_t maxResponseSize; // <<< Maximum size of XML description that can be processed
 	CStringArray uniqueServiceNames;

@@ -60,6 +60,7 @@ public:
 	};
 
 	using List = ObjectList<Device>;
+	using OwnedList = OwnedObjectList<Device>;
 	using Object::getRoot;
 
 	RootDevice* getRoot() override;
