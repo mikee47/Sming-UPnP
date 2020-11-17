@@ -100,7 +100,7 @@ String Device::getField(Field desc) const
 	// Provide defaults for required fields
 	switch(desc) {
 	case Field::deviceType:
-		return DeviceUrn(getField(Field::domain), getField(Field::type), version());
+		return DeviceUrn(getField(Field::domain), getField(Field::type), version()).toString();
 	case Field::type:
 		return DeviceType::Basic;
 	case Field::friendlyName:

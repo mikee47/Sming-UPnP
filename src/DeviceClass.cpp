@@ -19,10 +19,19 @@
 
 #include "include/Network/UPnP/DeviceClass.h"
 #include "include/Network/UPnP/DeviceControl.h"
-#include <Network/SSDP/Usn.h>
 
 namespace UPnP
 {
+String DeviceClass::getField(Field desc) const
+{
+	switch(desc) {
+	case Field::deviceType:
+		return String(getDeviceType());
+	default:
+		return nullptr;
+	}
+}
+
 DeviceControl* DeviceClass::createObject(ControlPoint& controlPoint, const char* location,
 										 const char* uniqueServiceName) const
 {
@@ -45,7 +54,7 @@ DeviceControl* DeviceClass::createObject(ControlPoint& controlPoint, const char*
 		debug_e("[UPnP] Domain mismatch");
 		return nullptr;
 	}
-	if(usn.kind != Usn::Kind::deviceType || usn.type != getField(Field::type)) {
+	if(usn.kind != Usn::Kind::device || usn.type != getField(Field::type)) {
 		debug_e("[UPnP] Device type mismatch");
 		return nullptr;
 	}
@@ -56,7 +65,7 @@ DeviceControl* DeviceClass::createObject(ControlPoint& controlPoint, const char*
 
 	auto obj = createObject(controlPoint);
 	obj->baseUrl_ = baseUrl;
-	obj->udn_ = usn.uuid;
+	obj->udn_ = Uuid(usn.uuid);
 	return obj;
 }
 

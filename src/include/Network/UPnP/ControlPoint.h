@@ -24,7 +24,6 @@
 #include "ObjectList.h"
 #include <Network/SSDP/Message.h>
 #include <Network/HttpClient.h>
-#include "Urn.h"
 #include "Constants.h"
 #include "DeviceControl.h"
 #include "ServiceControl.h"
@@ -202,7 +201,6 @@ private:
 			ServiceControlCallback callback;
 		};
 		struct Desc {
-			UPnP::Urn urn;
 			DescriptionCallback callback;
 		};
 		enum class Kind {
@@ -213,35 +211,22 @@ private:
 
 		Search(const Urn& urn, DescriptionCallback callback) : kind(Kind::desc)
 		{
-			desc.urn = urn;
+			this->urn = String(urn);
 			desc.callback = callback;
 		}
 
 		Search(const DeviceClass& cls, DeviceControlCallback callback) : kind(Kind::device)
 		{
+			urn = String(cls.getDeviceType());
 			device.cls = &cls;
 			device.callback = callback;
 		}
 
 		Search(const ServiceClass& cls, ServiceControlCallback callback) : kind(Kind::service)
 		{
+			urn = String(cls.getServiceType());
 			service.cls = &cls;
 			service.callback = callback;
-		}
-
-		Urn getUrn() const
-		{
-			switch(kind) {
-			case Kind::desc:
-				return desc.urn;
-			case Kind::device:
-				return device.cls->getUrn();
-			case Kind::service:
-				return service.cls->getUrn();
-			default:
-				assert(false);
-				return Urn{};
-			}
 		}
 
 		String toString(Search::Kind kind) const
@@ -263,12 +248,13 @@ private:
 		{
 			String s = toString(kind);
 			s += " {";
-			s += ::toString(getUrn());
+			s += urn;
 			s += '}';
 			return s;
 		}
 
 		Kind kind;
+		String urn;
 		Device device;
 		Service service;
 		Desc desc;
