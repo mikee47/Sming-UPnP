@@ -27,7 +27,6 @@
 namespace UPnP
 {
 ControlPoint::List ControlPoint::controlPoints;
-DeviceClass::OwnedList ControlPoint::deviceClasses;
 HttpClient ControlPoint::http;
 
 bool ControlPoint::submitSearch(Search* search)
@@ -153,7 +152,11 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 		if(search.callback) {
 			auto device = search.cls->createObject(*this, location, uniqueServiceName);
 			if(device != nullptr) {
-				search.callback(device);
+				if(search.callback(*device)) {
+					devices.add(device);
+				} else {
+					delete device;
+				}
 			}
 		} else {
 			debug_w("[UPnP]: No device callback provided");
@@ -167,7 +170,11 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 		if(search.callback) {
 			auto device = search.cls->deviceClass().createObject(*this, location, uniqueServiceName);
 			if(device != nullptr) {
-				search.callback(device, device->getService(*search.cls));
+				if(search.callback(*device, *device->getService(*search.cls))) {
+					devices.add(device);
+				} else {
+					delete device;
+				}
 			}
 		} else {
 			debug_w("[UPnP]: No service callback provided");

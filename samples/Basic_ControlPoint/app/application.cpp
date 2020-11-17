@@ -20,28 +20,53 @@ void connectFail(const String& ssid, MacAddress bssid, WifiDisconnectReason reas
 
 void initUPnP()
 {
-	controlPoint.beginSearch(Delegate<void(Device_MediaRenderer*)>([](Device_MediaRenderer* device) {
+	controlPoint.beginSearch(Delegate<bool(Device_MediaRenderer&)>([](auto& device) {
 		// Stop at the first response
 		//		controlPoint.cancelSearch();
 
-		Serial.print(F("Found: "));
-		Serial.println(device->friendlyName());
-		Serial.print(F("  UDN: "));
-		Serial.println(device->udn());
+		Serial.print(_F("Found: "));
+		Serial.println(device.friendlyName());
+		Serial.print(_F("  UDN: "));
+		Serial.println(device.udn());
 
-		auto& service = device->getRenderingControl();
+		auto& render = device.getRenderingControl();
 
-		service.action_ListPresets(0, [](auto& result) {
-			Serial.print("Current presets: ");
+		render.action_ListPresets(0, [&device](auto& result) {
+			Serial.print(device.friendlyName());
+			Serial.print(" {");
+			Serial.print(device.udn());
+			Serial.print("}: ");
+
+			Serial.print(_F("Current presets = "));
 			Serial.println(result.CurrentPresetNameList);
 		});
 
-		service.action_GetVolume(0, nullptr, [](auto& result) {
-			Serial.print("Current Volume: ");
+		render.action_GetVolume(0, nullptr, [&device](auto& result) {
+			Serial.print(device.friendlyName());
+			Serial.print(" {");
+			Serial.print(device.udn());
+			Serial.print("}: ");
+
+			Serial.print(_F("Current Volume = "));
 			Serial.println(result.CurrentVolume);
 		});
 
-		//		delete device;
+		auto& conn = device.getConnectionManager();
+
+		conn.action_GetCurrentConnectionInfo(0, [&device](auto& result) {
+			Serial.print(device.friendlyName());
+			Serial.print(" {");
+			Serial.print(device.udn());
+			Serial.print("}: ");
+
+			Serial.println(_F("Current Connection Info = "));
+			result.printTo(Serial);
+			Serial.println(_F("---"));
+			Serial.println();
+		});
+
+		// Keep this device
+		return true;
 	}));
 }
 
