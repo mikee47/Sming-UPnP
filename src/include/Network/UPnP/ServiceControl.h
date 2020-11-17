@@ -34,6 +34,9 @@ public:
 	using OwnedList = OwnedObjectList<ServiceControl>;
 	using Field = Service::Field;
 
+	ServiceControl() = delete;
+	ServiceControl(const ServiceControl&) = delete;
+
 	ServiceControl(DeviceControl& device, const ServiceClass& serviceClass) : device(device), serviceClass(serviceClass)
 	{
 	}
