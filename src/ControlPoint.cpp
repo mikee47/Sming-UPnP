@@ -21,6 +21,7 @@
 #include "include/Network/UPnP/ControlPoint.h"
 #include <Network/SSDP/Usn.h>
 #include <Network/SSDP/Server.h>
+#include "include/Network/UPnP/ActionInfo.h"
 #include "main.h"
 
 namespace UPnP
@@ -205,12 +206,56 @@ bool ControlPoint::processDescriptionResponse(HttpConnection& connection, XML::D
 	return true;
 }
 
+bool ControlPoint::sendRequest(ActionInfo& act, const ActionInfo::Callback& callback)
+{
+	auto req = new HttpRequest;
+	req->setMethod(HttpMethod::POST);
+	req->uri = act.service.getField(Service::Field::controlURL);
+	req->setBody(act.toString(false));
+
+	String s = toString(MimeType::XML);
+	s += F("; charset=\"utf-8\"");
+	req->headers[HTTP_HEADER_CONTENT_TYPE] = s;
+
+	s = '"';
+	s += act.service.getField(Service::Field::serviceType);
+	s += '#';
+	s += act.actionName();
+	s += '"';
+	req->headers[F("SOAPACTION")] = s;
+
+#if DEBUG_VERBOSE_LEVEL == DBG
+	s = req->toString();
+	s += act.toString(true);
+	m_nputs(s.c_str(), s.length());
+	m_putc('\n');
+#endif
+
+	const Service* service = &act.service;
+	req->onRequestComplete([service, callback](HttpConnection& client, bool successful) -> int {
+		ActionInfo response(*service);
+		String s;
+		if(successful) {
+			s = client.getResponse()->getBody();
+#if DEBUG_VERBOSE_LEVEL == DBG
+			m_nputs(s.c_str(), s.length());
+			m_putc('\n');
+#endif
+			response.load(s);
+		}
+		callback(response);
+		return 0;
+	});
+
+	return sendRequest(req);
+}
+
 bool ControlPoint::sendRequest(HttpRequest* request)
 {
 	// Don't create response stream until headers are in: this allows requests to be queued
 	if(request != nullptr && request->getResponseStream() == nullptr) {
 		request->onHeadersComplete([this](HttpConnection& client, HttpResponse& response) -> int {
-			client.getRequest()->setResponseStream(new LimitedMemoryStream(maxDescriptionSize));
+			client.getRequest()->setResponseStream(new LimitedMemoryStream(maxResponseSize));
 			return 0;
 		});
 	}

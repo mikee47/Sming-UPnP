@@ -49,7 +49,11 @@ public:
 	 */
 	using ServiceControlCallback = Delegate<void(DeviceControl* device, ServiceControl* service)>;
 
-	ControlPoint(size_t maxDescriptionSize = 2048) : maxDescriptionSize(maxDescriptionSize)
+	/**
+	 * @brief Constructor
+	 * @param maxResponseSize Limits size of stream used to receive HTTP responses
+	 */
+	ControlPoint(size_t maxResponseSize = 2048) : maxResponseSize(maxResponseSize)
 	{
 		controlPoints.add(this);
 	}
@@ -103,11 +107,9 @@ public:
 
 	template <typename Device> bool beginSearch(Delegate<void(Device*)> callback)
 	{
-		// TODO: Keep owned list of these
-		// TODO: Create OwnedObjectList<>
+		auto& deviceClass = getDeviceClass<typename Device::Class>();
 		return submitSearch(new Search(
-			getDeviceClass<typename Device::Class>(),
-			DeviceControlCallback([callback](DeviceControl* device) { callback(reinterpret_cast<Device*>(device)); })));
+			deviceClass, [callback](DeviceControl* device) { callback(reinterpret_cast<Device*>(device)); }));
 	}
 
 	/**
@@ -149,6 +151,8 @@ public:
 	{
 		return false;
 	}
+
+	bool sendRequest(ActionInfo& request, const ActionInfo::Callback& callback);
 
 	/**
 	 * @brief Send a request
@@ -277,7 +281,7 @@ private:
 	static List controlPoints;
 	static DeviceClass::OwnedList deviceClasses;
 	static HttpClient http;
-	size_t maxDescriptionSize; // <<< Maximum size of XML description that can be processed
+	size_t maxResponseSize; // <<< Maximum size of XML description that can be processed
 	CStringArray uniqueServiceNames;
 	std::unique_ptr<Search> activeSearch;
 };

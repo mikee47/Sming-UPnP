@@ -117,9 +117,7 @@ String Device::getField(Field desc) const
 	}
 	case Field::baseURL: {
 		String url = getRoot()->getField(desc);
-		String s = getField(Field::type);
-		splitTypeVersion(s);
-		url += s;
+		url += getField(Field::type);
 		url += '/';
 		return url;
 	}

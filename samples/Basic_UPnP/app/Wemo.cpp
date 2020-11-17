@@ -30,7 +30,7 @@ void BasicEventService::handleAction(ActionInfo& info)
 
 	if(act == "SetBinaryState") {
 		bool state;
-		if(info.getArgBool("BinaryState", state)) {
+		if(info.getArg("BinaryState", state)) {
 			debug_i("state = %u", state);
 			device()->setState(state);
 			info.createResponse();

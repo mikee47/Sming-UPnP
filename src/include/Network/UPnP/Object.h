@@ -112,20 +112,6 @@ public:
 	 * but this method may be overridden if, for example, a fixed description is stored in an .xml file.
 	 */
 	virtual IDataSourceStream* createDescription();
-
-	/**
-	 * @brief Split a device or service type string into `deviceType` and `version`
-	 * @param type e.g. "Basic:1", on return gets reduced to "Basic"
-	 * @retval String the version "1"
-	 */
-	static String splitTypeVersion(String& type);
-
-	/**
-	 * @brief Get the version section from a type string
-	 * @param type e.g. "Basic:1"
-	 * @retval The version "1", or nullptr if not present
-	 */
-	static const char* getTypeVersion(const char* type);
 };
 
 /**

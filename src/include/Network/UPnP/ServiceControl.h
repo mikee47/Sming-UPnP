@@ -34,29 +34,11 @@ public:
 	using OwnedList = OwnedObjectList<ServiceControl>;
 	using Field = Service::Field;
 
-	class ArgList
-	{
-	public:
-		void addInput(const String& name, const String& value)
-		{
-			// TODO
-		}
-
-		void addOutput(const String& name)
-		{
-			// TODO
-		}
-	};
-
 	ServiceControl(DeviceControl& device, const ServiceClass& serviceClass) : device(device), serviceClass(serviceClass)
 	{
 	}
 
-	String getField(Field desc) const override
-	{
-		String s = serviceClass.getField(desc);
-		return s ?: Service::getField(desc);
-	}
+	String getField(Field desc) const override;
 
 	const ServiceClass& getClass() const
 	{
@@ -68,12 +50,7 @@ public:
 		return reinterpret_cast<ServiceControl*>(next());
 	}
 
-	template <typename... ParamTypes> bool DispatchRequest(Delegate<void(ParamTypes...)>, ArgList args)
-	{
-		// TODO
-		debug_e("%s: To be completed", __PRETTY_FUNCTION__);
-		return false;
-	}
+	bool sendRequest(ActionInfo& request, const ActionInfo::Callback& callback);
 
 	void handleAction(ActionInfo& info) override
 	{

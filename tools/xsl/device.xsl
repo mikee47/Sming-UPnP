@@ -202,28 +202,50 @@ public:
 
 </xsl:template>
 
-<xsl:template name="out-params">
-	<xsl:for-each select="s:argumentList/s:argument[s:direction='out']"><xsl:if test="position() > 1">,</xsl:if>
-		<xsl:value-of select="s:relatedStateVariable"/><xsl:text> </xsl:text><xsl:value-of select="s:name"/><xsl:text/>
-	</xsl:for-each>
-</xsl:template>
-
 <xsl:template match="s:action">
-	using <xsl:value-of select="s:name"/>_ResultCallback = Delegate&lt;void(<xsl:call-template name="out-params"/>)>;
+	<!-- Declare a struct to contain result arguments, with an appropriate callback delegate type -->
+	<xsl:variable name="ResultArgs">Result_<xsl:value-of select="s:name"/></xsl:variable>
+	<xsl:choose>
+	<xsl:when test="s:argumentList/s:argument[s:direction='out']">
+	struct <xsl:value-of select="$ResultArgs"/> {
+		<xsl:for-each select="s:argumentList/s:argument[s:direction='out']">
+		<xsl:value-of select="s:relatedStateVariable"/><xsl:text> </xsl:text><xsl:value-of select="s:name"/>;
+		</xsl:for-each>
+	};
+	using <xsl:value-of select="s:name"/>_ResultCallback = Delegate&lt;void(<xsl:value-of select="$ResultArgs"/>&amp; result)>;
+	</xsl:when>
+	<xsl:otherwise>
+	using <xsl:value-of select="s:name"/>_ResultCallback = Delegate&lt;void()>;
+	</xsl:otherwise>
+	</xsl:choose>
 
+	<!-- Action execution -->
 	bool action_<xsl:value-of select="s:name"/>(
 			<xsl:value-of select="s:name"/>_ResultCallback callback<xsl:for-each select="s:argumentList/s:argument[s:direction='in']">,
 			<xsl:value-of select="s:relatedStateVariable"/><xsl:text> </xsl:text><xsl:value-of select="s:name"/>
 			</xsl:for-each>)
 	{
-		ArgList list;<xsl:text/>
+		<!-- Build request and send it, using a lambda wrapper for response handling -->
+		UPnP::ActionInfo request(*this);
+		request.createRequest(F("<xsl:value-of select="s:name"/>"));<xsl:text/>
 		<xsl:for-each select="s:argumentList/s:argument[s:direction='in']">
-		list.addInput(F("<xsl:value-of select="s:name"/>"), String(<xsl:value-of select="s:name"/>));<xsl:text/>
+		request.addArg(F("<xsl:value-of select="s:name"/>"), <xsl:value-of select="s:name"/>);<xsl:text/>
 		</xsl:for-each>
-		<xsl:for-each select="s:argumentList/s:argument[s:direction='out']">
-		list.addOutput(F("<xsl:value-of select="s:name"/>"));<xsl:text/>
-		</xsl:for-each>
-		return DispatchRequest(callback, list);
+		return sendRequest(request, [callback](UPnP::ActionInfo&amp; response) {
+			<!-- Process response and invoke user callback -->
+			<xsl:choose>
+			<xsl:when test="s:argumentList/s:argument[s:direction='out']">
+			<xsl:value-of select="$ResultArgs"/> result;
+			<xsl:for-each select="s:argumentList/s:argument[s:direction='out']">
+			response.getArg(F("<xsl:value-of select="s:name"/>"), result.<xsl:value-of select="s:name"/>);<xsl:text/>
+			</xsl:for-each>
+			callback(result);
+			</xsl:when>
+			<xsl:otherwise>
+			callback();
+			</xsl:otherwise>
+			</xsl:choose>
+		});
 	}
 </xsl:template>
 
@@ -236,12 +258,32 @@ public:
 <xsl:template name="getvartype">
   <xsl:choose>
     <xsl:when test="s:dataType='string'">String</xsl:when>
-    <xsl:when test="s:dataType='ui4'">uint32_t</xsl:when>
+    <xsl:when test="s:dataType='ui1'">uint8_t</xsl:when>
     <xsl:when test="s:dataType='ui2'">uint16_t</xsl:when>
-    <xsl:when test="s:dataType='i4'">int32_t</xsl:when>
+    <xsl:when test="s:dataType='ui4'">uint32_t</xsl:when>
+    <xsl:when test="s:dataType='i1'">int8_t</xsl:when>
     <xsl:when test="s:dataType='i2'">int16_t</xsl:when>
+    <xsl:when test="s:dataType='i4'">int32_t</xsl:when>
+    <xsl:when test="s:dataType='int'">int</xsl:when>
     <xsl:when test="s:dataType='boolean'">bool</xsl:when>
-    <xsl:otherwise>
+    <xsl:when test="s:dataType='r4'">float</xsl:when>
+    <xsl:when test="s:dataType='r8'">double</xsl:when>
+    <xsl:when test="s:dataType='number'">double</xsl:when>
+    <xsl:when test="s:dataType='float'">float</xsl:when>
+    <xsl:when test="s:dataType='char'">char</xsl:when>
+<!--
+fixed.14.4
+date
+dateTime
+dateTime.tz
+time
+time.tz
+bin.base64
+bin.hex
+uri
+uuid
+ -->
+     <xsl:otherwise>
       <xsl:message terminate="yes">Unknown field type: "<xsl:value-of select="s:dataType"/>"</xsl:message>
     </xsl:otherwise>
   </xsl:choose>

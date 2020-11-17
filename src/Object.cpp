@@ -24,26 +24,6 @@
 
 namespace UPnP
 {
-String Object::splitTypeVersion(String& type)
-{
-	String ver;
-	int i = type.indexOf(':');
-	if(i >= 0) {
-		ver = type.substring(i + 1);
-		type.remove(i);
-	}
-	return ver;
-}
-
-const char* Object::getTypeVersion(const char* type)
-{
-	auto p = strchr(type, ':');
-	if(p != nullptr) {
-		++p;
-	}
-	return p;
-}
-
 void Object::sendMessage(Message& msg, MessageSpec& ms)
 {
 	if(formatMessage(msg, ms)) {
