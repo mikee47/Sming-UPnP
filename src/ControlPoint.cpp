@@ -115,8 +115,17 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 	debug_w("  usn: %s", uniqueServiceName);
 
 	switch(activeSearch->kind) {
-	case Search::Kind::desc:
-	case Search::Kind::descWithSsdp: {
+	case Search::Kind::ssdp: {
+		auto& search = *reinterpret_cast<SsdpSearch*>(activeSearch.get());
+		if(search.callback) {
+			search.callback(message);
+		} else {
+			debug_w("[UPnP]: No SSDP callback provided");
+		}
+		break;
+	}
+
+	case Search::Kind::desc: {
 		debug_d("Fetching description from URL: '%s'", location);
 		auto request = new HttpRequest(location);
 
@@ -131,36 +140,19 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 				// Process and invoke callback
 				XML::Document doc;
 				processDescriptionResponse(connection, doc);
-				if(activeSearch->kind == Search::Kind::desc) {
-					auto& search = *reinterpret_cast<DescriptionSearch*>(activeSearch.get());
-					if(search.callback) {
-						search.callback(connection, doc);
-					} else {
-						debug_w("[UPnP]: No description callback provided");
-					}
-				} else if(activeSearch->kind == Search::Kind::descWithSsdp) {
-					auto& search = *reinterpret_cast<DescriptionWithSsdpSearch*>(activeSearch.get());
-					if(search.callback) {
-						search.callback(connection, doc, search.message);
-					} else {
-						debug_w("[UPnP]: No description callback provided");
-					}
-					search.message.clear();
+				auto& search = *reinterpret_cast<DescriptionSearch*>(activeSearch.get());
+				if(search.callback) {
+					search.callback(connection, doc);
 				} else {
-					assert(false);
+					debug_w("[UPnP]: No description callback provided");
 				}
 			}
 			return 0;
 		});
 
-		if(activeSearch->kind == Search::Kind::descWithSsdp) {
-			auto& search = *reinterpret_cast<DescriptionWithSsdpSearch*>(activeSearch.get());
-			search.message = message;
-		}
-
 		// If request queue is full we can try again later
 		sendRequest(request);
-		return;
+		break;
 	}
 
 	case Search::Kind::device: {
@@ -292,9 +284,9 @@ bool ControlPoint::requestDescription(const String& url, DescriptionSearch::Call
 	debug_d("Fetching description from URL: '%s'", url.c_str());
 	auto request = new HttpRequest(url);
 
-	request->onRequestComplete([this, callback](HttpConnection& connection, bool success) -> int {
+	request->onRequestComplete([callback](HttpConnection& connection, bool success) -> int {
 		if(!success) {
-			debug_e("Fetch failed");
+			debug_e("[UPnP] Description fetch failed");
 		} else if(callback) {
 			// Process and invoke callback
 			XML::Document doc;

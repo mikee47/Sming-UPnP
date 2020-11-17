@@ -30,11 +30,11 @@ namespace UPnP
  */
 struct Search {
 	enum class Kind {
-		none,		  ///< No search active
-		desc,		  ///< Fetch description for any matching urn
-		descWithSsdp, ///< Description plus SSDP response
-		device,		  ///< Searching for pre-defined device class
-		service,	  ///< Searching for pre-defined service class
+		none,	///< No search active
+		ssdp,	///< SSDP response
+		desc,	///< Fetch description for any matching urn
+		device,  ///< Searching for pre-defined device class
+		service, ///< Searching for pre-defined service class
 	};
 
 	Search() = default;
@@ -56,10 +56,10 @@ struct Search {
 	String toString(Search::Kind kind) const
 	{
 		switch(kind) {
+		case Kind::ssdp:
+			return F("SSDP");
 		case Kind::desc:
 			return F("Description");
-		case Kind::descWithSsdp:
-			return F("Description with SSDP");
 		case Kind::device:
 			return F("Device");
 		case Kind::service:
@@ -83,6 +83,16 @@ struct Search {
 	String urn;
 };
 
+struct SsdpSearch : public Search {
+	using Callback = Delegate<void(SSDP::BasicMessage& message)>;
+
+	SsdpSearch(const Urn& urn, Callback callback) : Search(Kind::ssdp, urn), callback(callback)
+	{
+	}
+
+	Callback callback;
+};
+
 struct DescriptionSearch : public Search {
 	using Callback = Delegate<void(HttpConnection& connection, XML::Document& description)>;
 
@@ -90,17 +100,6 @@ struct DescriptionSearch : public Search {
 	{
 	}
 
-	Callback callback;
-};
-
-struct DescriptionWithSsdpSearch : public Search {
-	using Callback = Delegate<void(HttpConnection& connection, XML::Document& description, SSDP::Message& message)>;
-
-	DescriptionWithSsdpSearch(const Urn& urn, Callback callback) : Search(Kind::descWithSsdp, urn), callback(callback)
-	{
-	}
-
-	SSDP::Message message;
 	Callback callback;
 };
 
