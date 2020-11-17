@@ -201,7 +201,7 @@ private:
 	}
 
 	bool submitSearch(Search* search);
-	static bool processDescriptionResponse(HttpConnection& connection, XML::Document& description);
+	static void processDescriptionResponse(HttpConnection& connection, const DescriptionSearch::Callback& callback);
 
 	static List controlPoints;
 	DeviceClass::OwnedList deviceClasses;

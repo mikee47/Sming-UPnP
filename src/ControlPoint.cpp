@@ -130,23 +130,26 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 		auto request = new HttpRequest(location);
 
 		request->onRequestComplete([this, uniqueServiceName](HttpConnection& connection, bool success) -> int {
-			if(!success) {
-				debug_e("Fetch failed");
-			} else if(!bool(activeSearch)) {
+			if(!bool(activeSearch)) {
 				// Looks like search was cancelled
-			} else if(!uniqueServiceNames.contains(uniqueServiceName)) {
+				return 0;
+			}
+
+			if(uniqueServiceNames.contains(uniqueServiceName)) {
+				return 0;
+			}
+			if(success) {
 				// Don't retry
 				uniqueServiceNames += uniqueServiceName;
-				// Process and invoke callback
-				XML::Document doc;
-				processDescriptionResponse(connection, doc);
-				auto& search = *reinterpret_cast<DescriptionSearch*>(activeSearch.get());
-				if(search.callback) {
-					search.callback(connection, doc);
-				} else {
-					debug_w("[UPnP]: No description callback provided");
-				}
 			}
+
+			auto& search = *reinterpret_cast<DescriptionSearch*>(activeSearch.get());
+			if(search.callback) {
+				processDescriptionResponse(connection, search.callback);
+			} else {
+				debug_w("[UPnP]: No description callback provided");
+			}
+
 			return 0;
 		});
 
@@ -196,30 +199,35 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 	}
 }
 
-// TODO: How to inform client of failed fetch?
-bool ControlPoint::processDescriptionResponse(HttpConnection& connection, XML::Document& description)
+void ControlPoint::processDescriptionResponse(HttpConnection& connection, const DescriptionSearch::Callback& callback)
 {
 	debug_i("Received description");
 
+	XML::Document doc;
+	XML::Document* description = nullptr;
+
 	auto response = connection.getResponse();
 	if(response->stream == nullptr) {
-		debug_e("No body");
-		return false;
+		debug_e("[UPnP] No response body");
+	} else {
+		String content;
+		if(!response->stream->moveString(content)) {
+			// TODO: Implement XML streaming parser
+			debug_e("[UPnP] Description too big: increase maxResponseSize");
+		}
+
+		if(content.length() == 0) {
+			debug_e("[UPnP] No description body");
+		}
+
+		if(XML::deserialize(doc, content)) {
+			description = &doc;
+		} else {
+			debug_w("Failed to deserialize XML");
+		}
 	}
 
-	String content;
-	if(!response->stream->moveString(content)) {
-		// TODO: Implement XML streaming parser
-		debug_e("Description too big for buffer: Increase maxDescriptionSize");
-		return false;
-	}
-
-	if(!XML::deserialize(description, content)) {
-		debug_w("Failed to deserialize XML");
-		return false;
-	}
-
-	return true;
+	callback(connection, description);
 }
 
 bool ControlPoint::sendRequest(ActionInfo& act, const ActionInfo::Callback& callback)
@@ -287,11 +295,10 @@ bool ControlPoint::requestDescription(const String& url, DescriptionSearch::Call
 	request->onRequestComplete([callback](HttpConnection& connection, bool success) -> int {
 		if(!success) {
 			debug_e("[UPnP] Description fetch failed");
-		} else if(callback) {
-			// Process and invoke callback
-			XML::Document doc;
-			processDescriptionResponse(connection, doc);
-			callback(connection, doc);
+		}
+
+		if(callback) {
+			processDescriptionResponse(connection, callback);
 		} else {
 			debug_w("[UPnP]: No description callback provided");
 		}

@@ -83,6 +83,9 @@ struct Search {
 	String urn;
 };
 
+/**
+ * @brief Callback invoked for every matching SSDP message
+ */
 struct SsdpSearch : public Search {
 	using Callback = Delegate<void(SSDP::BasicMessage& message)>;
 
@@ -93,8 +96,12 @@ struct SsdpSearch : public Search {
 	Callback callback;
 };
 
+/**
+ * @brief Callback invoked when description received
+ * If HTTP request fails, description will be null
+ */
 struct DescriptionSearch : public Search {
-	using Callback = Delegate<void(HttpConnection& connection, XML::Document& description)>;
+	using Callback = Delegate<void(HttpConnection& connection, XML::Document* description)>;
 
 	DescriptionSearch(const Urn& urn, Callback callback) : Search(Kind::desc, urn), callback(callback)
 	{
