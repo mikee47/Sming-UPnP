@@ -207,7 +207,10 @@ void ControlPoint::processDescriptionResponse(HttpConnection& connection, const 
 	XML::Document* description = nullptr;
 
 	auto response = connection.getResponse();
-	if(response->stream == nullptr) {
+
+	if(!response->isSuccess()) {
+		debug_e("[UPnP] failed: %s", toString(response->code).c_str());
+	} else if(response->stream == nullptr) {
 		debug_e("[UPnP] No response body");
 	} else {
 		String content;
@@ -302,6 +305,7 @@ bool ControlPoint::requestDescription(const String& url, DescriptionSearch::Call
 		} else {
 			debug_w("[UPnP]: No description callback provided");
 		}
+
 		return 0;
 	});
 
