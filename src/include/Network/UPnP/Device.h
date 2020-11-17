@@ -63,6 +63,16 @@ public:
 	using OwnedList = OwnedObjectList<Device>;
 	using Object::getRoot;
 
+	String caption() const
+	{
+		String s;
+		s += friendlyName();
+		s += " {";
+		s += getField(Field::UDN);
+		s += '}';
+		return s;
+	}
+
 	RootDevice* getRoot() override;
 
 	bool isRoot() const

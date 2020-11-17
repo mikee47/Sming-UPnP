@@ -25,41 +25,27 @@ void initUPnP()
 		//		controlPoint.cancelSearch();
 
 		Serial.print(_F("Found: "));
-		Serial.println(device.friendlyName());
-		Serial.print(_F("  UDN: "));
-		Serial.println(device.udn());
+		Serial.println(device.caption());
 
 		auto& render = device.getRenderingControl();
 
 		render.action_ListPresets(0, [&device](auto& result) {
-			Serial.print(device.friendlyName());
-			Serial.print(" {");
-			Serial.print(device.udn());
-			Serial.print("}: ");
-
-			Serial.print(_F("Current presets = "));
+			Serial.print(device.caption());
+			Serial.print(_F(": Current presets = "));
 			Serial.println(result.CurrentPresetNameList);
 		});
 
 		render.action_GetVolume(0, nullptr, [&device](auto& result) {
-			Serial.print(device.friendlyName());
-			Serial.print(" {");
-			Serial.print(device.udn());
-			Serial.print("}: ");
-
-			Serial.print(_F("Current Volume = "));
+			Serial.print(device.caption());
+			Serial.print(_F(": Current Volume = "));
 			Serial.println(result.CurrentVolume);
 		});
 
 		auto& conn = device.getConnectionManager();
 
 		conn.action_GetCurrentConnectionInfo(0, [&device](auto& result) {
-			Serial.print(device.friendlyName());
-			Serial.print(" {");
-			Serial.print(device.udn());
-			Serial.print("}: ");
-
-			Serial.println(_F("Current Connection Info = "));
+			Serial.print(device.caption());
+			Serial.println(_F(": Current Connection Info = "));
 			result.printTo(Serial);
 			Serial.println(_F("---"));
 			Serial.println();
