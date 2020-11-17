@@ -22,10 +22,11 @@
 
 namespace UPnP
 {
-DeviceControl* DeviceClass::createObject(XML::Document& description) const
+DeviceControl* DeviceClass::createObject(const char* location, const char* usn) const
 {
 	auto obj = createObject();
-	obj->parseDescription(description);
+	obj->location = location;
+	obj->usn = usn;
 	return obj;
 }
 

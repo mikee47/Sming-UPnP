@@ -27,10 +27,11 @@ namespace UPnP
 ControlPoint::List ControlPoint::controlPoints;
 HttpClient ControlPoint::http;
 
-bool ControlPoint::beginSearch(const UPnP::Urn& urn, DescriptionCallback callback)
+bool ControlPoint::submitSearch(Search* search)
 {
-	if(searchUrn) {
+	if(bool(activeSearch)) {
 		debug_e("Search already in progress");
+		delete search;
 		return false;
 	}
 
@@ -38,42 +39,36 @@ bool ControlPoint::beginSearch(const UPnP::Urn& urn, DescriptionCallback callbac
 		return false;
 	}
 
-	searchUrn = urn;
-	searchCallback = callback;
+	activeSearch.reset(search);
 
 	auto message = new SSDP::MessageSpec(SSDP::MessageType::msearch, SSDP::SearchTarget::type, this);
 	message->setRepeat(2);
 	SSDP::server.messageQueue.add(message, 0);
-	debug_i("Searching for %s", toString(urn).c_str());
+	debug_i("Searching for %s", search->toString().c_str());
 
 	return true;
 }
 
-bool ControlPoint::beginSearch(const DeviceClass& cls, DeviceControlCallback callback)
+bool ControlPoint::cancelSearch()
 {
-	return beginSearch(cls.getUrn(), [&cls, callback](HttpConnection& connection, XML::Document& description) {
-		debug_w("Got description for %s", toString(cls.getUrn()).c_str());
-		auto device = cls.createObject(description);
-		description.clear();
-		callback(device);
-	});
-}
+	if(!bool(activeSearch)) {
+		return false;
+	}
 
-bool ControlPoint::beginSearch(const ServiceClass& cls, ServiceControlCallback callback)
-{
-	return beginSearch(cls.getUrn(), [&cls, callback](HttpConnection& connection, XML::Document& description) {
-		debug_w("Got description for %s", toString(cls.getUrn()).c_str());
-		auto device = cls.deviceClass().createObject(description);
-		description.clear();
-		auto service = device->getService(cls);
-		callback(device, service);
-	});
+	debug_i("Cancelling search for %s", activeSearch->toString().c_str());
+
+	activeSearch = nullptr;
+	return true;
 }
 
 bool ControlPoint::formatMessage(SSDP::Message& message, SSDP::MessageSpec& ms)
 {
 	// Override the search target
-	message["ST"] = searchUrn;
+	if(!bool(activeSearch)) {
+		assert(false);
+		return false;
+	}
+	message["ST"] = activeSearch->getUrn();
 	if(UPNP_VERSION_IS(2.0)) {
 		message[F("CPFN.UPNP.ORG")] = F("Sming ControlPoint");
 	}
@@ -89,7 +84,11 @@ void ControlPoint::onSsdpMessage(BasicMessage& msg)
 
 void ControlPoint::onNotify(SSDP::BasicMessage& message)
 {
-	String st = searchUrn;
+	if(!bool(activeSearch)) {
+		return;
+	}
+
+	String st = activeSearch->getUrn();
 	if(st != message["NT"] && st != message["ST"]) {
 		return;
 	}
@@ -100,55 +99,104 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 		return;
 	}
 
-	auto uniqueServiceName = message["USN"];
-	if(uniqueServiceName == nullptr) {
+	auto usn = message["USN"];
+	if(usn == nullptr) {
 		debug_d("CP: No valid USN header found.");
 		return;
 	}
 
-	if(uniqueServiceNames.contains(uniqueServiceName)) {
+	if(uniqueServiceNames.contains(usn)) {
 		return; // Already found
 	}
 
-	if(requestDescription(location, searchCallback)) {
-		// Request queued
-		// TODO: Consider what happens if request fails to complete
-		uniqueServiceNames += uniqueServiceName;
+	debug_w("Found match for %s", activeSearch->toString().c_str());
+	debug_w("  location: %s", location);
+	debug_w("  usn: %s", usn);
+
+	switch(activeSearch->kind) {
+	case Search::Kind::desc: {
+		debug_d("Fetching description from URL: '%s'", location);
+		auto request = new HttpRequest(location);
+
+		request->onRequestComplete([this, usn](HttpConnection& connection, bool success) -> int {
+			if(!success) {
+				debug_e("Fetch failed");
+			} else if(activeSearch == nullptr) {
+				// Looks like search was cancelled
+			} else if(!uniqueServiceNames.contains(usn)) {
+				// Don't retry
+				uniqueServiceNames += usn;
+				// Process and invoke callback
+				XML::Document doc;
+				processDescriptionResponse(connection, doc);
+				if(activeSearch->desc.callback) {
+					activeSearch->desc.callback(connection, doc);
+				} else {
+					debug_w("[UPnP]: No description callback provided");
+				}
+			}
+			return 0;
+		});
+
+		// If request queue is full we can try again later
+		sendRequest(request);
+		return;
+	}
+
+	case Search::Kind::device: {
+		auto& search = activeSearch->device;
+		uniqueServiceNames += usn;
+		if(search.callback) {
+			auto device = search.cls->createObject(location, usn);
+			search.callback(device);
+		} else {
+			debug_w("[UPnP]: No device callback provided");
+		}
+		break;
+	}
+
+	case Search::Kind::service: {
+		auto& search = activeSearch->service;
+		uniqueServiceNames += usn;
+		auto device = search.cls->deviceClass().createObject(location, usn);
+		if(search.callback) {
+			auto service = device->getService(*search.cls);
+			search.callback(device, service);
+		} else {
+			debug_w("[UPnP]: No service callback provided");
+		}
+		break;
+	}
+
+	default:
+		assert(false);
 	}
 }
 
 // TODO: How to inform client of failed fetch?
-void ControlPoint::processDescriptionResponse(HttpConnection& connection, DescriptionCallback callback)
+bool ControlPoint::processDescriptionResponse(HttpConnection& connection, XML::Document& description)
 {
 	debug_i("Received description");
 
 	auto response = connection.getResponse();
 	if(response->stream == nullptr) {
 		debug_e("No body");
-		return;
-	}
-
-	if(!callback) {
-		debug_w("ControlPoint: No description callback provided");
-		return;
+		return false;
 	}
 
 	String content;
 	if(!response->stream->moveString(content)) {
 		// TODO: Implement XML streaming parser
 		debug_e("Description too big for buffer: Increase maxDescriptionSize");
-		return;
+		return false;
 	}
 
-	m_nputs(content.c_str(), content.length());
-
-	XML::Document doc;
-	if(!XML::deserialize(doc, content)) {
+	if(!XML::deserialize(description, content)) {
 		debug_w("Failed to deserialize XML");
-		return;
+		return false;
 	}
 
-	callback(connection, doc);
+	return true;
 }
 
 bool ControlPoint::sendRequest(HttpRequest* request)
@@ -172,8 +220,13 @@ bool ControlPoint::requestDescription(const String& url, DescriptionCallback cal
 	request->onRequestComplete([this, callback](HttpConnection& connection, bool success) -> int {
 		if(!success) {
 			debug_e("Fetch failed");
+		} else if(callback) {
+			// Process and invoke callback
+			XML::Document doc;
+			processDescriptionResponse(connection, doc);
+			callback(connection, doc);
 		} else {
-			processDescriptionResponse(connection, callback);
+			debug_w("[UPnP]: No description callback provided");
 		}
 		return 0;
 	});

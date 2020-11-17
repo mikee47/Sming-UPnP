@@ -21,9 +21,4 @@
 
 namespace UPnP
 {
-String ServiceControl::getField(Field desc) const
-{
-	return serviceClass.getField(desc) ?: Service::getField(desc);
-}
-
 } // namespace UPnP

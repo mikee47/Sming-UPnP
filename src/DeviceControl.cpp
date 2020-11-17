@@ -30,21 +30,6 @@ DeviceControl::~DeviceControl()
 	}
 }
 
-void DeviceControl::parseDescription(XML::Document& description)
-{
-	auto get = [&](const String& path) -> String {
-		auto node = XML::getNode(description, path);
-		if(node == nullptr) {
-			debug_e("[UPnP] Not found: %s", path.c_str());
-			return nullptr;
-		}
-		return node->value();
-	};
-
-	friendlyName_ = get(F("/device/friendlyName"));
-	udn_ = get(F("/device/UDN"));
-}
-
 ServiceControl* DeviceControl::getService(const ServiceClass& serviceClass)
 {
 	ServiceControl* service;
@@ -63,18 +48,6 @@ ServiceControl* DeviceControl::getService(const ServiceClass& serviceClass)
 		}
 	}
 	return nullptr;
-}
-
-String DeviceControl::getField(Field desc) const
-{
-	switch(desc) {
-	case Field::friendlyName:
-		return String(friendlyName_);
-	case Field::UDN:
-		return String(udn_);
-	default:
-		return deviceClass.getField(desc) ?: Device::getField(desc);
-	}
 }
 
 } // namespace UPnP

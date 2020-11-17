@@ -51,7 +51,10 @@ public:
 	{
 	}
 
-	String getField(Field desc) const override;
+	String getField(Field desc) const override
+	{
+		return serviceClass.getField(desc) ?: Service::getField(desc);
+	}
 
 	const ServiceClass& getClass() const
 	{
@@ -63,7 +66,12 @@ public:
 		return reinterpret_cast<ServiceControl*>(next());
 	}
 
-	template <typename... ParamTypes> bool DispatchRequest(Delegate<void(ParamTypes...)>, ArgList args);
+	template <typename... ParamTypes> bool DispatchRequest(Delegate<void(ParamTypes...)>, ArgList args)
+	{
+		// TODO
+		debug_e("%s: To be completed", __PRETTY_FUNCTION__);
+		return false;
+	}
 
 	void handleAction(ActionInfo& info) override
 	{
