@@ -1,0 +1,14 @@
+<scpd xmlns="urn:schemas-upnp-org:service-1-0">
+	<specVersion>
+		<major>1</major>
+		<minor>0</minor>
+	</specVersion>
+	<serviceStateTable>
+		<stateVariable sendEvents="no">
+			<name>X_ScalarWebAPI</name>
+			<dataType>string</dataType>
+		</stateVariable>
+	</serviceStateTable>
+	<serviceType>urn:schemas-sony-com:service:ScalarWebAPI:1</serviceType>
+</scpd>
+
