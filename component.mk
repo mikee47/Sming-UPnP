@@ -6,49 +6,74 @@ UPNP_TOOLS		:= $(COMPONENT_PATH)/tools
 UPNP_SCHEMA		:= $(COMPONENT_PATH)/schema
 UPNP_INCDIR		:= $(COMPONENT_BUILD_BASE)/src/Network/UPnP
 
+# Application can set these in their component.mk file (which is always parsed first)
+UPNP_APP_SCHEMA	?=
+UPNP_APP_INCDIR	?= $(CMP_App_BUILD_BASE)/src/Network/UPnP
+
 COMPONENT_INCDIRS := \
 	src/include \
 	$(COMPONENT_BUILD_BASE)/src
 
-#
-# $1 -> Template
-# $2 -> Source .xml file
-# $3 -> Output .h file
+COMPONENT_SRCDIRS := src
+
+# Get base schema directory. For example:
+#	/home/user/Sming/Sming/Libraries/UPnP/schema/schemas-upnp-org/device/MediaServer1.xml
+# gives:
+#	/home/user/Sming/Sming/Libraries/UPnP/schema/
+upnp_schema_dir = $(call dirx,$(call dirx,$(call dirx,$1)))
+
+# Get schema relative to base schema directory. For example:
+#	/home/user/Sming/Sming/Libraries/UPnP/schema/schemas-upnp-org/device/MediaServer1.xml
+# gives:
+#	schemas-upnp-org/device/MediaServer1.xml
+upnp_schema_relpath = $(patsubst $(call upnp_schema_dir,$1)/%,%,$1)
+
+# Generate header or source for a device or service schema
+# $< -> Source .xml file path
+# $@ -> Output file
+# $1 -> Template kind (hpp or cpp)
 define upnp_generate_template
-$(info UPnP generate $1)
-$(info --> "$2")
-$(info <-- "$3")
-$(Q) $(UPNP_TOOLS)/gen.py -t $(UPNP_TOOLS)/xsl/$1.hpp.xsl -i $2 -o $3
-$(Q) $(UPNP_TOOLS)/gen.py -t $(UPNP_TOOLS)/xsl/$1.cpp.xsl -i $2 -o $(3:.h=.cpp)
+	$$(info UPnP generate $$(<F) -> $$(@F))
+	$(Q) $(UPNP_TOOLS)/gen.py -t $(UPNP_TOOLS)/xsl/$$(if $$(findstring /device/,$$<),DeviceControl,ServiceControl).$1.xsl -i $$< -o $$@
 endef
 
-#
-# $1 -> Source .xml file path
-# $2 -> Output .h file
+# Internal function to generate source creation targets
+# $1 -> Name of .xml schema, no path
+# $2 -> Directory for schema
+# $3 -> Directory for output source code
+define upnp_generate_target
+UPNP_INCFILES += $3$(1:.xml=.h)
+$3$(1:.xml=.h): $2$1
+	$(call upnp_generate_template,hpp)
+
+UPNP_SRCFILES += $3$(1:.xml=.cpp)
+$3$(1:.xml=.cpp): $2$1
+	$(call upnp_generate_template,cpp)
+endef
+
+# Generate all source targets from a schema directory
+# $1 -> Schema directory
+# $2 -> Source output directory
 define upnp_generate
-$(call upnp_generate_template,$(if $(findstring /device/,$1),DeviceControl,ServiceControl),$1,$2)
+UPNP_SRCFILES :=
+UPNP_INCFILES :=
+$$(foreach c,$$(call ListAllFiles,$1,*.xml),$$(eval $$(call upnp_generate_target,$$(notdir $$c),$$(dir $$c),$2/$$(call upnp_schema_relpath,$$(dir $$c)))))
 endef
 
-#
-UPNP_CONFIGS := $(patsubst $(UPNP_SCHEMA)/%,%,$(wildcard $(foreach d,$(call ListAllSubDirs,$(UPNP_SCHEMA)),$d/*.xml)))
-UPNP_INCFILES := $(foreach f,$(UPNP_CONFIGS),$(UPNP_INCDIR)/$(f:.xml=.h))
+# Create targets for library schema source generation
+$(eval $(call upnp_generate,$(COMPONENT_PATH)/schema,$(UPNP_INCDIR)))
+COMPONENT_SRCFILES		+= $(UPNP_SRCFILES)
 
-COMPONENT_SRCDIRS := \
-	src \
-	$(sort $(foreach f,$(UPNP_INCFILES),$(dir $f)))
+COMPONENT_PREREQUISITES	:= upnp_prerequisites 
+.PHONY: upnp_prerequisites
+upnp_prerequisites: $(UPNP_SRCFILES) $(UPNP_INCFILES)
 
-COMPONENT_PREREQUISITES := $(UPNP_INCFILES)
+# If specified, create targets for application source generation
+ifneq (,$(UPNP_APP_SCHEMA))
+$(eval $(call upnp_generate,$(UPNP_APP_SCHEMA),$(UPNP_APP_INCDIR)))
+COMPONENT_APPCODE := $(abspath $(sort $(call dirx,$(UPNP_SRCFILES))))
+CMP_App_PREREQUISITES += upnp_app_prerequisites 
 
-$(UPNP_INCFILES):
-	$(call upnp_generate,$(patsubst $(UPNP_INCDIR)/%,$(UPNP_SCHEMA)/%,$(@:.h=.xml)),$@)
-
-.PHONY: upnp-schema
-upnp-schema: ##Generate source files from XML descriptions
-	$(Q) $(MAKE) -B $(UPNP_INCFILES)
-
-UPnP-clean: upnp-schema-clean
-
-.PHONY: upnp-schema-clean
-upnp-schema-clean: ##Clean UPnP generated source files
-	-$(Q) rm -rf $(UPNP_INCDIR)
-
+.PHONY: upnp_app_prerequisites
+upnp_app_prerequisites: $(UPNP_SRCFILES) $(UPNP_INCFILES)
+endif
