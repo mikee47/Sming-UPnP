@@ -2,17 +2,13 @@ COMPONENT_DEPENDS := SSDP RapidXML
 
 COMPONENT_PYTHON_REQUIREMENTS := requirements.txt
 
-# Add this to main Sming build ?
-COMMON_SRCDIR	:= $(SMING_HOME)/out/common
-# ?
-
 UPNP_TOOLS		:= $(COMPONENT_PATH)/tools
 UPNP_SCHEMA		:= $(COMPONENT_PATH)/schema
-UPNP_INCDIR		:= $(COMMON_SRCDIR)/Network/UPnP
+UPNP_INCDIR		:= $(COMPONENT_BUILD_BASE)/src/Network/UPnP
 
 COMPONENT_INCDIRS := \
 	src/include \
-	$(COMMON_SRCDIR)
+	$(COMPONENT_BUILD_BASE)/src
 
 #
 # $1 -> Template
@@ -40,14 +36,11 @@ UPNP_INCFILES := $(foreach f,$(UPNP_CONFIGS),$(UPNP_INCDIR)/$(f:.xml=.h))
 COMPONENT_SRCDIRS := \
 	src \
 	$(sort $(foreach f,$(UPNP_INCFILES),$(dir $f)))
-	
-COMPONENT_TARGETS += $(UPNP_INCFILES)
 
-ifeq (,$(COMPONENT_RULE))
+COMPONENT_PREREQUISITES := $(UPNP_INCFILES)
+
 $(UPNP_INCFILES):
 	$(call upnp_generate,$(patsubst $(UPNP_INCDIR)/%,$(UPNP_SCHEMA)/%,$(@:.h=.xml)),$@)
-endif
-
 
 .PHONY: upnp-schema
 upnp-schema: ##Generate source files from XML descriptions
