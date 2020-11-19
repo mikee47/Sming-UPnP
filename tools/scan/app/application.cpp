@@ -4,7 +4,7 @@
 #include <Data/CString.h>
 
 #ifdef ARCH_HOST
-#include <io.h>
+#include <sys/stat.h>
 #include <Data/Stream/HostFileStream.h>
 #endif
 
@@ -219,7 +219,7 @@ void makedirs(const String& path)
 	char* p = s;
 	while((p = strchr(p, '/')) != nullptr) {
 		*p = '\0';
-		mkdir(s);
+		mkdir(s, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 		*p++ = '/';
 	}
 #endif
@@ -559,7 +559,7 @@ void gotIP(IpAddress ip, IpAddress netmask, IpAddress gateway)
 
 	initUPnP();
 }
-
+/*
 void urnTest(UPnP::Urn::Kind kind, const String& s)
 {
 	UPnP::Urn urn(s);
@@ -569,7 +569,7 @@ void urnTest(UPnP::Urn::Kind kind, const String& s)
 	assert(kind == urn.kind);
 }
 
-/*
+
 void testUrn()
 {
 #define URN_STRING_MAP(XX)                                                                                             \
