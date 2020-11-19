@@ -40,7 +40,7 @@ public:
 <xsl:call-template name="namespace-close"/>
 
 // Alias for easier use
-using <xsl:call-template name="control-class"/> = UPnP::service::<xsl:call-template name="urn-domain-cpp"/>::<xsl:call-template name="control-class"/>;
+using <xsl:call-template name="control-class"/> = UPnP::<xsl:call-template name="urn-domain-cpp"/>::service::<xsl:call-template name="control-class"/>;
 
 </xsl:template>
 
@@ -55,9 +55,8 @@ using <xsl:call-template name="control-class"/> = UPnP::service::<xsl:call-templ
 	<xsl:when test="s:argumentList/s:argument[s:direction='out']">
 	struct <xsl:call-template name="action-result"/> {
 		<xsl:for-each select="s:argumentList/s:argument[s:direction='out']">
-		<xsl:call-template name="variable-type"/><xsl:text> </xsl:text><xsl:call-template name="varname-cpp"/>;<xsl:text/>
+		<xsl:call-template name="variable-type"/><xsl:text> </xsl:text><xsl:call-template name="varname-cpp"/>;
 		</xsl:for-each>
-
 		size_t printTo(Print&amp; p);
 	};
 	using <xsl:call-template name="action-result-callback"/> = Delegate&lt;void(<xsl:call-template name="action-result"/>&amp; result)>;<xsl:text/>

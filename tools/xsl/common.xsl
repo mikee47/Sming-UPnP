@@ -41,21 +41,21 @@
 <!-- Namespace opening declaration -->
 <xsl:template name="namespace-open">
 namespace UPnP {
-namespace <xsl:call-template name="urn-kind"/> {
 namespace <xsl:call-template name="urn-domain-cpp"/> {
+namespace <xsl:call-template name="urn-kind"/> {
 </xsl:template>
 
 <!-- Namespace opening declaration -->
 <xsl:template name="namespace-close">
-} // namespace <xsl:call-template name="urn-domain"/>
 } // namespace <xsl:call-template name="urn-kind"/>
+} // namespace <xsl:call-template name="urn-domain-cpp"/>
 } // namespace UPnP
 </xsl:template>
 
 <!-- Breaks device/service URN into a valid C++ directory path -->
 <xsl:template name="header-path">
 <xsl:variable name="elem" select="str:tokenize(d:deviceType | d:serviceType | s:serviceType, ':')"/>
-<xsl:value-of select="concat($elem[3], '/', $elem[2], '/', $elem[4], $elem[5], '.h')"/>
+<xsl:value-of select="concat($elem[2], '/', $elem[3], '/', $elem[4], $elem[5], '.h')"/>
 </xsl:template>
 
 <!-- Device or service type with version, e.g. RenderingControl1 -->

@@ -23,9 +23,6 @@
 
 namespace UPnP
 {
-DECLARE_FSTR(upnp_org);
-DECLARE_FSTR(schemas_upnp_org);
-
 #define UPNP_DEVICETYPE_MAP(XX) XX(Basic, "Basic")
 
 namespace DeviceType
