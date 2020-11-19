@@ -21,9 +21,6 @@
 
 namespace UPnP
 {
-DEFINE_FSTR(upnp_org, "upnp-org");
-DEFINE_FSTR(schemas_upnp_org, "schemas-upnp-org");
-
 namespace DeviceType
 {
 #define XX(tag, str) DEFINE_FSTR(tag, str)

@@ -109,7 +109,7 @@ String Device::getField(Field desc) const
 	case Field::UDN:
 		return F("REQUIRED FIELD");
 	case Field::domain:
-		return schemas_upnp_org;
+		return F("schemas-upnp-org");
 	case Field::descriptionURL: {
 		String url = getField(Field::baseURL);
 		url += _F("desc.xml");
