@@ -202,7 +202,7 @@ void parseDevice(XML::Node* device, const Fetch& f)
 			} else {
 				Url url(f.url);
 				url.Path = String(node->value(), node->value_size());
-				descriptionQueue.add(Fetch(UPnP::Urn::Kind::service, String(url), String(f.root), svcType));
+				descriptionQueue.add({UPnP::Urn::Kind::service, String(url), String(f.root), svcType});
 			}
 
 			svc = svc->next_sibling();
@@ -242,24 +242,24 @@ void scheduleFetch(unsigned delay = 2000)
 
 void fetchNextDescription()
 {
-	Fetch fetch;
+	Fetch* fetch{nullptr};
 
 	for(;;) {
-		if(descriptionQueue.count() == 0) {
+		Fetch& f = descriptionQueue.find(Fetch::State::pending);
+		if(!f) {
 			beginNextSearch();
 			return;
 		}
 
-		Fetch& f = descriptionQueue.peek();
-		++f.attempts;
-		if(f.attempts <= maxDescriptionFetchAttempts) {
+		if(f.attempts < maxDescriptionFetchAttempts) {
+			++f.attempts;
 			Serial.print(_F("Fetching '"));
 			Serial.println(f.toString());
-			fetch = f;
+			fetch = &f;
 			break;
 		}
 		debug_e("Giving up on '%s' after %u attempts", f.toString().c_str(), f.attempts);
-		descriptionQueue.finished(f);
+		f.finished(false);
 	}
 
 	auto callback = [fetch](HttpConnection& connection, XML::Document* description) {
@@ -287,13 +287,13 @@ void fetchNextDescription()
 		}
 #endif
 
-		auto& f = fetch;
+		auto& f = *fetch;
 
 		if(!connection.getResponse()->isSuccess()) {
 			// Fetch failed, move to end of queue
 			if(f.attempts >= maxDescriptionFetchAttempts) {
 				debug_e("Giving up on '%s' after %u attempts", f.toString().c_str(), f.attempts);
-				descriptionQueue.finished(f);
+				f.finished(false);
 			} else {
 				Serial.print(_F("Fetch '"));
 				Serial.print(f.url);
@@ -309,7 +309,7 @@ void fetchNextDescription()
 				}
 			}
 
-			descriptionQueue.finished(f);
+			f.finished(true);
 
 			parseDescription(*description, f);
 		}
@@ -317,7 +317,8 @@ void fetchNextDescription()
 		scheduleFetch();
 	};
 
-	if(controlPoint.requestDescription(fetch.url, callback)) {
+	assert(fetch != nullptr);
+	if(controlPoint.requestDescription(fetch->url, callback)) {
 		fetchTimer.initializeMs<descriptionFetchTimeout>(fetchNextDescription);
 		fetchTimer.startOnce();
 	} else {
@@ -377,45 +378,42 @@ void onSsdp(SSDP::BasicMessage& msg)
 		}
 	}
 
-	ssdpQueue.finished(f);
+	f.finished(true);
 
 	descriptionQueue.add(f);
 	scheduleFetch();
 }
 
+void printQueue(const FetchList& list)
+{
+	Serial.println(list.toString());
+	for(unsigned i = 0; i < list.count(); ++i) {
+		Serial.print("  ");
+		Serial.println(list[i].toString());
+	}
+}
+
+void printScanSummary()
+{
+	printQueue(ssdpQueue);
+	printQueue(descriptionQueue);
+}
+
 void beginNextSearch()
 {
 	controlPoint.cancelSearch();
-	Fetch f = ssdpQueue.pop();
+	auto& f = ssdpQueue.find(Fetch::State::pending);
 	if(!bool(f)) {
 		Serial.println(_F("ALL DONE"));
+		printScanSummary();
 		System.restart(2000);
+		return;
 	}
 
 	controlPoint.beginSearch(f.urn(), onSsdp);
-	ssdpQueue.finished(f);
+	f.finished(true);
 }
 
-/*
-
-Scanning starts with root devices.
-
-From SSDP response we have:
-		ST: upnp:rootdevice
-		Location: http://192.168.1.254:1990/WFADevice.xml
-
-Create directory "192.168.1.254:1990/"
-
-Write "SSDP-upnp-rootdevice.txt" (replace : with -)
-
-Write "WFADevice.xml"
-
-Enumerate services from device description
-	<SCPDURL>/x_wfawlanconfig.xml</SCPDURL>
-
-Fetch and write each file with path.
-
- */
 void scan(const UPnP::Urn& urn)
 {
 	options = Option::networkScan | Option::writeDeviceTree | Option::writeDeviceSchema | Option::writeServiceSchema;
@@ -448,7 +446,7 @@ void scan(const UPnP::Urn& urn)
 
 #ifdef ARCH_HOST
 
-auto parseFile(const String& filename, const Fetch& f)
+void parseFile(const String& filename, const Fetch& f)
 {
 	XML::Document doc;
 	HostFileStream fs(f.root + filename);
@@ -476,9 +474,10 @@ void parseXml(String root, String filename)
 
 	Fetch f(UPnP::Urn::Kind::device, "file://.", root, nullptr);
 	parseFile(filename, f);
-	while((f = descriptionQueue.pop())) {
+	while((f = descriptionQueue.find(Fetch::State::pending))) {
 		Url url(f.url);
 		parseFile(url.Path, f);
+		f.finished(true);
 	}
 }
 
