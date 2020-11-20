@@ -1,12 +1,29 @@
 #pragma once
 
+#define FETCH_STATE_MAP(XX)                                                                                            \
+	XX(none)                                                                                                           \
+	XX(pending)                                                                                                        \
+	XX(success)                                                                                                        \
+	XX(failed)                                                                                                         \
+	XX(skipped)
+
 // Fetch one description file at a time to avoid swamping the TCP stack
 struct Fetch {
+	enum class State {
+#define XX(n) n,
+		FETCH_STATE_MAP(XX)
+#undef XX
+	};
+
+	using States = BitSet<uint8_t, State>;
+	static constexpr States completed{State::success | State::failed | State::skipped};
+
 	UPnP::Urn::Kind kind{};
 	String url;
 	String root;
 	String path;
-	unsigned attempts{0};
+	State state{State::none};
+	uint8_t attempts{0};
 
 	Fetch() = default;
 	Fetch(const Fetch&) = default;
@@ -23,6 +40,11 @@ struct Fetch {
 	explicit operator bool() const
 	{
 		return kind != UPnP::Urn::Kind::none;
+	}
+
+	bool isComplete() const
+	{
+		return completed[state];
 	}
 
 	bool operator==(const Fetch& other)
@@ -48,11 +70,39 @@ struct Fetch {
 		return s;
 	}
 
+	void finished(bool success)
+	{
+		state = success ? State::success : State::failed;
+	}
+
+	static String toString(State state)
+	{
+		switch(state) {
+#define XX(n)                                                                                                          \
+	case State::n:                                                                                                     \
+		return F(#n);
+			FETCH_STATE_MAP(XX)
+#undef XX
+		default:
+			assert(false);
+			return nullptr;
+		}
+	}
+
 	String toString() const
 	{
 		String s;
 		s += '(';
 		s += ::toString(kind);
+		if(isComplete()) {
+			s += ", ";
+			s += toString(state);
+		}
+		if(attempts > 1) {
+			s += ", ";
+			s += attempts;
+			s += _F(" attempts");
+		}
 		s += ") ";
 		if(url) {
 			s += url;
@@ -67,21 +117,11 @@ struct Fetch {
 	}
 };
 
-class FetchList
+class FetchList : public Vector<Fetch>
 {
 public:
 	FetchList(const String& name) : name(name)
 	{
-	}
-
-	bool contains(const Fetch& f)
-	{
-		return queue.contains(f) || done.contains(f);
-	}
-
-	bool isDone(const Fetch& f)
-	{
-		return done.contains(f);
 	}
 
 	bool add(Fetch f)
@@ -94,10 +134,13 @@ public:
 			return false;
 		}
 
+		f.state = Fetch::State::pending;
+		f.attempts = 0;
+
 		if(f.kind == UPnP::Urn::Kind::service) {
-			queue.insertElementAt(f, 0);
+			insertElementAt(f, 0);
 		} else {
-			queue.add(f);
+			Vector::addElement(f);
 		}
 
 		Serial.print(_F("Queuing '"));
@@ -106,60 +149,54 @@ public:
 		return true;
 	}
 
-	Fetch& peek()
+	Fetch& find(Fetch::States states)
 	{
-		if(queue.count() == 0) {
-			static Fetch nil;
-			nil = Fetch();
-			return nil;
-		} else {
-			return queue[0];
-		}
-	}
-
-	Fetch pop()
-	{
-		if(queue.count() == 0) {
-			return Fetch{};
+		for(unsigned i = 0; i < count(); ++i) {
+			auto& f = operator[](i);
+			if(states[f.state]) {
+				return f;
+			}
 		}
 
-		Fetch f = queue.at(0);
-		queue.remove(0);
-		return f;
+		static Fetch nil;
+		nil = Fetch();
+		return nil;
 	}
 
-	void finished(const Fetch& f)
-	{
-		done.add(f);
-		queue.removeElement(f);
-	}
+	using Vector::count;
 
-	void finished(const String& url)
+	unsigned count(Fetch::States states) const
 	{
-		Fetch f;
-		f.url = url;
-		finished(f);
-	}
+		unsigned n{0};
+		for(unsigned i = 0; i < count(); ++i) {
+			auto& f = elementAt(i);
+			if(states[f.state]) {
+				++n;
+			}
+		}
 
-	unsigned count() const
-	{
-		return queue.count();
+		return n;
 	}
 
 	String toString() const
 	{
 		String s;
 		s += name;
-		s += F(": fetched ");
-		s += done.count();
+		s += F(": completed ");
+		s += count(Fetch::completed);
 		s += F(" of ");
-		s += done.count() + queue.count();
+		s += count();
+		s += ", ";
+		s += count(Fetch::State::failed);
+		s += F(" failed.");
 		return s;
 	}
 
 private:
-	using List = Vector<Fetch>;
 	String name;
-	List queue;
-	List done;
 };
+
+inline String toString(Fetch::State state)
+{
+	return Fetch::toString(state);
+}
