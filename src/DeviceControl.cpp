@@ -22,13 +22,52 @@
 
 namespace UPnP
 {
+bool DeviceControl::configure(const Url& location, XML::Document& description)
+{
+	auto device = XML::getNode(description, _F("/device"));
+	if(device == nullptr) {
+		debug_e("[UPnP] device node not found");
+		return false;
+	}
+
+	auto getValue = [&](const char* name) -> String {
+		auto node = device->first_node(name);
+		if(node == nullptr) {
+			return nullptr;
+		}
+		return String(node->value(), node->value_size());
+	};
+
+	this->description.baseUrl = location.toString();
+	this->description.udn = getValue(_F("UDN"));
+	this->description.friendlyName = getValue(_F("friendlyName"));
+	this->description.manufacturer = getValue(_F("manufacturer"));
+	this->description.modelDescription = getValue(_F("modelDescription"));
+	this->description.modelName = getValue(_F("modelName"));
+	this->description.modelNumber = getValue(_F("modelNumber"));
+	this->description.serialNumber = getValue(_F("serialNumber"));
+	return true;
+}
+
 String DeviceControl::getField(Field desc) const
 {
 	switch(desc) {
 	case Field::UDN:
-		return toString(udn_);
+		return String(description.udn);
+	case Field::friendlyName:
+		return String(description.friendlyName);
+	case Field::manufacturer:
+		return String(description.manufacturer);
+	case Field::modelDescription:
+		return String(description.modelDescription);
+	case Field::modelName:
+		return String(description.modelName);
+	case Field::modelNumber:
+		return String(description.modelNumber);
+	case Field::serialNumber:
+		return String(description.serialNumber);
 	case Field::baseURL:
-		return baseUrl_;
+		return String(description.baseUrl);
 	default:
 		String s = deviceClass.getField(desc);
 		return s ?: Device::getField(desc);

@@ -1,6 +1,7 @@
 #include <SmingCore.h>
 #include <Network/UPnP/ControlPoint.h>
-#include <upnp/device/Panasonic/42AS500_Series/MediaRenderer1.h>
+#include <Network/UPnP/schemas-upnp-org/device/MediaRenderer1.h>
+#include <Network/UPnP/schemas-upnp-org/device/MediaServer1.h>
 
 // If you want, you can define WiFi settings globally in Eclipse Environment Variables
 #ifndef WIFI_SSID
@@ -13,15 +14,14 @@ namespace
 NtpClient* ntpClient;
 UPnP::ControlPoint controlPoint(8192);
 
-using MediaRenderer1 = UPnP::schemas_upnp_org::device::MediaRenderer1;
-
 void connectFail(const String& ssid, MacAddress bssid, WifiDisconnectReason reason)
 {
 	debugf("I'm NOT CONNECTED!");
 }
 
-void initUPnP()
+void findMediaRenderers()
 {
+	controlPoint.cancelSearch();
 	controlPoint.beginSearch(Delegate<bool(MediaRenderer1&)>([](auto& device) {
 		// Stop at the first response
 		//		controlPoint.cancelSearch();
@@ -53,9 +53,48 @@ void initUPnP()
 			Serial.println();
 		});
 
+		auto& transport = device.getAVTransport();
+		transport.action_GetDeviceCapabilities(0, [&device](auto& result) {
+			Serial.print(device.caption());
+			Serial.println(_F(": Device Capabilities = "));
+			result.printTo(Serial);
+			Serial.println(_F("---"));
+			Serial.println();
+		});
+
 		// Keep this device
 		return true;
 	}));
+
+	// Stop after 10 seconds
+	auto timer = new AutoDeleteTimer;
+	timer->initializeMs<10000>(InterruptCallback([]() { controlPoint.cancelSearch(); })).startOnce();
+}
+
+void findMediaServers()
+{
+	controlPoint.cancelSearch();
+	controlPoint.beginSearch(Delegate<bool(MediaServer1&)>([](auto& device) {
+		// Stop at the first response
+		//		controlPoint.cancelSearch();
+
+		Serial.print(_F("Found: "));
+		Serial.println(device.caption());
+
+		auto& dir = device.getContentDirectory();
+
+		dir.action_Browse("0", "BrowseMetadata", "*", 0, 10, nullptr, [&device](auto& result) {
+			Serial.print(device.caption());
+			Serial.print(_F(": Browse first 10 metadata: "));
+			result.printTo(Serial);
+		});
+
+		return true;
+	}));
+
+	// Stop after 5 seconds and do a search for renderers
+	auto timer = new AutoDeleteTimer;
+	timer->initializeMs<5000>(findMediaRenderers).startOnce();
 }
 
 void gotIP(IpAddress ip, IpAddress netmask, IpAddress gateway)
@@ -70,7 +109,7 @@ void gotIP(IpAddress ip, IpAddress netmask, IpAddress gateway)
 		});
 	};
 
-	initUPnP();
+	findMediaServers();
 }
 
 } // namespace

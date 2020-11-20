@@ -48,19 +48,30 @@ public:
 		return deviceClass;
 	}
 
-	const Uuid udn() const
+	const String udn() const
 	{
-		return udn_;
+		return String(description.udn);
 	}
 
 	bool sendRequest(ActionInfo& request, const ActionInfo::Callback& callback);
+
+	bool configure(const Url& location, XML::Document& description);
 
 private:
 	const DeviceClass& deviceClass;
 	ControlPoint& controlPoint;
 	ServiceControl::OwnedList services;
-	String baseUrl_; ///< Includes trailing path separator, e.g. "http://192.168.1.1/"
-	Uuid udn_;
+	struct Description {
+		CString baseUrl; ///< Includes trailing path separator, e.g. "http://192.168.1.1/"
+		CString udn;
+		CString friendlyName;
+		CString manufacturer;
+		CString modelName;
+		CString modelNumber;
+		CString modelDescription;
+		CString serialNumber;
+	};
+	Description description;
 };
 
 } // namespace UPnP

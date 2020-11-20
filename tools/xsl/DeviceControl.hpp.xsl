@@ -72,6 +72,9 @@ public:
 
 <xsl:call-template name="namespace-close"/>
 
+// Alias for easier use
+using <xsl:call-template name="control-class"/> = UPnP::<xsl:call-template name="urn-domain-cpp"/>::device::<xsl:call-template name="control-class"/>;
+
 </xsl:template>
 
 </xsl:stylesheet>

@@ -61,9 +61,11 @@ public:
 	 * @param controlPoint Device will use this to service requests
 	 * @param location URL of XML description file
 	 * @param uniqueServiceName Composite of UDN and device/service type
+	 * @param description Root device description
 	 * @retval DeviceControl* Constructed device object
 	 */
-	DeviceControl* createObject(ControlPoint& controlPoint, const char* location, const char* uniqueServiceName) const;
+	DeviceControl* createObject(ControlPoint& controlPoint, const Url& location, const String& uniqueServiceName,
+								XML::Document& description) const;
 
 	bool operator==(const DeviceClass& other) const
 	{

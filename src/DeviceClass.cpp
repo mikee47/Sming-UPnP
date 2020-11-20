@@ -32,23 +32,9 @@ String DeviceClass::getField(Field desc) const
 	}
 }
 
-DeviceControl* DeviceClass::createObject(ControlPoint& controlPoint, const char* location,
-										 const char* uniqueServiceName) const
+DeviceControl* DeviceClass::createObject(ControlPoint& controlPoint, const Url& location,
+										 const String& uniqueServiceName, XML::Document& description) const
 {
-	/*
-	 * Don't need the description name so throw it away.
-	 *
-	 * Note: UPnP 1.0 has URLBase but this is not permitted for later revisions.
-	 * If ths is encountered we should alert the use.
-	 */
-	const char* p = strrchr(location, '/');
-	String baseUrl;
-	if(p == nullptr) {
-		debug_e("[UPnP] Location invalid: %s", location);
-		return nullptr;
-	}
-	baseUrl.setString(location, 1 + p - location);
-
 	Usn usn(uniqueServiceName);
 	if(usn.domain != getField(Field::domain)) {
 		debug_e("[UPnP] Domain mismatch");
@@ -64,8 +50,11 @@ DeviceControl* DeviceClass::createObject(ControlPoint& controlPoint, const char*
 	}
 
 	auto obj = createObject(controlPoint);
-	obj->baseUrl_ = baseUrl;
-	obj->udn_ = Uuid(usn.uuid);
+	if(!obj->configure(location, description)) {
+		delete obj;
+		return nullptr;
+	}
+
 	return obj;
 }
 

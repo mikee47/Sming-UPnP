@@ -100,8 +100,8 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 		return;
 	}
 
-	auto uniqueServiceName = message["USN"];
-	if(uniqueServiceName == nullptr) {
+	String uniqueServiceName = message["USN"];
+	if(!uniqueServiceName) {
 		debug_d("CP: No valid USN header found.");
 		return;
 	}
@@ -112,125 +112,130 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 
 	debug_w("Found match for %s", activeSearch->toString().c_str());
 	debug_w("  location: %s", location);
-	debug_w("  usn: %s", uniqueServiceName);
+	debug_w("  usn: %s", uniqueServiceName.c_str());
 
-	switch(activeSearch->kind) {
-	case Search::Kind::ssdp: {
+	if(activeSearch->kind == Search::Kind::ssdp) {
 		auto& search = *reinterpret_cast<SsdpSearch*>(activeSearch.get());
 		if(search.callback) {
 			search.callback(message);
 		} else {
 			debug_w("[UPnP]: No SSDP callback provided");
 		}
-		break;
+		return;
 	}
 
-	case Search::Kind::desc: {
-		debug_d("Fetching description from URL: '%s'", location);
-		auto request = new HttpRequest(location);
+	debug_d("Fetching description from URL: '%s'", location);
+	auto request = new HttpRequest(location);
 
-		request->onRequestComplete([this, uniqueServiceName](HttpConnection& connection, bool success) -> int {
-			if(!bool(activeSearch)) {
-				// Looks like search was cancelled
-				return 0;
-			}
+	request->onRequestComplete([this, uniqueServiceName](HttpConnection& connection, bool success) -> int {
+		if(!bool(activeSearch)) {
+			// Looks like search was cancelled
+			return 0;
+		}
 
-			if(uniqueServiceNames.contains(uniqueServiceName)) {
-				return 0;
-			}
-			if(success) {
-				// Don't retry
-				uniqueServiceNames += uniqueServiceName;
-			}
+		if(uniqueServiceNames.contains(uniqueServiceName)) {
+			return 0;
+		}
+		if(success) {
+			// Don't retry
+			uniqueServiceNames += uniqueServiceName;
+		}
 
+		XML::Document description;
+		bool ok = processDescriptionResponse(connection, description);
+
+		switch(activeSearch->kind) {
+		case Search::Kind::desc: {
 			auto& search = *reinterpret_cast<DescriptionSearch*>(activeSearch.get());
 			if(search.callback) {
-				processDescriptionResponse(connection, search.callback);
+				search.callback(connection, ok ? &description : nullptr);
 			} else {
 				debug_w("[UPnP]: No description callback provided");
 			}
-
-			return 0;
-		});
-
-		// If request queue is full we can try again later
-		sendRequest(request);
-		break;
-	}
-
-	case Search::Kind::device: {
-		auto& search = *reinterpret_cast<DeviceSearch*>(activeSearch.get());
-		uniqueServiceNames += uniqueServiceName;
-		if(search.callback) {
-			auto device = search.cls.createObject(*this, location, uniqueServiceName);
-			if(device != nullptr) {
-				if(search.callback(*device)) {
-					devices.add(device);
-				} else {
-					delete device;
-				}
-			}
-		} else {
-			debug_w("[UPnP]: No device callback provided");
+			break;
 		}
-		break;
-	}
 
-	case Search::Kind::service: {
-		auto& search = *reinterpret_cast<ServiceSearch*>(activeSearch.get());
-		uniqueServiceNames += uniqueServiceName;
-		if(search.callback) {
-			auto device = search.cls.deviceClass().createObject(*this, location, uniqueServiceName);
-			if(device != nullptr) {
-				if(search.callback(*device, *device->getService(search.cls))) {
-					devices.add(device);
-				} else {
-					delete device;
+		case Search::Kind::device: {
+			auto& search = *reinterpret_cast<DeviceSearch*>(activeSearch.get());
+			uniqueServiceNames += uniqueServiceName;
+			if(search.callback) {
+				auto device =
+					search.cls.createObject(*this, connection.getRequest()->uri, uniqueServiceName, description);
+				if(device != nullptr) {
+					if(search.callback(*device)) {
+						devices.add(device);
+					} else {
+						delete device;
+					}
 				}
+			} else {
+				debug_w("[UPnP]: No device callback provided");
 			}
-		} else {
-			debug_w("[UPnP]: No service callback provided");
+			break;
 		}
-		break;
-	}
 
-	default:
-		assert(false);
-	}
+		case Search::Kind::service: {
+			auto& search = *reinterpret_cast<ServiceSearch*>(activeSearch.get());
+			uniqueServiceNames += uniqueServiceName;
+			if(search.callback) {
+				auto device = search.cls.deviceClass().createObject(*this, connection.getRequest()->uri,
+																	uniqueServiceName, description);
+				if(device != nullptr) {
+					if(search.callback(*device, *device->getService(search.cls))) {
+						devices.add(device);
+					} else {
+						delete device;
+					}
+				}
+			} else {
+				debug_w("[UPnP]: No service callback provided");
+			}
+			break;
+		}
+
+		default:
+			assert(false);
+		}
+
+		return 0;
+	});
+
+	// If request queue is full we can try again later
+	sendRequest(request);
 }
 
-void ControlPoint::processDescriptionResponse(HttpConnection& connection, const DescriptionSearch::Callback& callback)
+bool ControlPoint::processDescriptionResponse(HttpConnection& connection, XML::Document& description)
 {
 	debug_i("Received description");
-
-	XML::Document doc;
-	XML::Document* description = nullptr;
 
 	auto response = connection.getResponse();
 
 	if(!response->isSuccess()) {
 		debug_e("[UPnP] failed: %s", toString(response->code).c_str());
-	} else if(response->stream == nullptr) {
-		debug_e("[UPnP] No response body");
-	} else {
-		String content;
-		if(!response->stream->moveString(content)) {
-			// TODO: Implement XML streaming parser
-			debug_e("[UPnP] Description too big: increase maxResponseSize");
-		}
-
-		if(content.length() == 0) {
-			debug_e("[UPnP] No description body");
-		}
-
-		if(XML::deserialize(doc, content)) {
-			description = &doc;
-		} else {
-			debug_w("Failed to deserialize XML");
-		}
+		return false;
 	}
 
-	callback(connection, description);
+	if(response->stream == nullptr) {
+		debug_e("[UPnP] No response body");
+		return false;
+	}
+
+	String content;
+	if(!response->stream->moveString(content)) {
+		// TODO: Implement XML streaming parser
+		debug_e("[UPnP] Description too big: increase maxResponseSize");
+	}
+
+	if(content.length() == 0) {
+		debug_e("[UPnP] No description body");
+	}
+
+	if(!XML::deserialize(description, content)) {
+		debug_w("Failed to deserialize XML");
+		return false;
+	}
+
+	return true;
 }
 
 bool ControlPoint::sendRequest(ActionInfo& act, const ActionInfo::Callback& callback)
@@ -301,7 +306,9 @@ bool ControlPoint::requestDescription(const String& url, DescriptionSearch::Call
 		}
 
 		if(callback) {
-			processDescriptionResponse(connection, callback);
+			XML::Document description;
+			bool ok = processDescriptionResponse(connection, description);
+			callback(connection, ok ? &description : nullptr);
 		} else {
 			debug_w("[UPnP]: No description callback provided");
 		}
