@@ -83,11 +83,17 @@ void findMediaServers()
 
 		auto& dir = device.getContentDirectory();
 
-		dir.action_Browse("0", "BrowseMetadata", "*", 0, 10, nullptr, [&device](auto& result) {
-			Serial.print(device.caption());
-			Serial.print(_F(": Browse first 10 metadata: "));
+		auto printBrowseResult = [](ContentDirectory1::BrowseResult& result) {
+			Serial.println(_F("Browse result:"));
+			XML::Document doc;
+			XML::deserialize(doc, result.vResult);
+			XML::serialize(doc, Serial, true);
+			result.vResult = nullptr;
 			result.printTo(Serial);
-		});
+		};
+
+		dir.action_Browse("0", "BrowseMetadata", "*", 0, 10, nullptr, printBrowseResult);
+		dir.action_Browse("0", "BrowseDirectChildren", "*", 0, 10, nullptr, printBrowseResult);
 
 		return true;
 	}));
