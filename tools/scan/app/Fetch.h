@@ -64,15 +64,10 @@ struct Fetch {
 		s += path;
 		auto ext = path.lastIndexOf('.');
 		auto sep = path.lastIndexOf('/');
-		if(sep > ext) {
+		if(ext < 0 || sep > ext) {
 			s += ".xml";
 		}
 		return s;
-	}
-
-	void finished(bool success)
-	{
-		state = success ? State::success : State::failed;
 	}
 
 	static String toString(State state)
@@ -106,13 +101,11 @@ struct Fetch {
 		s += ") ";
 		if(url) {
 			s += url;
-			s += F("' -> '");
-			s += root;
-			s += path;
-			s += '\'';
-		} else {
-			s += path;
+			s += F("' -> ");
 		}
+		s += '\'';
+		s += fullPath();
+		s += '\'';
 		return s;
 	}
 };
@@ -124,29 +117,30 @@ public:
 	{
 	}
 
-	bool add(Fetch f)
+	Fetch& add(Fetch f)
 	{
 		if(f.kind > UPnP::Urn::Kind::service) {
 			f.kind = UPnP::Urn::Kind::none;
 		}
 
-		if(contains(f)) {
-			return false;
+		int i = indexOf(f);
+		if(i < 0) {
+			f.state = Fetch::State::pending;
+			f.attempts = 0;
+
+			if(f.kind == UPnP::Urn::Kind::service) {
+				insertElementAt(f, 0);
+				i = 0;
+			} else {
+				Vector::addElement(f);
+				i = count() - 1;
+			}
+
+			Serial.print(_F("Queuing '"));
+			Serial.println(f.toString());
 		}
 
-		f.state = Fetch::State::pending;
-		f.attempts = 0;
-
-		if(f.kind == UPnP::Urn::Kind::service) {
-			insertElementAt(f, 0);
-		} else {
-			Vector::addElement(f);
-		}
-
-		Serial.print(_F("Queuing '"));
-		Serial.println(f.toString());
-
-		return true;
+		return operator[](i);
 	}
 
 	Fetch& find(Fetch::States states)
@@ -189,7 +183,6 @@ public:
 		s += ", ";
 		s += count(Fetch::State::skipped);
 		s += F(" skipped, ");
-		s += ", ";
 		s += count(Fetch::State::failed);
 		s += F(" failed.");
 		return s;
