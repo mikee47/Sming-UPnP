@@ -86,13 +86,20 @@ namespace <xsl:call-template name="urn-kind"/> {
 <xsl:template name="urn-version"><xsl:value-of select="str:tokenize(d:deviceType | d:serviceType | s:serviceType, ':')[5]"/></xsl:template>
 
 <!-- State variable type -->
-<xsl:template name="variable-type">
+<xsl:template match="s:stateVariable" mode="type">
 	<xsl:param name="const"/>
-	<xsl:variable name="vartype" select="/s:scpd/s:serviceStateTable/s:stateVariable[s:name=current()/s:relatedStateVariable]/s:dataType"/>
 	<xsl:call-template name="cpp-vartype">
-		<xsl:with-param name="vartype" select="$vartype"/>
+		<xsl:with-param name="vartype" select="s:dataType"/>
 		<xsl:with-param name="const" select="$const"/>
 	</xsl:call-template>
+</xsl:template>
+
+<!-- Action argument type -->
+<xsl:template match="s:argument" mode="type">
+	<xsl:param name="const"/>
+	<xsl:apply-templates select="/s:scpd/s:serviceStateTable/s:stateVariable[s:name=current()/s:relatedStateVariable]" mode="type">
+		<xsl:with-param name="const" select="$const"/>
+	</xsl:apply-templates>
 </xsl:template>
 
 <!-- Name of action with weird prefixes removed -->
@@ -113,9 +120,9 @@ namespace <xsl:call-template name="urn-kind"/> {
 <!-- Method declaration for service action -->
 <xsl:template name="action-method">action_<xsl:call-template name="action-name"/>(
 		<xsl:for-each select="s:argumentList/s:argument[s:direction='in']">
-		<xsl:call-template name="variable-type">
+		<xsl:apply-templates select="." mode="type">
 			<xsl:with-param name="const" select="1"/>
-		</xsl:call-template>
+		</xsl:apply-templates>
 		<xsl:text> </xsl:text><xsl:call-template name="varname-cpp"/>,
 		</xsl:for-each>
 		<xsl:call-template name="action-result-callback"/> callback)<xsl:text/>

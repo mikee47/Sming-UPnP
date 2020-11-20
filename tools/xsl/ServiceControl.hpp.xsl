@@ -55,7 +55,7 @@ using <xsl:call-template name="control-class"/> = UPnP::<xsl:call-template name=
 	<xsl:when test="s:argumentList/s:argument[s:direction='out']">
 	struct <xsl:call-template name="action-result"/> {
 		<xsl:for-each select="s:argumentList/s:argument[s:direction='out']">
-		<xsl:call-template name="variable-type"/><xsl:text> </xsl:text><xsl:call-template name="varname-cpp"/>;
+		<xsl:apply-templates select="." mode="type"/><xsl:text> </xsl:text><xsl:call-template name="varname-cpp"/>;
 		</xsl:for-each>
 		size_t printTo(Print&amp; p);
 	};
