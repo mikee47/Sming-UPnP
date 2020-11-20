@@ -187,6 +187,9 @@ public:
 		s += F(" of ");
 		s += count();
 		s += ", ";
+		s += count(Fetch::State::skipped);
+		s += F(" skipped, ");
+		s += ", ";
 		s += count(Fetch::State::failed);
 		s += F(" failed.");
 		return s;
