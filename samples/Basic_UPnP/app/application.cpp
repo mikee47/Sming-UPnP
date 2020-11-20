@@ -51,7 +51,7 @@ int onHttpRequest(HttpServerConnection& connection, HttpRequest& request, HttpRe
 
 void simpleSearch()
 {
-	UPnP::ServiceUrn urn("dial-multiscreen-org", "dial", 1);
+	ServiceUrn urn("dial-multiscreen-org", "dial", 1);
 	controlPoint.beginSearch(urn, [](HttpConnection& connection, XML::Document& description) {
 		debug_e("Found service!");
 		auto node = XML::getNode(description, F("/device/friendlyName"));

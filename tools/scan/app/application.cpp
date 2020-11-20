@@ -115,7 +115,7 @@ void writeServiceSchema(XML::Document& scpd, const String& serviceType)
 {
 	XML::appendNode(scpd.first_node(), "serviceType", serviceType);
 
-	UPnP::Urn urn(serviceType);
+	Urn urn(serviceType);
 	String path = schemaDir;
 	path += "/service/";
 	path += urn.domain;
@@ -151,7 +151,7 @@ void writeDeviceSchema(XML::Node* device, const String& deviceType)
 		attr = attr->next_attribute();
 	}
 
-	UPnP::Urn urn(deviceType);
+	Urn urn(deviceType);
 	String path = schemaDir;
 	path += "/device/";
 	path += manufacturer;
@@ -195,7 +195,7 @@ void parseDevice(XML::Node* device, const Fetch& f)
 		Serial.println("*** deviceType NOT found ***");
 		return;
 	}
-	ssdpQueue.add(UPnP::Urn{deviceType});
+	ssdpQueue.add(Urn{deviceType});
 
 	if(options[Option::writeDeviceSchema]) {
 		writeDeviceSchema(device, deviceType);
@@ -209,7 +209,7 @@ void parseDevice(XML::Node* device, const Fetch& f)
 			node = svc->first_node("serviceType");
 			assert(node != nullptr);
 			String svcType(node->value(), node->value_size());
-			ssdpQueue.add(UPnP::Urn{svcType});
+			ssdpQueue.add(Urn{svcType});
 
 			auto node = svc->first_node("SCPDURL");
 			if(node == nullptr) {
@@ -218,7 +218,7 @@ void parseDevice(XML::Node* device, const Fetch& f)
 				Url url(f.url);
 				url.Path = String(node->value(), node->value_size());
 
-				auto& desc = descriptionQueue.add({UPnP::Urn::Kind::service, String(url), String(f.root), svcType});
+				auto& desc = descriptionQueue.add({Urn::Kind::service, String(url), String(f.root), svcType});
 				checkExisting(desc);
 			}
 
@@ -238,7 +238,7 @@ void parseDevice(XML::Node* device, const Fetch& f)
 
 void parseDescription(XML::Document& description, const Fetch& f)
 {
-	if(f.kind == UPnP::Urn::Kind::service) {
+	if(f.kind == Urn::Kind::service) {
 		if(options[Option::writeServiceSchema]) {
 			writeServiceSchema(description, f.path);
 		}
@@ -346,7 +346,7 @@ void fetchNextDescription()
 Fetch createDescFetch(const String& location)
 {
 	Fetch f;
-	f.kind = UPnP::Urn::Kind::device;
+	f.kind = Urn::Kind::device;
 	f.url = location;
 
 	// Create root directory for device
@@ -374,7 +374,7 @@ void onSsdp(SSDP::BasicMessage& msg)
 		deviceType = msg["NT"];
 	}
 
-	UPnP::Urn urn(deviceType);
+	Urn urn(deviceType);
 
 	if(options[Option::writeDeviceTree]) {
 		// Write SSDP response
@@ -431,7 +431,7 @@ void beginNextSearch()
 	f.state = Fetch::State::success;
 }
 
-void scan(const UPnP::Urn& urn)
+void scan(const Urn& urn)
 {
 	options = Option::networkScan | Option::writeDeviceTree | Option::writeDeviceSchema | Option::writeServiceSchema;
 	WifiStation.enable(true, false);
@@ -489,7 +489,7 @@ void parseXml(String root, String filename)
 		filename = "/" + filename;
 	}
 
-	Fetch f(UPnP::Urn::Kind::device, "file://.", root, nullptr);
+	Fetch f(Urn::Kind::device, "file://.", root, nullptr);
 	parseFile(filename, f);
 	while((f = descriptionQueue.find(Fetch::State::pending))) {
 		Url url(f.url);
@@ -521,7 +521,7 @@ bool parseCommands()
 
 	String cmd = parameters[0].text;
 	if(cmd == "scan") {
-		auto urn = UPnP::RootDeviceUrn();
+		auto urn = RootDeviceUrn();
 		if(parameters.count() > 1) {
 			auto str = parameters[1].text;
 			if(!urn.decompose(str)) {

@@ -18,7 +18,7 @@ struct Fetch {
 	using States = BitSet<uint8_t, State>;
 	static constexpr States completed{State::success | State::failed | State::skipped};
 
-	UPnP::Urn::Kind kind{};
+	Urn::Kind kind{};
 	String url;
 	String root;
 	String path;
@@ -28,18 +28,18 @@ struct Fetch {
 	Fetch() = default;
 	Fetch(const Fetch&) = default;
 
-	Fetch(UPnP::Urn::Kind kind, const String& url, const String& root, const String& path)
+	Fetch(Urn::Kind kind, const String& url, const String& root, const String& path)
 		: kind(kind), url(url), root(root), path(path)
 	{
 	}
 
-	Fetch(const UPnP::Urn& urn) : kind(urn.kind), path(urn.toString())
+	Fetch(const Urn& urn) : kind(urn.kind), path(urn.toString())
 	{
 	}
 
 	explicit operator bool() const
 	{
-		return kind != UPnP::Urn::Kind::none;
+		return kind != Urn::Kind::none;
 	}
 
 	bool isComplete() const
@@ -52,9 +52,9 @@ struct Fetch {
 		return path == other.path;
 	}
 
-	UPnP::Urn urn() const
+	Urn urn() const
 	{
-		return UPnP::Urn(path);
+		return Urn(path);
 	}
 
 	String fullPath() const
@@ -119,8 +119,8 @@ public:
 
 	Fetch& add(Fetch f)
 	{
-		if(f.kind > UPnP::Urn::Kind::service) {
-			f.kind = UPnP::Urn::Kind::none;
+		if(f.kind > Urn::Kind::service) {
+			f.kind = Urn::Kind::none;
 		}
 
 		int i = indexOf(f);
@@ -128,7 +128,7 @@ public:
 			f.state = Fetch::State::pending;
 			f.attempts = 0;
 
-			if(f.kind == UPnP::Urn::Kind::service) {
+			if(f.kind == Urn::Kind::service) {
 				insertElementAt(f, 0);
 				i = 0;
 			} else {
