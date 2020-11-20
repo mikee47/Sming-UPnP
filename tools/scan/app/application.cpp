@@ -93,13 +93,6 @@ Print* openStream(String path)
 	path.replace('&', '-');
 	path.replace(' ', '_');
 
-	if(!options[Option::overwriteExisting] && exist(path)) {
-		Serial.print(F("Skipping existing file '"));
-		Serial.print(path);
-		Serial.println("'");
-		return nullptr;
-	}
-
 	makedirs(path);
 	Serial.print(_F("Writing "));
 	Serial.println(path);
@@ -171,6 +164,23 @@ void writeDeviceSchema(XML::Node* device, const String& deviceType)
 	}
 }
 
+void checkExisting(Fetch& desc)
+{
+	if(options[Option::overwriteExisting]) {
+		return;
+	}
+
+	String path = desc.fullPath();
+	if(!exist(path)) {
+		return;
+	}
+
+	Serial.print(F("Skipping existing file '"));
+	Serial.print(path);
+	Serial.println('\'');
+	desc.state = Fetch::State::skipped;
+}
+
 void parseDevice(XML::Node* device, const Fetch& f)
 {
 	auto node = device->first_node("deviceType");
@@ -202,7 +212,10 @@ void parseDevice(XML::Node* device, const Fetch& f)
 			} else {
 				Url url(f.url);
 				url.Path = String(node->value(), node->value_size());
-				descriptionQueue.add({UPnP::Urn::Kind::service, String(url), String(f.root), svcType});
+
+				Fetch desc{UPnP::Urn::Kind::service, String(url), String(f.root), svcType};
+				descriptionQueue.add(desc);
+				checkExisting(desc);
 			}
 
 			svc = svc->next_sibling();
@@ -381,6 +394,8 @@ void onSsdp(SSDP::BasicMessage& msg)
 	f.finished(true);
 
 	descriptionQueue.add(f);
+	checkExisting(f);
+
 	scheduleFetch();
 }
 
