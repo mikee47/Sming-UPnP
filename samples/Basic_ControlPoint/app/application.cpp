@@ -92,8 +92,8 @@ void findMediaServers()
 			result.printTo(Serial);
 		};
 
-		dir.action_Browse("0", "BrowseMetadata", "*", 0, 10, nullptr, printBrowseResult);
-		dir.action_Browse("0", "BrowseDirectChildren", "*", 0, 10, nullptr, printBrowseResult);
+		dir.browse("0", ContentDirectory1::BrowseFlag::fs_BrowseMetadata, "*", 0, 10, nullptr, printBrowseResult);
+		dir.browse("0", ContentDirectory1::BrowseFlag::fs_BrowseDirectChildren, "*", 0, 10, nullptr, printBrowseResult);
 
 		return true;
 	}));

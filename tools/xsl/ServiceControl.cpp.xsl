@@ -21,6 +21,7 @@ static constexpr uint8_t versionNumber{<xsl:call-template name="urn-version"/>};
 } // namespace
 
 <xsl:variable name="controlClass"><xsl:call-template name="control-class"/></xsl:variable>
+
 String <xsl:value-of select="$controlClass"/>::Class::getField(Field desc) const
 {
 	switch(desc) {

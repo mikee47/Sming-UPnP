@@ -14,7 +14,9 @@
 <xsl:call-template name="file-hpp"/>
 <xsl:call-template name="namespace-open"/>
 
-class <xsl:call-template name="control-class"/>: public ServiceControl
+<xsl:variable name="controlClass"><xsl:call-template name="control-class"/></xsl:variable>
+
+class <xsl:value-of select="$controlClass"/>: public ServiceControl
 {
 public:
 	class Class: public ServiceClass
@@ -32,6 +34,18 @@ public:
 		}
 	}; // Class
 
+	/*
+	 * Pre-defined values (from allowed value lists)
+	 */
+	<xsl:for-each select="s:serviceStateTable/s:stateVariable[s:allowedValueList]">
+	struct <xsl:apply-templates select="." mode="name"/> {<xsl:text/>
+	<xsl:for-each select="s:allowedValueList/s:allowedValue">
+		DEFINE_FSTR_LOCAL(<xsl:apply-templates select="." mode="name"/>, "<xsl:value-of select="."/>")<xsl:text/>
+	</xsl:for-each>
+	};
+	</xsl:for-each>
+	
+	
 	using ServiceControl::ServiceControl;
 
 	<xsl:apply-templates select="s:actionList/s:action"/>
@@ -40,7 +54,7 @@ public:
 <xsl:call-template name="namespace-close"/>
 
 // Alias for easier use
-using <xsl:call-template name="control-class"/> = UPnP::<xsl:call-template name="urn-domain-cpp"/>::service::<xsl:call-template name="control-class"/>;
+using <xsl:value-of select="$controlClass"/> = UPnP::<xsl:call-template name="urn-domain-cpp"/>::service::<xsl:value-of select="$controlClass"/>;
 
 </xsl:template>
 

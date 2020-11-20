@@ -94,6 +94,12 @@ namespace <xsl:call-template name="urn-kind"/> {
 	</xsl:call-template>
 </xsl:template>
 
+<!-- State variable name -->
+<xsl:template match="s:stateVariable" mode="name"><xsl:value-of select="str:replace(s:name, 'A_ARG_TYPE_', '')"/></xsl:template>
+
+<!-- State variable allowed value name (tag) -->
+<xsl:template match="s:allowedValue" mode="name">fs_<xsl:value-of select="translate(., '-./', '___')"/></xsl:template>
+
 <!-- Action argument type -->
 <xsl:template match="s:argument" mode="type">
 	<xsl:param name="const"/>
