@@ -122,7 +122,10 @@ namespace <xsl:call-template name="urn-kind"/> {
 <xsl:template name="varname"><xsl:value-of select="str:replace(s:name, 'X_', '')"/></xsl:template>
 
 <!-- Name of variable/parameter, for C++ use -->
-<xsl:template name="varname-cpp">v<xsl:call-template name="varname"/></xsl:template>
+<xsl:template name="varname-cpp">
+	<xsl:variable name="name"><xsl:call-template name="varname"/></xsl:variable>
+	<xsl:value-of select="concat(translate(substring($name,1,1), $vUpper, $vLower), substring($name, 2))"/>
+</xsl:template>
 
 <!-- Name of structure containing action result -->
 <xsl:template name="action-result"><xsl:apply-templates select="." mode="name"/>Result</xsl:template>

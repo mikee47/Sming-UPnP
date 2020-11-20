@@ -34,13 +34,13 @@ void findMediaRenderers()
 		render.listPresets(0, [&device](auto& result) {
 			Serial.print(device.caption());
 			Serial.print(_F(": Current presets = "));
-			Serial.println(result.vCurrentPresetNameList);
+			Serial.println(result.currentPresetNameList);
 		});
 
 		render.getVolume(0, nullptr, [&device](auto& result) {
 			Serial.print(device.caption());
 			Serial.print(_F(": Current Volume = "));
-			Serial.println(result.vCurrentVolume);
+			Serial.println(result.currentVolume);
 		});
 
 		auto& conn = device.getConnectionManager();
@@ -86,9 +86,9 @@ void findMediaServers()
 		auto printBrowseResult = [](ContentDirectory1::BrowseResult& result) {
 			Serial.println(_F("Browse result:"));
 			XML::Document doc;
-			XML::deserialize(doc, result.vResult);
+			XML::deserialize(doc, result.result);
 			XML::serialize(doc, Serial, true);
-			result.vResult = nullptr;
+			result.result = nullptr;
 			result.printTo(Serial);
 		};
 
