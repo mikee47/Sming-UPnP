@@ -85,14 +85,19 @@ void makedirs(const String& path)
 }
 #endif
 
-Print* openStream(String path)
+String& validate(String& path)
 {
-#ifdef ARCH_HOST
 	path.replace(':', '-');
 	path.replace('?', '-');
 	path.replace('&', '-');
 	path.replace(' ', '_');
+	return path;
+}
 
+Print* openStream(String path)
+{
+#ifdef ARCH_HOST
+	validate(path);
 	makedirs(path);
 	Serial.print(_F("Writing "));
 	Serial.println(path);
@@ -106,7 +111,6 @@ Print* openStream(String path)
 
 	return nullptr;
 }
-
 void writeServiceSchema(XML::Document& scpd, const String& serviceType)
 {
 	XML::appendNode(scpd.first_node(), "serviceType", serviceType);
@@ -171,13 +175,14 @@ void checkExisting(Fetch& desc)
 	}
 
 	String path = desc.fullPath();
+	validate(path);
 	if(!exist(path)) {
 		return;
 	}
 
-	Serial.print(F("Skipping existing file '"));
+	Serial.print(F("Skipping '"));
 	Serial.print(path);
-	Serial.println('\'');
+	Serial.println(F("': already fetched."));
 	desc.state = Fetch::State::skipped;
 }
 
@@ -213,8 +218,7 @@ void parseDevice(XML::Node* device, const Fetch& f)
 				Url url(f.url);
 				url.Path = String(node->value(), node->value_size());
 
-				Fetch desc{UPnP::Urn::Kind::service, String(url), String(f.root), svcType};
-				descriptionQueue.add(desc);
+				auto& desc = descriptionQueue.add({UPnP::Urn::Kind::service, String(url), String(f.root), svcType});
 				checkExisting(desc);
 			}
 
@@ -272,7 +276,7 @@ void fetchNextDescription()
 			break;
 		}
 		debug_e("Giving up on '%s' after %u attempts", f.toString().c_str(), f.attempts);
-		f.finished(false);
+		f.state = Fetch::State::failed;
 	}
 
 	auto callback = [fetch](HttpConnection& connection, XML::Document* description) {
@@ -306,7 +310,7 @@ void fetchNextDescription()
 			// Fetch failed, move to end of queue
 			if(f.attempts >= maxDescriptionFetchAttempts) {
 				debug_e("Giving up on '%s' after %u attempts", f.toString().c_str(), f.attempts);
-				f.finished(false);
+				f.state = Fetch::State::failed;
 			} else {
 				Serial.print(_F("Fetch '"));
 				Serial.print(f.url);
@@ -322,7 +326,7 @@ void fetchNextDescription()
 				}
 			}
 
-			f.finished(true);
+			f.state = Fetch::State::success;
 
 			parseDescription(*description, f);
 		}
@@ -339,18 +343,11 @@ void fetchNextDescription()
 	}
 }
 
-void onSsdp(SSDP::BasicMessage& msg)
+Fetch createDescFetch(const String& location)
 {
-	String location = msg[HTTP_HEADER_LOCATION];
-
 	Fetch f;
 	f.kind = UPnP::Urn::Kind::device;
 	f.url = location;
-
-	if(ssdpQueue.contains(f)) {
-		debug_d("%s - ignoring, already processed", location.c_str());
-		return;
-	}
 
 	// Create root directory for device
 	String root = deviceDir;
@@ -363,6 +360,14 @@ void onSsdp(SSDP::BasicMessage& msg)
 
 	f.root = root;
 	f.path = url.getRelativePath();
+	return f;
+}
+
+void onSsdp(SSDP::BasicMessage& msg)
+{
+	String location = msg[HTTP_HEADER_LOCATION];
+
+	auto f = createDescFetch(location);
 
 	auto deviceType = msg["ST"];
 	if(deviceType == nullptr) {
@@ -370,7 +375,6 @@ void onSsdp(SSDP::BasicMessage& msg)
 	}
 
 	UPnP::Urn urn(deviceType);
-	f.kind = UPnP::Urn::Kind::device;
 
 	if(options[Option::writeDeviceTree]) {
 		// Write SSDP response
@@ -379,7 +383,7 @@ void onSsdp(SSDP::BasicMessage& msg)
 		filename += deviceType;
 		filename += ".txt";
 
-		auto fs = openStream(root + filename);
+		auto fs = openStream(f.root + filename);
 		if(fs != nullptr) {
 			fs->print(F("Message type: "));
 			fs->println(toString(msg.type));
@@ -391,10 +395,8 @@ void onSsdp(SSDP::BasicMessage& msg)
 		}
 	}
 
-	f.finished(true);
-
-	descriptionQueue.add(f);
-	checkExisting(f);
+	auto& desc = descriptionQueue.add(f);
+	checkExisting(desc);
 
 	scheduleFetch();
 }
@@ -426,7 +428,7 @@ void beginNextSearch()
 	}
 
 	controlPoint.beginSearch(f.urn(), onSsdp);
-	f.finished(true);
+	f.state = Fetch::State::success;
 }
 
 void scan(const UPnP::Urn& urn)
@@ -492,17 +494,18 @@ void parseXml(String root, String filename)
 	while((f = descriptionQueue.find(Fetch::State::pending))) {
 		Url url(f.url);
 		parseFile(url.Path, f);
-		f.finished(true);
+		f.state = Fetch::State::success;
 	}
 }
 
 void help()
 {
-	m_printf(_F("\n"
-				"UPnP Scan Utility. Options:\n"
-				"  scan   urn                Perform a local network scan (default is upnp:rootdevice) \n"
-				"  parse  root filenames...  Parse XML files from given root directory\n"
-				"\n"));
+	m_printf(_F("\r\n"
+				"UPnP Scan Utility. Options:\r\n"
+				"  scan   urn                Perform a local network scan (default is upnp:rootdevice)\r\n"
+				"  fetch  URL(s)...          Fetch descriptions\r\n"
+				"  parse  root filenames...  Parse XML files from given root directory\r\n"
+				"\r\n"));
 }
 
 /*
@@ -530,6 +533,20 @@ bool parseCommands()
 		return true;
 	}
 
+	if(cmd == "fetch") {
+		if(parameters.count() < 1) {
+			m_printf("No URL(s) specified\r\n");
+			return false;
+		}
+
+		for(unsigned i = 1; i < parameters.count(); ++i) {
+			descriptionQueue.add(createDescFetch(parameters[i].text));
+		}
+
+		scheduleFetch();
+		return true;
+	}
+
 	if(cmd == "parse") {
 		if(parameters.count() < 3) {
 			Serial.println(F("** Missing parameters"));
@@ -539,6 +556,7 @@ bool parseCommands()
 			for(unsigned i = 2; i < parameters.count(); ++i) {
 				parseXml(root, parameters[i].text);
 			}
+			printQueue(descriptionQueue);
 		}
 		return false;
 	}
@@ -563,13 +581,13 @@ void init()
 	if(p != nullptr && *p != '\0') {
 		deviceDir = p;
 	}
-	m_printf("DEVICE_DIR = '%s'\n", deviceDir);
+	m_printf("DEVICE_DIR = '%s'\r\n", deviceDir);
 
 	p = getenv(ENV_SCHEMA_DIR);
 	if(p != nullptr && *p != '\0') {
 		schemaDir = p;
 	}
-	m_printf("SCHEMA_DIR = '%s'\n", schemaDir);
+	m_printf("SCHEMA_DIR = '%s'\r\n", schemaDir);
 
 	if(!parseCommands()) {
 		System.restart();

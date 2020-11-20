@@ -24,7 +24,11 @@ If you want to use a specific search type, just add it to the command line::
 
    make run HOST_PARAMETERS='scan urn:schemas-upnp-org:service:ContentDirectory:1'
 
-This will take some time to complete. You should then find output in the following directories:
+This will take some time to complete. If there are any failures, you can retry
+by running the command again: any descriptions which have already been fetched will
+be skipped.
+
+You find output in the following directories:
 
 out/upnp/devices
    Contains a hierarchical map of all found devices on your local UPnP network.
