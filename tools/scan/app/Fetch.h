@@ -49,7 +49,7 @@ struct Fetch {
 
 	bool operator==(const Fetch& other)
 	{
-		return path == other.path;
+		return root == other.root && path == other.path;
 	}
 
 	Urn urn() const
