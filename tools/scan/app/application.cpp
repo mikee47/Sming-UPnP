@@ -83,7 +83,6 @@ void makedirs(const String& path)
 		*p++ = '/';
 	}
 }
-#endif
 
 String& validate(String& path)
 {
@@ -93,6 +92,7 @@ String& validate(String& path)
 	path.replace(' ', '_');
 	return path;
 }
+#endif
 
 Print* openStream(String path)
 {
@@ -170,6 +170,7 @@ void writeDeviceSchema(XML::Node* device, const String& deviceType)
 
 void checkExisting(Fetch& desc)
 {
+#ifdef ARCH_HOST
 	if(options[Option::overwriteExisting]) {
 		return;
 	}
@@ -184,6 +185,7 @@ void checkExisting(Fetch& desc)
 	Serial.print(path);
 	Serial.println(F("': already fetched."));
 	desc.state = Fetch::State::skipped;
+#endif
 }
 
 void parseDevice(XML::Node* device, const Fetch& f)
@@ -491,7 +493,7 @@ void parseXml(String root, String filename)
 
 	Fetch f(Urn::Kind::device, "file://.", root, nullptr);
 	parseFile(filename, f);
-	while((f = descriptionQueue.find(Fetch::State::pending))) {
+	while(auto& f = descriptionQueue.find(Fetch::State::pending)) {
 		Url url(f.url);
 		parseFile(url.Path, f);
 		f.state = Fetch::State::success;
@@ -594,6 +596,6 @@ void init()
 	}
 
 #else
-	scan();
+	scan(RootDeviceUrn());
 #endif
 }

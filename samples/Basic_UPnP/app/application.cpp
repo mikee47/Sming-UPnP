@@ -52,7 +52,12 @@ int onHttpRequest(HttpServerConnection& connection, HttpRequest& request, HttpRe
 void simpleSearch()
 {
 	ServiceUrn urn("dial-multiscreen-org", "dial", 1);
-	controlPoint.beginSearch(urn, [](HttpConnection& connection, XML::Document& description) {
+	controlPoint.beginSearch(urn, [](HttpConnection& connection, XML::Document* description) {
+		if(description == nullptr) {
+			Serial.println(F("Search failed"));
+			return;
+		}
+
 		debug_e("Found service!");
 		auto node = XML::getNode(description, F("/device/friendlyName"));
 		if(node == nullptr) {

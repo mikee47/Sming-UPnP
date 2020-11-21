@@ -23,7 +23,7 @@ void BasicEventService::handleAction(ActionInfo& info)
 	auto act = info.actionName();
 	if(act == "GetBinaryState") {
 		if(info.createResponse()) {
-			XML::appendNode(info.response, "BinaryState", device()->getState());
+			info.addArg("BinaryState", device()->getState());
 		}
 		return;
 	}
