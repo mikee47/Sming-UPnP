@@ -19,54 +19,14 @@
 
 #pragma once
 
-#include "ClassObject.h"
-#include "Service.h"
+#include "ObjectClass.h"
 
 namespace UPnP
 {
-class DeviceControl;
-class ServiceControl;
-class DeviceClass;
-
 /**
- * @brief Provides all information required for UPnP to construct a ServiceControl object
+ * @brief Provides information required for UPnP to construct a ServiceControl object
  */
-class ServiceClass : public ClassObject
-{
-	friend DeviceControl;
-
-public:
-	using List = ObjectList<ServiceClass>;
-	using Field = Service::Field;
-
-	ServiceClass(const DeviceClass& deviceClass) : devcls(deviceClass)
-	{
-	}
-
-	Urn getServiceType() const
-	{
-		return ServiceUrn(getField(Field::domain), getField(Field::type), version());
-	}
-
-	virtual String getField(Field desc) const;
-
-	const ServiceClass* getNext() const
-	{
-		return reinterpret_cast<const ServiceClass*>(next());
-	}
-
-	const DeviceClass& deviceClass() const
-	{
-		return devcls;
-	}
-
-	bool typeIs(const Urn& urn) const;
-
-protected:
-	virtual ServiceControl* createObject(DeviceControl& device, const ServiceClass& serviceClass) const = 0;
-
-private:
-	const DeviceClass& devcls;
+struct ServiceClass : public ObjectClass {
 };
 
 } // namespace UPnP

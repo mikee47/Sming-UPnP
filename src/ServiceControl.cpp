@@ -18,7 +18,7 @@
  ****/
 
 #include "include/Network/UPnP/ServiceControl.h"
-#include "include/Network/UPnP/DeviceControl.h"
+#include "include/Network/UPnP/RootDeviceControl.h"
 
 namespace UPnP
 {
@@ -38,7 +38,7 @@ bool ServiceControl::configure(const XML::Node* service)
 	description.controlURL = getUrl(F("controlURL"));
 	description.eventSubURL = getUrl(F("eventSubURL"));
 
-	debug_i("[UPnP] controlURL = %s", getField(Field::controlURL).c_str());
+	debug_i("[UPnP] controlURL = %s", description.controlURL.c_str());
 
 	return true;
 }
@@ -46,8 +46,14 @@ bool ServiceControl::configure(const XML::Node* service)
 String ServiceControl::getField(Field desc) const
 {
 	switch(desc) {
+	case Field::domain:
+		return getClass().group.domain;
+	case Field::type:
+		return getClass().type;
+	case Field::version:
+		return String(version());
 	case Field::baseURL:
-		return device.getField(Device::Field::baseURL);
+		return device().getField(Device::Field::baseURL);
 	case Field::controlURL:
 		if(description.controlURL) {
 			return getField(Field::baseURL) + description.controlURL.c_str();
@@ -61,14 +67,13 @@ String ServiceControl::getField(Field desc) const
 			return nullptr;
 		}
 	default:
-		String s = serviceClass.getField(desc);
-		return s ?: Service::getField(desc);
+		return Service::getField(desc);
 	}
 }
 
 bool ServiceControl::sendRequest(ActionInfo& request, const ActionInfo::Callback& callback)
 {
-	return device.sendRequest(request, callback);
+	return root().sendRequest(request, callback);
 }
 
 } // namespace UPnP

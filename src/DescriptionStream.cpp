@@ -25,13 +25,7 @@
 
 namespace UPnP
 {
-DescriptionStream::DescriptionStream(Object* object)
-{
-	assert(object != nullptr);
-	object_ = object;
-	segments[0].item = object;
-	getContent();
-}
+const SpecVersion specVersion{1, 0};
 
 void DescriptionStream::reset()
 {
@@ -55,14 +49,14 @@ void DescriptionStream::freeMem()
 	}
 }
 
-String DescriptionStream::getName() const
+void DescriptionStream::setName(const String& descriptionUrl)
 {
-	String s = object_->getRoot()->getField(Device::Field::descriptionURL);
-	int i = s.lastIndexOf('/');
+	int i = descriptionUrl.lastIndexOf('/');
 	if(i >= 0) {
-		s.remove(0, i + 1);
+		name = descriptionUrl.substring(i + 1);
+	} else {
+		name = descriptionUrl;
 	}
-	return s;
 }
 
 void DescriptionStream::getContent()
@@ -99,9 +93,8 @@ void DescriptionStream::getContent()
 			auto node = seg->item->getDescription(doc, DescType::header);
 
 			auto ver = XML::appendNode(node, _F("specVersion"));
-			SpecVersion spec = object_->getRoot()->getSpecVersion();
-			XML::appendNode(ver, _F("major"), spec.major);
-			XML::appendNode(ver, _F("minor"), spec.minor);
+			XML::appendNode(ver, _F("major"), specVersion.major);
+			XML::appendNode(ver, _F("minor"), specVersion.minor);
 
 			XML::serialize(doc, content, XML_PRETTY);
 			splitTag(node);

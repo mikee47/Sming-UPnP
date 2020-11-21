@@ -1,7 +1,9 @@
 #include <SmingCore.h>
 #include <Network/UPnP/ControlPoint.h>
-#include <Network/UPnP/schemas-upnp-org/device/MediaRenderer1.h>
-#include <Network/UPnP/schemas-upnp-org/device/MediaServer1.h>
+#include <Network/UPnP/schemas-upnp-org/ClassGroup.h>
+
+#include <FlashString/Array.hpp>
+#include <FlashString/Vector.hpp>
 
 // If you want, you can define WiFi settings globally in Eclipse Environment Variables
 #ifndef WIFI_SSID
@@ -29,38 +31,42 @@ void findMediaRenderers()
 		Serial.print(_F("Found: "));
 		Serial.println(device.caption());
 
-		auto& render = device.getRenderingControl();
+		auto render = device.getRenderingControl();
+		if(render != nullptr) {
+			render->listPresets(0, [&device](auto& result) {
+				Serial.print(device.friendlyName());
+				Serial.print(_F(": Current presets = "));
+				Serial.println(result.currentPresetNameList);
+			});
 
-		render.listPresets(0, [&device](auto& result) {
-			Serial.print(device.caption());
-			Serial.print(_F(": Current presets = "));
-			Serial.println(result.currentPresetNameList);
-		});
+			render->getVolume(0, nullptr, [&device](auto& result) {
+				Serial.print(device.friendlyName());
+				Serial.print(_F(": Current Volume = "));
+				Serial.println(result.currentVolume);
+			});
+		}
 
-		render.getVolume(0, nullptr, [&device](auto& result) {
-			Serial.print(device.caption());
-			Serial.print(_F(": Current Volume = "));
-			Serial.println(result.currentVolume);
-		});
+		auto conn = device.getConnectionManager();
+		if(conn != nullptr) {
+			conn->getCurrentConnectionInfo(0, [&device](auto& result) {
+				Serial.print(device.friendlyName());
+				Serial.println(_F(": Current Connection Info = "));
+				result.printTo(Serial);
+				Serial.println(_F("---"));
+				Serial.println();
+			});
+		}
 
-		auto& conn = device.getConnectionManager();
-
-		conn.getCurrentConnectionInfo(0, [&device](auto& result) {
-			Serial.print(device.caption());
-			Serial.println(_F(": Current Connection Info = "));
-			result.printTo(Serial);
-			Serial.println(_F("---"));
-			Serial.println();
-		});
-
-		auto& transport = device.getAVTransport();
-		transport.getDeviceCapabilities(0, [&device](auto& result) {
-			Serial.print(device.caption());
-			Serial.println(_F(": Device Capabilities = "));
-			result.printTo(Serial);
-			Serial.println(_F("---"));
-			Serial.println();
-		});
+		auto transport = device.getAVTransport();
+		if(transport != nullptr) {
+			transport->getDeviceCapabilities(0, [&device](auto& result) {
+				Serial.print(device.friendlyName());
+				Serial.println(_F(": Device Capabilities = "));
+				result.printTo(Serial);
+				Serial.println(_F("---"));
+				Serial.println();
+			});
+		}
 
 		// Keep this device
 		return true;
@@ -68,7 +74,13 @@ void findMediaRenderers()
 
 	// Stop after 10 seconds
 	auto timer = new AutoDeleteTimer;
-	timer->initializeMs<10000>(InterruptCallback([]() { controlPoint.cancelSearch(); })).startOnce();
+	timer->initializeMs<10000>(InterruptCallback([]() {
+		controlPoint.cancelSearch();
+		Serial.println();
+		Serial.println(_F("OK, I'm all done for now. What shall we do next?"));
+		Serial.println();
+	}));
+	timer->startOnce();
 }
 
 void findMediaServers()
@@ -81,19 +93,22 @@ void findMediaServers()
 		Serial.print(_F("Found: "));
 		Serial.println(device.caption());
 
-		auto& dir = device.getContentDirectory();
+		auto dir = device.getContentDirectory();
+		if(dir != nullptr) {
+			auto printBrowseResult = [&device](ContentDirectory1::BrowseResult& result) {
+				Serial.print(device.friendlyName());
+				Serial.println(_F(": Browse result ="));
+				XML::Document doc;
+				XML::deserialize(doc, result.result);
+				XML::serialize(doc, Serial, true);
+				result.result = nullptr;
+				result.printTo(Serial);
+			};
 
-		auto printBrowseResult = [](ContentDirectory1::BrowseResult& result) {
-			Serial.println(_F("Browse result:"));
-			XML::Document doc;
-			XML::deserialize(doc, result.result);
-			XML::serialize(doc, Serial, true);
-			result.result = nullptr;
-			result.printTo(Serial);
-		};
-
-		dir.browse("0", ContentDirectory1::BrowseFlag::fs_BrowseMetadata, "*", 0, 10, nullptr, printBrowseResult);
-		dir.browse("0", ContentDirectory1::BrowseFlag::fs_BrowseDirectChildren, "*", 0, 10, nullptr, printBrowseResult);
+			dir->browse("0", ContentDirectory1::BrowseFlag::fs_BrowseMetadata, "*", 0, 10, nullptr, printBrowseResult);
+			dir->browse("0", ContentDirectory1::BrowseFlag::fs_BrowseDirectChildren, "*", 0, 10, nullptr,
+						printBrowseResult);
+		}
 
 		return true;
 	}));
@@ -101,6 +116,12 @@ void findMediaServers()
 	// Stop after 5 seconds and do a search for renderers
 	auto timer = new AutoDeleteTimer;
 	timer->initializeMs<5000>(findMediaRenderers).startOnce();
+}
+
+void initUPnP()
+{
+	UPnP::schemas_upnp_org::registerClasses();
+	findMediaServers();
 }
 
 void gotIP(IpAddress ip, IpAddress netmask, IpAddress gateway)
@@ -115,7 +136,7 @@ void gotIP(IpAddress ip, IpAddress netmask, IpAddress gateway)
 		});
 	};
 
-	findMediaServers();
+	initUPnP();
 }
 
 } // namespace

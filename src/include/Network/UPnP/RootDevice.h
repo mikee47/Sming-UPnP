@@ -34,16 +34,6 @@ class RootDevice : public Device
 public:
 	using List = ObjectList<RootDevice>;
 
-	virtual SpecVersion getSpecVersion()
-	{
-		return {1, 0};
-	}
-
-	RootDevice* getRoot() override
-	{
-		return this;
-	}
-
 	Url getURL(const String& path);
 
 	String getField(Field desc) const override;

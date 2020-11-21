@@ -10,36 +10,24 @@
 
 <xsl:template match="d:device">
 <xsl:call-template name="file-cpp"/>
-<xsl:call-template name="namespace-open"/>
 
-namespace {
-/*
- * Interface specification
- */
-DEFINE_FSTR_LOCAL(FS_domain, "<xsl:call-template name="urn-domain"/>");
-DEFINE_FSTR_LOCAL(FS_type, "<xsl:call-template name="urn-type"/>");
-static constexpr uint8_t versionNumber{<xsl:call-template name="urn-version"/>};
+namespace UPnP {
+namespace <xsl:call-template name="urn-domain-cpp"/> {
 
-} // namespace
+extern const ClassGroup classGroup;
 
-String <xsl:call-template name="control-class"/>::Class::getField(Field desc) const
-{
-	switch(desc) {
-	case Field::domain:
-		return FS_domain;
-	case Field::type:
-		return FS_type;
-	case Field::version:
-		return String(versionNumber);
-	default:
-		return DeviceClass::getField(desc);
-	}
-}
-		
-Object::Version <xsl:call-template name="control-class"/>::Class::version() const
-{
-	return versionNumber;
-}
+namespace <xsl:call-template name="urn-kind"/> {
+
+DEFINE_FSTR_LOCAL(type, "<xsl:call-template name="urn-type"/>");
+
+const DeviceClass <xsl:call-template name="control-class"/>::class_ PROGMEM = {
+	classGroup,
+	type,
+	<xsl:call-template name="urn-version"/>,
+	Urn::Kind::device,
+	<xsl:call-template name="control-class"/>::createObject
+};
+
 
 <xsl:call-template name="namespace-close"/>
 

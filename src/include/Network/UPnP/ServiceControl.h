@@ -20,6 +20,7 @@
 #pragma once
 
 #include "ServiceClass.h"
+#include "Service.h"
 #include <Data/CString.h>
 #include <memory>
 
@@ -37,15 +38,22 @@ public:
 	ServiceControl() = delete;
 	ServiceControl(const ServiceControl&) = delete;
 
-	ServiceControl(DeviceControl& device, const ServiceClass& serviceClass) : device(device), serviceClass(serviceClass)
+	ServiceControl(DeviceControl& device) : Service(reinterpret_cast<Device&>(device))
 	{
+	}
+
+	RootDeviceControl& root() const
+	{
+		return reinterpret_cast<RootDeviceControl&>(Service::root());
 	}
 
 	String getField(Field desc) const override;
 
-	const ServiceClass& getClass() const
+	virtual const ServiceClass& getClass() const = 0;
+
+	Version version() const override
 	{
-		return serviceClass;
+		return getClass().version();
 	}
 
 	ServiceControl* getNext() const
@@ -61,9 +69,12 @@ public:
 
 	bool configure(const XML::Node* service);
 
+	DeviceControl& device() const
+	{
+		return reinterpret_cast<DeviceControl&>(Service::device());
+	}
+
 private:
-	DeviceControl& device;
-	const ServiceClass& serviceClass;
 	struct Description {
 		CString controlURL;
 		CString eventSubURL;

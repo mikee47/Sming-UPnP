@@ -1,5 +1,5 @@
 /**
- * DeviceControl.h
+ * DeviceControl.cpp
  *
  * Copyright 2020 mikee47 <mike@sillyhouse.net>
  *
@@ -22,17 +22,8 @@
 
 namespace UPnP
 {
-bool DeviceControl::configure(const Url& location, XML::Document& description)
+bool DeviceControl::configure(XML::Node* device)
 {
-	auto device = XML::getNode(description, _F("/device"));
-	if(device == nullptr) {
-		debug_e("[UPnP] device node not found");
-		return false;
-	}
-
-	Url baseUrl(location);
-	baseUrl.Path = nullptr;
-	this->description.baseUrl = baseUrl.toString();
 	this->description.udn = XML::getValue(device, _F("UDN"));
 	this->description.friendlyName = XML::getValue(device, _F("friendlyName"));
 	this->description.manufacturer = XML::getValue(device, _F("manufacturer"));
@@ -49,11 +40,26 @@ bool DeviceControl::configure(const Url& location, XML::Document& description)
 			String svcType = XML::getValue(svc, _F("serviceType"));
 			auto service = getService(svcType);
 			if(service == nullptr) {
-				debug_w("[UPnP] Service not found in device class: %s", svcType.c_str());
+				debug_w("[UPnP] Service not registered: %s", svcType.c_str());
 			} else {
 				service->configure(svc);
 			}
 			svc = svc->next_sibling();
+		}
+	}
+
+	auto deviceList = device->first_node("deviceList");
+	if(deviceList != nullptr) {
+		auto devNode = deviceList->first_node();
+		while(devNode != nullptr) {
+			String devType = XML::getValue(devNode, _F("deviceType"));
+			auto dev = getDevice(devType);
+			if(dev == nullptr) {
+				debug_w("[UPnP] Device not registered: %s", devType.c_str());
+			} else {
+				dev->configure(devNode);
+			}
+			devNode = devNode->next_sibling();
 		}
 	}
 
@@ -63,6 +69,12 @@ bool DeviceControl::configure(const Url& location, XML::Document& description)
 String DeviceControl::getField(Field desc) const
 {
 	switch(desc) {
+	case Field::domain:
+		return getClass().group.domain;
+	case Field::type:
+		return getClass().type;
+	case Field::version:
+		return String(version());
 	case Field::UDN:
 		return String(description.udn);
 	case Field::friendlyName:
@@ -78,67 +90,56 @@ String DeviceControl::getField(Field desc) const
 	case Field::serialNumber:
 		return String(description.serialNumber);
 	case Field::baseURL:
-		return String(description.baseUrl);
+		return root().baseURL();
 	default:
-		String s = deviceClass.getField(desc);
-		return s ?: Device::getField(desc);
+		return Device::getField(desc);
 	}
 }
 
 ServiceControl* DeviceControl::getService(const Urn& serviceType)
 {
-	ServiceControl* service;
-	for(service = services.head(); service != nullptr; service = service->getNext()) {
+	if(!serviceType) {
+		debug_e("[UPnP] DeviceControl::getService(): Invalid serviceType");
+		return nullptr;
+	}
+
+	for(auto service = firstService(); service != nullptr; service = service->getNext()) {
 		if(service->getClass().typeIs(serviceType)) {
 			return service;
 		}
 	}
 
-	for(auto cls = deviceClass.firstService(); cls != nullptr; cls = cls->getNext()) {
-		if(cls->typeIs(serviceType)) {
-			auto service = cls->createObject(*this, *cls);
-			services.add(service);
-			return service;
-		}
-	}
-
-	return nullptr;
-}
-
-ServiceControl* DeviceControl::getService(const String& serviceType)
-{
-	Urn urn;
-	if(!urn.decompose(serviceType)) {
-		debug_e("** Invalid serviceType: %s", serviceType.c_str());
+	auto cls = ControlPoint::findServiceClass(serviceType);
+	if(cls == nullptr) {
 		return nullptr;
 	}
 
-	return getService(urn);
+	auto service = cls->createService(*this);
+	addService(service);
+	return service;
 }
 
-ServiceControl* DeviceControl::getService(const ServiceClass& serviceClass)
+DeviceControl* DeviceControl::getDevice(const Urn& deviceType)
 {
-	ServiceControl* service;
-	for(service = services.head(); service != nullptr; service = service->getNext()) {
-		if(service->getClass() == serviceClass) {
-			return service;
+	if(!deviceType) {
+		debug_e("[UPnP] DeviceControl::getDevice(): Invalid deviceType");
+		return nullptr;
+	}
+
+	for(auto device = firstDevice(); device != nullptr; device = device->getNext()) {
+		if(device->getClass().typeIs(deviceType)) {
+			return device;
 		}
 	}
 
-	for(auto cls = deviceClass.firstService(); cls != nullptr; cls = cls->getNext()) {
-		if(*cls == serviceClass) {
-			auto service = cls->createObject(*this, *cls);
-			services.add(service);
-			return service;
-		}
+	const ObjectClass* cls = ControlPoint::findDeviceClass(deviceType);
+	if(cls == nullptr) {
+		return nullptr;
 	}
 
-	return nullptr;
-}
-
-bool DeviceControl::sendRequest(ActionInfo& request, const ActionInfo::Callback& callback)
-{
-	return controlPoint.sendRequest(request, callback);
+	auto device = cls->createDevice(*this);
+	addDevice(device);
+	return device;
 }
 
 } // namespace UPnP

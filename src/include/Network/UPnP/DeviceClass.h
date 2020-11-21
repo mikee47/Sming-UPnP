@@ -19,42 +19,17 @@
 
 #pragma once
 
-#include "ServiceClass.h"
-#include "Device.h"
-#include <Network/SSDP/Uuid.h>
+#include "ObjectClass.h"
 
 namespace UPnP
 {
+class RootDeviceControl;
 class ControlPoint;
-class DeviceControl;
 
 /**
- * @brief Provides all information required for UPnP to construct a DeviceControl object
+ * @brief Provides information required for UPnP to construct a DeviceControl object
  */
-class DeviceClass : public ClassObject
-{
-public:
-	using List = ObjectList<DeviceClass>;
-	using OwnedList = OwnedObjectList<DeviceClass>;
-	using Field = Device::Field;
-
-	Urn getDeviceType() const
-	{
-		return DeviceUrn(getField(Field::domain), getField(Field::type), version());
-	}
-
-	virtual String getField(Field desc) const;
-
-	const DeviceClass* getNext() const
-	{
-		return reinterpret_cast<const DeviceClass*>(next());
-	}
-
-	const ServiceClass* firstService() const
-	{
-		return serviceClasses.head();
-	}
-
+struct DeviceClass : public ObjectClass {
 	/**
 	 * @brief When SSDP discovery notification received we pass location and USN fields here
 	 * to construct a device instance.
@@ -62,21 +37,10 @@ public:
 	 * @param location URL of XML description file
 	 * @param uniqueServiceName Composite of UDN and device/service type
 	 * @param description Root device description
-	 * @retval DeviceControl* Constructed device object
+	 * @retval RootDeviceControl* Constructed device object
 	 */
-	DeviceControl* createObject(ControlPoint& controlPoint, const Url& location, const String& uniqueServiceName,
-								XML::Document& description) const;
-
-	bool operator==(const DeviceClass& other) const
-	{
-		return getField(Field::domain) == other.getField(Field::domain) &&
-			   getField(Field::type) == other.getField(Field::type) && version() == other.version();
-	}
-
-protected:
-	virtual DeviceControl* createObject(ControlPoint& controlPoint) const = 0;
-
-	ServiceClass::List serviceClasses;
+	RootDeviceControl* createRootObject(ControlPoint& controlPoint, const Url& location,
+										const String& uniqueServiceName, XML::Document& description) const;
 };
 
 } // namespace UPnP

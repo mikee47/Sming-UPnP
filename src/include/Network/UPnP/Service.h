@@ -56,9 +56,13 @@ public:
 	};
 
 	using List = ObjectList<Service>;
-	using Object::getRoot;
+	using OwnedList = OwnedObjectList<Service>;
 
-	RootDevice* getRoot() override;
+	Service(Device& device) : device_(device)
+	{
+	}
+
+	RootDevice& root() const;
 
 	void search(const SearchFilter& filter) override;
 	bool formatMessage(Message& msg, MessageSpec& ms) override;
@@ -79,9 +83,11 @@ public:
 
 	XML::Node* getDescription(XML::Document& doc, DescType descType) const override;
 
+	IDataSourceStream* createDescription() override;
+
 	ItemEnumerator* getList(unsigned index, String& name) override;
 
-	Device* device() const
+	Device& device() const
 	{
 		return device_;
 	}
@@ -96,14 +102,7 @@ public:
 	virtual void handleAction(ActionInfo& info) = 0;
 
 private:
-	friend class Device;
-	void setDevice(Device* device)
-	{
-		device_ = device;
-	}
-
-private:
-	Device* device_{nullptr};
+	Device& device_;
 	// actionList
 	// serviceStateTable
 };

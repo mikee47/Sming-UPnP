@@ -49,13 +49,30 @@ $3$(1:.xml=.cpp): $2$1
 	$(call upnp_generate_template,cpp)
 endef
 
+# Generate group class info target
+# $1 -> Path to domain schema directory
+# $2 -> Directory for output
+define upnp_generate_group_target
+UPNP_INCFILES += $2/ClassGroup.h
+$2/ClassGroup.h:
+	$$(info UPnP generate $$@)
+	$(Q) $$(UPNP_TOOLS)/gen.py -t $$(UPNP_TOOLS)/xsl/ClassGroup.hpp.xsl -i $1 -o $$@
+
+UPNP_SRCFILES += $2/ClassGroup.cpp
+$2/ClassGroup.cpp:
+	$(Q) $$(UPNP_TOOLS)/gen.py -t $$(UPNP_TOOLS)/xsl/ClassGroup.cpp.xsl -i $1 -o $$@
+endef
+
 # Generate all source targets from a schema directory
 # $1 -> Schema directory
 # $2 -> Source output directory
 define upnp_generate
 UPNP_SRCFILES :=
 UPNP_INCFILES :=
-$$(foreach c,$$(call ListAllFiles,$1,*.xml),$$(eval $$(call upnp_generate_target,$$(notdir $$c),$$(dir $$c),$2/$$(call upnp_schema_relpath,$$(dir $$c)))))
+UPNP_DESCRIPTIONS := $(call ListAllFiles,$1,*.xml)
+UPNP_GROUPS := $$(sort $$(call dirx,$$(call dirx,$$(UPNP_DESCRIPTIONS))))
+$$(foreach c,$$(UPNP_DESCRIPTIONS),$$(eval $$(call upnp_generate_target,$$(notdir $$c),$$(dir $$c),$2/$$(call upnp_schema_relpath,$$(dir $$c)))))
+$$(foreach d,$$(UPNP_GROUPS),$$(eval $$(call upnp_generate_group_target,$$d,$2/$$(notdir $$d))))
 endef
 
 # If specified, create targets for application source generation
@@ -63,7 +80,7 @@ ifneq (,$(UPNP_APP_SCHEMA))
 ifeq (,$(UPNP_APP_SCHEMA_FLAG))
 $(eval $(call upnp_generate,$(UPNP_APP_SCHEMA),$(UPNP_APP_INCDIR)))
 COMPONENT_APPCODE := $(abspath $(sort $(call dirx,$(UPNP_SRCFILES))))
-CMP_App_PREREQUISITES += upnp_app_prerequisites 
+CMP_App_PREREQUISITES += upnp_app_prerequisites
 
 .PHONY: upnp_app_prerequisites
 upnp_app_prerequisites: $(UPNP_SRCFILES) $(UPNP_INCFILES)

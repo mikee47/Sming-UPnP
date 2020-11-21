@@ -31,9 +31,4 @@ void Object::sendMessage(Message& msg, MessageSpec& ms)
 	}
 }
 
-IDataSourceStream* Object::createDescription()
-{
-	return new DescriptionStream(this);
-}
-
 } // namespace UPnP

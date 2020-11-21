@@ -27,6 +27,21 @@ namespace UPnP
 {
 ControlPoint::List ControlPoint::controlPoints;
 HttpClient ControlPoint::http;
+ClassGroup::List ControlPoint::objectClasses;
+
+const ObjectClass* ControlPoint::findClass(const Urn& objectType)
+{
+	const ObjectClass* cls{nullptr};
+	for(unsigned i = 0; i < objectClasses.count(); ++i) {
+		cls = objectClasses[i]->find(objectType);
+		if(cls != nullptr) {
+			debug_i("Found %s", String(cls->type).c_str());
+			break;
+		}
+	}
+
+	return cls;
+}
 
 bool ControlPoint::submitSearch(Search* search)
 {
@@ -141,8 +156,9 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 			uniqueServiceNames += uniqueServiceName;
 		}
 
+		String content;
 		XML::Document description;
-		bool ok = processDescriptionResponse(connection, description);
+		bool ok = processDescriptionResponse(connection, content, description);
 
 		switch(activeSearch->kind) {
 		case Search::Kind::desc: {
@@ -158,38 +174,96 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 		case Search::Kind::device: {
 			auto& search = *reinterpret_cast<DeviceSearch*>(activeSearch.get());
 			uniqueServiceNames += uniqueServiceName;
-			if(search.callback) {
-				auto device =
-					search.cls.createObject(*this, connection.getRequest()->uri, uniqueServiceName, description);
-				if(device != nullptr) {
-					if(search.callback(*device)) {
-						devices.add(device);
-					} else {
-						delete device;
-					}
-				}
-			} else {
+			if(!search.callback) {
 				debug_w("[UPnP]: No device callback provided");
+				break;
 			}
+
+			auto device = search.cls.createRootDevice();
+			if(device == nullptr) {
+				break;
+			}
+
+			if(!device->configure(*this, connection.getRequest()->uri, description)) {
+				delete device;
+				break;
+			}
+
+			rootDevices.add(device);
+
+			/******
+			 * Deferring the callback allows the stack to unwind first.
+			 * However, we get `HPE_CLOSED_CONNECTION` error when attempting to send any HTTP
+			 * requests from that callback, e.g. sending action request.
+			 *
+			 * Invoking the callback directly and it works.
+			 *
+			 * Why is that? How to fix it?
+			 */
+			//			auto callback = search.callback;
+			//			System.queueCallback([this, callback, device]() {
+			//				if(!callback(*device)) {
+			//					rootDevices.remove(device);
+			//				}
+			//			});
+			if(!search.callback(*device)) {
+				rootDevices.remove(device);
+			}
+			/*****/
+
 			break;
 		}
 
 		case Search::Kind::service: {
 			auto& search = *reinterpret_cast<ServiceSearch*>(activeSearch.get());
 			uniqueServiceNames += uniqueServiceName;
-			if(search.callback) {
-				auto device = search.cls.deviceClass().createObject(*this, connection.getRequest()->uri,
-																	uniqueServiceName, description);
-				if(device != nullptr) {
-					if(search.callback(*device, *device->getService(search.cls))) {
-						devices.add(device);
-					} else {
-						delete device;
-					}
-				}
-			} else {
+			if(!search.callback) {
 				debug_w("[UPnP]: No service callback provided");
+				break;
 			}
+
+			Usn usn(uniqueServiceName);
+			if(!usn) {
+				debug_e("[UPnP] Invalid USN: %s", uniqueServiceName.c_str());
+				break;
+			}
+			const DeviceClass* cls = findDeviceClass(usn);
+			if(cls == nullptr) {
+				debug_e("[UPnP] Device not registered: %s", uniqueServiceName.c_str());
+				break;
+			}
+
+			auto device = cls->createRootDevice();
+			if(device == nullptr) {
+				break;
+			}
+
+			if(!device->configure(*this, connection.getRequest()->uri, description)) {
+				delete device;
+				break;
+			}
+
+			auto service = device->getService(search.cls);
+			if(service == nullptr) {
+				delete device;
+				break;
+			}
+
+			rootDevices.add(device);
+
+			/***** See above */
+			//			auto callback = search.callback;
+			//			System.queueCallback([this, callback, device, service]() {
+			//				if(!callback(*device, *service)) {
+			//					rootDevices.remove(device);
+			//				}
+			//			});
+
+			if(!search.callback(*device, *service)) {
+				rootDevices.remove(device);
+			}
+			/*****/
+
 			break;
 		}
 
@@ -204,7 +278,7 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 	sendRequest(request);
 }
 
-bool ControlPoint::processDescriptionResponse(HttpConnection& connection, XML::Document& description)
+bool ControlPoint::processDescriptionResponse(HttpConnection& connection, String& content, XML::Document& description)
 {
 	debug_i("Received description");
 
@@ -220,7 +294,6 @@ bool ControlPoint::processDescriptionResponse(HttpConnection& connection, XML::D
 		return false;
 	}
 
-	String content;
 	if(!response->stream->moveString(content)) {
 		// TODO: Implement XML streaming parser
 		debug_e("[UPnP] Description too big: increase maxResponseSize");
@@ -311,8 +384,9 @@ bool ControlPoint::requestDescription(const String& url, DescriptionSearch::Call
 		}
 
 		if(callback) {
+			String content;
 			XML::Document description;
-			bool ok = processDescriptionResponse(connection, description);
+			bool ok = processDescriptionResponse(connection, content, description);
 			callback(connection, ok ? &description : nullptr);
 		} else {
 			debug_w("[UPnP]: No description callback provided");

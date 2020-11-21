@@ -39,14 +39,9 @@ DEFINE_FSTR_VECTOR(fieldNames, FlashString, UPNP_DEVICE_FIELD_MAP(XX))
 
 namespace UPnP
 {
-RootDevice* Device::getRoot()
+RootDevice& Device::root() const
 {
-	assert(parent_ != nullptr);
-	Device* dev = this;
-	while(dev->parent_ != nullptr) {
-		dev = dev->parent_;
-	}
-	return dev->getRoot();
+	return isRoot() ? const_cast<RootDevice&>(reinterpret_cast<const RootDevice&>(*this)) : parent_.root();
 }
 
 /*
@@ -116,16 +111,21 @@ String Device::getField(Field desc) const
 		return url;
 	}
 	case Field::baseURL: {
-		String url = getRoot()->getField(desc);
+		String url = root().getField(desc);
 		url += getField(Field::type);
 		url += '/';
 		return url;
 	}
 	case Field::serverId:
-		return (parent_ == nullptr) ? nullptr : getRoot()->getField(desc);
+		return isRoot() ? nullptr : root().getField(desc);
 	default:
 		return nullptr;
 	}
+}
+
+IDataSourceStream* Device::createDescription()
+{
+	return new DescriptionStream(*this, root().getField(Field::descriptionURL));
 }
 
 ItemEnumerator* Device::getList(unsigned index, String& name)
@@ -177,7 +177,7 @@ void Device::search(const SearchFilter& filter)
 bool Device::formatMessage(Message& msg, MessageSpec& ms)
 {
 	msg[HTTP_HEADER_SERVER] = getField(Field::serverId);
-	msg[HTTP_HEADER_LOCATION] = getRoot()->getURL(getField(Field::descriptionURL));
+	msg[HTTP_HEADER_LOCATION] = root().getURL(getField(Field::descriptionURL));
 
 	String st;
 	String usn = getField(Field::UDN);

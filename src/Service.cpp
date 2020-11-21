@@ -45,9 +45,9 @@ String toString(UPnP::Service::Field field)
 
 namespace UPnP
 {
-RootDevice* Service::getRoot()
+RootDevice& Service::root() const
 {
-	return (device_ == nullptr) ? nullptr : device_->getRoot();
+	return device_.root();
 }
 
 XML::Node* Service::getDescription(XML::Document& doc, DescType descType) const
@@ -81,6 +81,11 @@ XML::Node* Service::getDescription(XML::Document& doc, DescType descType) const
 	}
 }
 
+IDataSourceStream* Service::createDescription()
+{
+	return new DescriptionStream(*this, root().getField(Device::Field::descriptionURL));
+}
+
 String Service::getField(Field desc) const
 {
 	// Provide defaults for required fields
@@ -107,10 +112,10 @@ String Service::getField(Field desc) const
 		return getField(Field::baseURL) + _F("event");
 
 	case Field::domain:
-		return device_->getField(Device::Field::domain);
+		return device_.getField(Device::Field::domain);
 
 	case Field::baseURL: {
-		String url = device_->getField(Device::Field::baseURL);
+		String url = device_.getField(Device::Field::baseURL);
 		url += getField(Field::type);
 		url += '/';
 		return url;
@@ -159,11 +164,11 @@ bool Service::formatMessage(Message& msg, MessageSpec& ms)
 		return false;
 	}
 
-	msg[HTTP_HEADER_SERVER] = device_->getField(Device::Field::serverId);
-	msg[HTTP_HEADER_LOCATION] = getRoot()->getURL(getField(Field::SCPDURL)).toString();
+	msg[HTTP_HEADER_SERVER] = device_.getField(Device::Field::serverId);
+	msg[HTTP_HEADER_LOCATION] = root().getURL(getField(Field::SCPDURL)).toString();
 
 	String st = getField(Field::serviceType);
-	String usn = device_->getField(Device::Field::UDN);
+	String usn = device_.getField(Device::Field::UDN);
 	usn += "::";
 	usn += st;
 
@@ -226,7 +231,7 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 
 		auto stream = new MemoryDataStream;
 		info.serialize(*stream, false);
-		device_->sendXml(response, stream);
+		device_.sendXml(response, stream);
 
 #if DEBUG_VERBOSE_LEVEL >= DBG
 		String s = info.toString(true);
@@ -239,7 +244,7 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 		Uuid uuid;
 		uuid.generate();
 
-		response.headers[HTTP_HEADER_SERVER] = device_->getField(Device::Field::serverId);
+		response.headers[HTTP_HEADER_SERVER] = device_.getField(Device::Field::serverId);
 		response.headers["SID"] = String("uuid:") + String(uuid);
 		response.headers[HTTP_HEADER_CONTENT_LENGTH] = "0";
 		response.headers["TIMEOUT"] = "1800";
@@ -249,7 +254,7 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 	if(uri.Path == getField(Field::SCPDURL)) {
 		printRequest();
 		if(request.method == HTTP_GET) {
-			device_->sendXml(response, createDescription());
+			device_.sendXml(response, createDescription());
 		} else {
 			response.code = HTTP_STATUS_BAD_REQUEST;
 		}

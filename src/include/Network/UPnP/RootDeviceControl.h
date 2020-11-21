@@ -1,5 +1,5 @@
 /**
- * ClassObject.h
+ * RootDeviceControl.h
  *
  * Copyright 2020 mikee47 <mike@sillyhouse.net>
  *
@@ -19,21 +19,17 @@
 
 #pragma once
 
-#include "Object.h"
-#include "ObjectList.h"
-#include <Network/SSDP/Urn.h>
+#include "DeviceControl.h"
 
 namespace UPnP
 {
-class ClassObject : public ObjectTemplate<ClassObject>
+class ControlPoint;
+
+class RootDeviceControl : public DeviceControl
 {
 public:
-	using List = ObjectList<ClassObject>;
-
-	RootDevice* getRoot() override
-	{
-		return nullptr;
-	}
+	using List = ObjectList<RootDeviceControl>;
+	using OwnedList = OwnedObjectList<RootDeviceControl>;
 
 	void search(const SearchFilter& filter) override
 	{
@@ -44,9 +40,20 @@ public:
 		return false;
 	}
 
-	bool onHttpRequest(HttpServerConnection& connection) override
+	bool sendRequest(ActionInfo& request, const ActionInfo::Callback& callback);
+
+	bool configure(ControlPoint& controlPoint, const Url& location, XML::Document& description);
+
+	String getField(Field desc) const;
+
+	String baseURL() const
 	{
-		return false;
+		return rootConfig->baseUrl.c_str();
+	}
+
+	ControlPoint& controlPoint() const
+	{
+		return rootConfig->controlPoint;
 	}
 };
 

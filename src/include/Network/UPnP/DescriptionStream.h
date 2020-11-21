@@ -31,7 +31,12 @@ public:
 	 * @brief Construct a description stream
 	 * @param object The Object to enumerate
 	 */
-	DescriptionStream(Object* object);
+	DescriptionStream(Object& object, const String& descriptionUrl) : object_(object)
+	{
+		setName(descriptionUrl);
+		segments[0].item = &object;
+		getContent();
+	}
 
 	~DescriptionStream()
 	{
@@ -58,14 +63,24 @@ public:
 		return !content && (state == State::done);
 	}
 
-	String getName() const override;
+	String getName() const override
+	{
+		return name;
+	}
+
+	MimeType getMimeType() const override
+	{
+		return MimeType::XML;
+	}
 
 protected:
 	void freeMem();
 	void getContent();
+	void setName(const String& descriptionUrl);
 
 private:
-	Object* object_{nullptr};
+	const Object& object_;
+	String name;
 	// Nesting levels
 	struct Segment {
 		Item* item{nullptr};

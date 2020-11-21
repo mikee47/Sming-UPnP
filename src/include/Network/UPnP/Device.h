@@ -61,7 +61,14 @@ public:
 
 	using List = ObjectList<Device>;
 	using OwnedList = OwnedObjectList<Device>;
-	using Object::getRoot;
+
+	Device(Device& parent) : parent_(parent)
+	{
+	}
+
+	Device(Device* parent) : parent_(*(parent ?: this))
+	{
+	}
 
 	String caption() const
 	{
@@ -73,11 +80,11 @@ public:
 		return s;
 	}
 
-	RootDevice* getRoot() override;
+	RootDevice& root() const;
 
 	bool isRoot() const
 	{
-		return parent_ == nullptr;
+		return static_cast<const Device*>(this) == &parent_;
 	}
 
 	void search(const SearchFilter& filter) override;
@@ -100,25 +107,35 @@ public:
 	void addDevice(Device* device)
 	{
 		devices_.add(device);
-		device->parent_ = this;
 	}
 
 	void addService(Service* service)
 	{
 		services_.add(service);
-		service->setDevice(this);
 	}
 
 	XML::Node* getDescription(XML::Document& doc, DescType descType) const override;
+
+	IDataSourceStream* createDescription() override;
 
 	ItemEnumerator* getList(unsigned index, String& name) override;
 
 	void sendXml(HttpResponse& response, IDataSourceStream* content);
 
+	Service* firstService()
+	{
+		return services_.head();
+	}
+
+	Device* firstDevice()
+	{
+		return devices_.head();
+	}
+
 private:
-	Service::List services_;
-	Device::List devices_;
-	Device* parent_{nullptr};
+	Device& parent_;
+	Service::OwnedList services_;
+	Device::OwnedList devices_;
 };
 
 } // namespace UPnP

@@ -26,7 +26,7 @@ class BasicEventService : public WemoService
 public:
 	String getField(Field desc) const override;
 
-	IDataSourceStream* createDescription() override
+	IDataSourceStream* createDescription() const override
 	{
 		return new FlashMemoryStream(WEMO_SERVICE_SCPD);
 	}
@@ -39,7 +39,7 @@ class MetaInfoService : public WemoService
 public:
 	String getField(Field desc) const override;
 
-	IDataSourceStream* createDescription() override
+	IDataSourceStream* createDescription() const override
 	{
 		return new FlashMemoryStream(WEMO_METAINFO_SCPD);
 	}
@@ -52,10 +52,8 @@ class Controllee : public RootDevice
 public:
 	using StateChangeDelegate = Delegate<void(Controllee& device)>;
 
-	Controllee(unsigned id, const String& name) : id_(id), name_(name)
+	Controllee(unsigned id, const String& name) : id_(id), name_(name), eventService(*this), metaInfoService(*this)
 	{
-		addService(&eventService);
-		addService(&metaInfoService);
 	}
 
 	void onStateChange(StateChangeDelegate delegate)

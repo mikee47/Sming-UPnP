@@ -19,21 +19,6 @@
 class <xsl:value-of select="$controlClass"/>: public ServiceControl
 {
 public:
-	class Class: public ServiceClass
-	{
-	public:
-		using ServiceClass::ServiceClass;
-	
-		String getField(Field desc) const override;
-		Version version() const override;
-
-	protected:
-		ServiceControl* createObject(DeviceControl&amp; device, const ServiceClass&amp; serviceClass) const override
-		{
-			return new <xsl:call-template name="control-class"/>(device, serviceClass);
-		}
-	}; // Class
-
 	/*
 	 * Pre-defined values (from allowed value lists)
 	 */
@@ -44,9 +29,20 @@ public:
 	</xsl:for-each>
 	};
 	</xsl:for-each>
-	
-	
+
 	using ServiceControl::ServiceControl;
+
+	static const ServiceClass class_;
+
+	const ServiceClass&amp; getClass() const override
+	{
+		return class_;
+	}
+
+	static Object* createObject(DeviceControl* owner)
+	{
+		return owner ? new <xsl:value-of select="$controlClass"/>(*owner) : nullptr;
+	}
 
 	<xsl:apply-templates select="s:actionList/s:action"/>
 };

@@ -61,17 +61,7 @@ public:
 		return reinterpret_cast<Object*>(LinkedItem::next());
 	}
 
-	virtual RootDevice* getRoot() = 0;
-
-	const RootDevice* getRoot() const
-	{
-		return const_cast<Object*>(this)->getRoot();
-	}
-
-	virtual Version version() const
-	{
-		return 1;
-	}
+	virtual Version version() const = 0;
 
 	/**
 	 * @brief Called during SSDP search operation
@@ -102,7 +92,10 @@ public:
 	 * @param response
 	 * @retval bool true if request was handled
 	 */
-	virtual bool onHttpRequest(HttpServerConnection& connection) = 0;
+	virtual bool onHttpRequest(HttpServerConnection& connection)
+	{
+		return false;
+	}
 
 	/**
 	 * @brief Called by framework to construct a device description response stream
@@ -111,7 +104,10 @@ public:
 	 * By default, the framework generates a stream constructed from the device information fields,
 	 * but this method may be overridden if, for example, a fixed description is stored in an .xml file.
 	 */
-	virtual IDataSourceStream* createDescription();
+	virtual IDataSourceStream* createDescription()
+	{
+		return nullptr;
+	}
 };
 
 /**

@@ -120,7 +120,7 @@ struct DeviceSearch : public Search {
 	using Callback = Delegate<bool(DeviceControl& device)>;
 
 	DeviceSearch(const DeviceClass& cls, Callback callback)
-		: Search(Kind::device, cls.getDeviceType()), cls(cls), callback(callback)
+		: Search(Kind::device, cls.objectType()), cls(cls), callback(callback)
 	{
 	}
 
@@ -139,7 +139,7 @@ struct ServiceSearch : public Search {
 	using Callback = Delegate<bool(DeviceControl& device, ServiceControl& service)>;
 
 	ServiceSearch(const ServiceClass& cls, Callback callback)
-		: Search(Kind::service, cls.getServiceType()), cls(cls), callback(callback)
+		: Search(Kind::service, cls.objectType()), cls(cls), callback(callback)
 	{
 	}
 

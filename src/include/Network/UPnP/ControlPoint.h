@@ -25,8 +25,7 @@
 #include <Network/SSDP/Message.h>
 #include <Network/HttpClient.h>
 #include "Constants.h"
-#include "DeviceControl.h"
-#include "ServiceControl.h"
+#include "RootDeviceControl.h"
 #include "Search.h"
 #include <memory>
 
@@ -59,13 +58,12 @@ public:
 	}
 
 	/**
-	 * @brief Perform a reset and destroy all registered devices and classes
+	 * @brief Perform a reset and destroy all created devices
 	 */
 	void clear()
 	{
 		reset();
-		devices.clear();
-		deviceClasses.clear();
+		rootDevices.clear();
 	}
 
 	/**
@@ -114,8 +112,7 @@ public:
 
 	template <typename Device> bool beginSearch(Delegate<bool(Device&)> callback)
 	{
-		auto& deviceClass = getDeviceClass<typename Device::Class>();
-		return beginSearch(deviceClass,
+		return beginSearch(Device(nullptr).getClass(),
 						   [callback](DeviceControl& device) { return callback(reinterpret_cast<Device&>(device)); });
 	}
 
@@ -143,9 +140,9 @@ public:
 
 	/* Object */
 
-	RootDevice* getRoot() override
+	Version version() const
 	{
-		return nullptr;
+		return 0;
 	}
 
 	void search(const SearchFilter& filter) override
@@ -181,32 +178,40 @@ public:
 	 */
 	static void onSsdpMessage(BasicMessage& msg);
 
+	static const ObjectClass* findClass(const Urn& objectType);
+
+	template <typename Class> static const Class* findClass()
+	{
+		const Class* cls = findClass(Class().objectType());
+		return reinterpret_cast<const Class*>(cls);
+	}
+
+	static const ServiceClass* findServiceClass(const Urn& urn)
+	{
+		return (urn.kind == Urn::Kind::service) ? reinterpret_cast<const ServiceClass*>(findClass(urn)) : nullptr;
+	}
+
+	static const DeviceClass* findDeviceClass(const Urn& urn)
+	{
+		return (urn.kind == Urn::Kind::device) ? reinterpret_cast<const DeviceClass*>(findClass(urn)) : nullptr;
+	}
+
+	static void registerClasses(const ClassGroup& group)
+	{
+		if(!objectClasses.contains(&group)) {
+			objectClasses.add(&group);
+		}
+	}
+
 private:
 	using List = ObjectList<ControlPoint>;
 
-	template <typename Class> const DeviceClass& getDeviceClass()
-	{
-		Class cls;
-		const DeviceClass* c = deviceClasses.head();
-		while(c != nullptr) {
-			if(*c == cls) {
-				return *c;
-			}
-
-			c = c->getNext();
-		}
-
-		c = new Class;
-		deviceClasses.add(c);
-		return *c;
-	}
-
 	bool submitSearch(Search* search);
-	static bool processDescriptionResponse(HttpConnection& connection, XML::Document& description);
+	static bool processDescriptionResponse(HttpConnection& connection, String& buffer, XML::Document& description);
 
 	static List controlPoints;
-	DeviceClass::OwnedList deviceClasses;
-	Device::OwnedList devices;
+	static ClassGroup::List objectClasses;
+	RootDeviceControl::OwnedList rootDevices;
 	static HttpClient http;
 	size_t maxResponseSize; // <<< Maximum size of XML description that can be processed
 	CStringArray uniqueServiceNames;

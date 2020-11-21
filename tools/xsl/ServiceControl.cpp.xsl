@@ -8,39 +8,24 @@
 
 <xsl:template match="s:scpd">
 <xsl:call-template name="file-cpp"/>
-<xsl:call-template name="namespace-open"/>
+namespace UPnP {
+namespace <xsl:call-template name="urn-domain-cpp"/> {
 
-namespace {
-/*
- * Interface specification
- */
-DEFINE_FSTR_LOCAL(FS_domain, "<xsl:call-template name="urn-domain"/>")
-DEFINE_FSTR_LOCAL(FS_type, "<xsl:call-template name="urn-type"/>")
-static constexpr uint8_t versionNumber{<xsl:call-template name="urn-version"/>};
+extern const ClassGroup classGroup;
 
-} // namespace
+namespace <xsl:call-template name="urn-kind"/> {
 
 <xsl:variable name="controlClass"><xsl:call-template name="control-class"/></xsl:variable>
 
-String <xsl:value-of select="$controlClass"/>::Class::getField(Field desc) const
-{
-	switch(desc) {
-	case Field::domain:
-		return FS_domain;
-	case Field::type:
-		return FS_type;
-	case Field::version:
-		return String(versionNumber);
-	default:
-		return ServiceClass::getField(desc);
-	}
-}
+DEFINE_FSTR_LOCAL(type, "<xsl:call-template name="urn-type"/>")
 
-Object::Version <xsl:value-of select="$controlClass"/>::Class::version() const
-{
-	return versionNumber;
-}
-
+const ServiceClass <xsl:value-of select="$controlClass"/>::class_ PROGMEM = {
+	classGroup,
+	type,
+	<xsl:call-template name="urn-version"/>,
+	Urn::Kind::service,
+	<xsl:call-template name="control-class"/>::createObject
+};
 
 <xsl:for-each select="s:actionList/s:action">
 
