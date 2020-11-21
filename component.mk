@@ -3,8 +3,6 @@ COMPONENT_DEPENDS := SSDP RapidXML
 COMPONENT_PYTHON_REQUIREMENTS := requirements.txt
 
 UPNP_TOOLS		:= $(COMPONENT_PATH)/tools
-UPNP_SCHEMA		:= $(COMPONENT_PATH)/schema
-UPNP_INCDIR		:= $(COMPONENT_BUILD_BASE)/src/Network/UPnP
 
 # Application can set these in their component.mk file (which is always parsed first)
 UPNP_APP_SCHEMA	?=
@@ -60,20 +58,16 @@ UPNP_INCFILES :=
 $$(foreach c,$$(call ListAllFiles,$1,*.xml),$$(eval $$(call upnp_generate_target,$$(notdir $$c),$$(dir $$c),$2/$$(call upnp_schema_relpath,$$(dir $$c)))))
 endef
 
-# Create targets for library schema source generation
-$(eval $(call upnp_generate,$(COMPONENT_PATH)/schema,$(UPNP_INCDIR)))
-COMPONENT_SRCFILES		+= $(UPNP_SRCFILES)
-
-COMPONENT_PREREQUISITES	:= upnp_prerequisites 
-.PHONY: upnp_prerequisites
-upnp_prerequisites: $(UPNP_SRCFILES) $(UPNP_INCFILES)
-
 # If specified, create targets for application source generation
 ifneq (,$(UPNP_APP_SCHEMA))
+ifeq (,$(UPNP_APP_SCHEMA_FLAG))
 $(eval $(call upnp_generate,$(UPNP_APP_SCHEMA),$(UPNP_APP_INCDIR)))
 COMPONENT_APPCODE := $(abspath $(sort $(call dirx,$(UPNP_SRCFILES))))
 CMP_App_PREREQUISITES += upnp_app_prerequisites 
 
 .PHONY: upnp_app_prerequisites
 upnp_app_prerequisites: $(UPNP_SRCFILES) $(UPNP_INCFILES)
+
+UPNP_APP_SCHEMA_FLAG := X
+endif
 endif
