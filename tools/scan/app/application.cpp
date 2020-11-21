@@ -133,13 +133,8 @@ void writeServiceSchema(XML::Document& scpd, const String& serviceType)
 
 void writeDeviceSchema(XML::Node* device, const String& deviceType)
 {
-	auto node = device->first_node("manufacturer");
-	assert(node != nullptr);
-	String manufacturer(node->value(), node->value_size());
-
-	node = device->first_node("friendlyName");
-	assert(node != nullptr);
-	String friendlyName(node->value(), node->value_size());
+	String manufacturer = XML::getValue(device, "manufacturer");
+	String friendlyName = XML::getValue(device, "friendlyName");
 
 	auto doc = device->document();
 	auto root = device->document()->first_node();
@@ -190,10 +185,8 @@ void checkExisting(Fetch& desc)
 
 void parseDevice(XML::Node* device, const Fetch& f)
 {
-	auto node = device->first_node("deviceType");
-	assert(node != nullptr);
-	String deviceType(node->value(), node->value_size());
-	if(deviceType == nullptr) {
+	String deviceType = XML::getValue(device, "deviceType");
+	if(!deviceType) {
 		Serial.println("*** deviceType NOT found ***");
 		return;
 	}
@@ -208,20 +201,20 @@ void parseDevice(XML::Node* device, const Fetch& f)
 	if(serviceList != nullptr) {
 		auto svc = serviceList->first_node();
 		while(svc != nullptr) {
-			node = svc->first_node("serviceType");
-			assert(node != nullptr);
-			String svcType(node->value(), node->value_size());
-			ssdpQueue.add(Urn{svcType});
-
-			auto node = svc->first_node("SCPDURL");
-			if(node == nullptr) {
-				Serial.println("*** SCPDURL missing ***");
+			String svcType = XML::getValue(svc, "serviceType");
+			if(!svcType) {
+				Serial.println("*** serviceType missing ***");
 			} else {
-				Url url(f.url);
-				url.Path = String(node->value(), node->value_size());
+				ssdpQueue.add(Urn{svcType});
 
-				auto& desc = descriptionQueue.add({Urn::Kind::service, String(url), String(f.root), svcType});
-				checkExisting(desc);
+				Url url(f.url);
+				url.Path = XML::getValue(svc, "SCPDURL");
+				if(!url.Path) {
+					Serial.println("*** SCPDURL missing ***");
+				} else {
+					auto& desc = descriptionQueue.add({Urn::Kind::service, String(url), String(f.root), svcType});
+					checkExisting(desc);
+				}
 			}
 
 			svc = svc->next_sibling();
