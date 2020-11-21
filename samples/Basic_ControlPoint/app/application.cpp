@@ -31,13 +31,13 @@ void findMediaRenderers()
 
 		auto& render = device.getRenderingControl();
 
-		render.action_ListPresets(0, [&device](auto& result) {
+		render.listPresets(0, [&device](auto& result) {
 			Serial.print(device.caption());
 			Serial.print(_F(": Current presets = "));
 			Serial.println(result.vCurrentPresetNameList);
 		});
 
-		render.action_GetVolume(0, nullptr, [&device](auto& result) {
+		render.getVolume(0, nullptr, [&device](auto& result) {
 			Serial.print(device.caption());
 			Serial.print(_F(": Current Volume = "));
 			Serial.println(result.vCurrentVolume);
@@ -45,7 +45,7 @@ void findMediaRenderers()
 
 		auto& conn = device.getConnectionManager();
 
-		conn.action_GetCurrentConnectionInfo(0, [&device](auto& result) {
+		conn.getCurrentConnectionInfo(0, [&device](auto& result) {
 			Serial.print(device.caption());
 			Serial.println(_F(": Current Connection Info = "));
 			result.printTo(Serial);
@@ -54,7 +54,7 @@ void findMediaRenderers()
 		});
 
 		auto& transport = device.getAVTransport();
-		transport.action_GetDeviceCapabilities(0, [&device](auto& result) {
+		transport.getDeviceCapabilities(0, [&device](auto& result) {
 			Serial.print(device.caption());
 			Serial.println(_F(": Device Capabilities = "));
 			result.printTo(Serial);

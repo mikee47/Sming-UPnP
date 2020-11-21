@@ -5,7 +5,12 @@
 	xmlns:d="urn:schemas-upnp-org:device-1-0"
 	xmlns:s="urn:schemas-upnp-org:service-1-0">
 
-<!-- Header file opening -->
+
+<!-- Used to camelCase things (libxml2 implements xslt 1.0) -->
+<xsl:variable name="vLower" select="'abcdefghijklmnopqrstuvwxyz'"/>
+<xsl:variable name="vUpper" select="'ABCDEFGHIJKLMNOPQRSTUVWXYZ'"/>
+ 
+ <!-- Header file opening -->
 <xsl:template name="file-hpp">
 /**
  * @brief <xsl:value-of select="d:deviceType | s:serviceType"/>
@@ -109,7 +114,9 @@ namespace <xsl:call-template name="urn-kind"/> {
 </xsl:template>
 
 <!-- Name of action with weird prefixes removed -->
-<xsl:template name="action-name"><xsl:value-of select="str:replace(s:name, 'X_', '')"/></xsl:template>
+<xsl:template match="s:action" mode="name">
+<xsl:value-of select="str:replace(s:name, 'X_', '')"/>
+</xsl:template>
 
 <!-- Name of variable/parameter with weird prefixes removed, for display -->
 <xsl:template name="varname"><xsl:value-of select="str:replace(s:name, 'X_', '')"/></xsl:template>
@@ -118,13 +125,15 @@ namespace <xsl:call-template name="urn-kind"/> {
 <xsl:template name="varname-cpp">v<xsl:call-template name="varname"/></xsl:template>
 
 <!-- Name of structure containing action result -->
-<xsl:template name="action-result"><xsl:call-template name="action-name"/>Result</xsl:template>
+<xsl:template name="action-result"><xsl:apply-templates select="." mode="name"/>Result</xsl:template>
 
 <!-- Name of result Delegate type -->
 <xsl:template name="action-result-callback"><xsl:call-template name="action-result"/>Callback</xsl:template>
 
 <!-- Method declaration for service action -->
-<xsl:template name="action-method">action_<xsl:call-template name="action-name"/>(
+<xsl:template match="s:action" mode="method">
+	<xsl:variable name="name"><xsl:apply-templates select="." mode="name"/></xsl:variable>
+	<xsl:value-of select="concat(translate(substring($name,1,1), $vUpper, $vLower), substring($name, 2))"/>(
 		<xsl:for-each select="s:argumentList/s:argument[s:direction='in']">
 		<xsl:apply-templates select="." mode="type">
 			<xsl:with-param name="const" select="1"/>

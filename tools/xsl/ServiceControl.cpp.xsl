@@ -57,7 +57,7 @@ size_t <xsl:value-of select="$controlClass"/>::<xsl:call-template name="action-r
 </xsl:if>
 
 
-bool <xsl:value-of select="$controlClass"/>::<xsl:call-template name="action-method"/>
+bool <xsl:value-of select="$controlClass"/>::<xsl:apply-templates select="." mode="method"/>
 {
 	<!-- Build request and send it, using a lambda wrapper for response handling -->
 	ActionInfo request(*this);

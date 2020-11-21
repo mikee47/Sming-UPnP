@@ -61,10 +61,10 @@ using <xsl:value-of select="$controlClass"/> = UPnP::<xsl:call-template name="ur
 <xsl:template match="s:action">
 	<!-- Declare a struct to contain result arguments, with an appropriate callback delegate type -->
 	/**
-	 * @brief Action: <xsl:call-template name="action-name"/>
+	 * @brief Action: <xsl:value-of select="s:name"/>
 	 * @{
 	 */<xsl:text/>
-	 
+
 	<xsl:choose>
 	<xsl:when test="s:argumentList/s:argument[s:direction='out']">
 	struct <xsl:call-template name="action-result"/> {
@@ -80,7 +80,7 @@ using <xsl:value-of select="$controlClass"/> = UPnP::<xsl:call-template name="ur
 	</xsl:otherwise>
 	</xsl:choose>
 
-	bool <xsl:call-template name="action-method"/>;
+	bool <xsl:apply-templates select="." mode="method"/>;
 	/** @} */
 </xsl:template>
 
