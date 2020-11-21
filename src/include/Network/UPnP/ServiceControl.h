@@ -59,9 +59,16 @@ public:
 	{
 	}
 
+	bool configure(const XML::Node* service);
+
 private:
 	DeviceControl& device;
 	const ServiceClass& serviceClass;
+	struct Description {
+		CString controlURL;
+		CString eventSubURL;
+	};
+	Description description;
 };
 
 } // namespace UPnP

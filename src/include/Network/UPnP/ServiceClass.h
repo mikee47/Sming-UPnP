@@ -60,6 +60,8 @@ public:
 		return devcls;
 	}
 
+	bool typeIs(const Urn& urn) const;
+
 protected:
 	virtual ServiceControl* createObject(DeviceControl& device, const ServiceClass& serviceClass) const = 0;
 

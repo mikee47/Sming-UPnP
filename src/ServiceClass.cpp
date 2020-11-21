@@ -32,4 +32,9 @@ String ServiceClass::getField(Field desc) const
 	}
 }
 
+bool ServiceClass::typeIs(const Urn& urn) const
+{
+	return getField(Field::domain) == urn.domain && getField(Field::type) == urn.type && version() == urn.version;
+}
+
 } // namespace UPnP

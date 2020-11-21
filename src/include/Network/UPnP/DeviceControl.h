@@ -39,6 +39,8 @@ public:
 
 	void parseDescription(XML::Document& description);
 
+	ServiceControl* getService(const Urn& serviceType);
+	ServiceControl* getService(const String& serviceType);
 	ServiceControl* getService(const ServiceClass& serviceClass);
 
 	String getField(Field desc) const override;

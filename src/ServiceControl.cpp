@@ -22,15 +22,44 @@
 
 namespace UPnP
 {
+bool ServiceControl::configure(const XML::Node* service)
+{
+	// Omit leading separator as device baseURL includes it
+	auto getUrl = [&](const String& name) {
+		String url = XML::getValue(service, name);
+		if(!url) {
+			debug_e("[UPnP] %s missing from %s", name.c_str(), serviceType().c_str());
+		} else if(url[0] == '/') {
+			url.remove(0, 1);
+		}
+		return url;
+	};
+
+	description.controlURL = getUrl(F("controlURL"));
+	description.eventSubURL = getUrl(F("eventSubURL"));
+
+	debug_i("[UPnP] controlURL = %s", getField(Field::controlURL).c_str());
+
+	return true;
+}
+
 String ServiceControl::getField(Field desc) const
 {
 	switch(desc) {
 	case Field::baseURL:
 		return device.getField(Device::Field::baseURL);
 	case Field::controlURL:
-		return getField(Field::baseURL) + serviceClass.getField(desc);
+		if(description.controlURL) {
+			return getField(Field::baseURL) + description.controlURL.c_str();
+		} else {
+			return nullptr;
+		}
 	case Field::eventSubURL:
-		return getField(Field::baseURL) + serviceClass.getField(desc);
+		if(description.eventSubURL) {
+			return getField(Field::baseURL) + description.eventSubURL.c_str();
+		} else {
+			return nullptr;
+		}
 	default:
 		String s = serviceClass.getField(desc);
 		return s ?: Service::getField(desc);

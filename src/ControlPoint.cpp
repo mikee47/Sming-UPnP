@@ -242,7 +242,12 @@ bool ControlPoint::sendRequest(ActionInfo& act, const ActionInfo::Callback& call
 {
 	auto req = new HttpRequest;
 	req->setMethod(HttpMethod::POST);
-	req->uri = act.service.getField(Service::Field::controlURL);
+	String url = act.service.getField(Service::Field::controlURL);
+	if(!url) {
+		debug_e("[UPnP] No service endpoint defined");
+		return false;
+	}
+	req->uri = url;
 	req->setBody(act.toString(false));
 
 	String s = toString(MimeType::XML);
