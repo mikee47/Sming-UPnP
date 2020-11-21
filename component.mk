@@ -71,3 +71,19 @@ upnp_app_prerequisites: $(UPNP_SRCFILES) $(UPNP_INCFILES)
 UPNP_APP_SCHEMA_FLAG := X
 endif
 endif
+
+#
+# Tool for scanning, fetching and parsing. Needs to be pre-built
+#
+UPNP_SCAN_TOOL = $(UPNP_TOOLS)/scan/out/Host/debug/firmware/scan$(TOOL_EXT)
+
+.PHONY: upnp-tools
+upnp-tools: $(UPNP_SCAN_TOOL) ##Build UPnP tools - append SMING_ARCH as required
+
+$(UPNP_SCAN_TOOL):
+	$(Q) $(MAKE) -C $(UPNP_TOOLS)/scan -e 
+
+#
+UPNP_SCAN = $(UPNP_SCAN_TOOL) --nonet scan
+UPNP_PARSE = $(UPNP_SCAN_TOOL) --nonet parse
+UPNP_FETCH = $(UPNP_SCAN_TOOL) --nonet fetch
