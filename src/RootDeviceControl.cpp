@@ -22,14 +22,8 @@
 
 namespace UPnP
 {
-bool RootDeviceControl::configure(ControlPoint& controlPoint, const Url& location, XML::Document& description)
+bool RootDeviceControl::configure(ControlPoint& controlPoint, const String& location, XML::Node* device)
 {
-	auto device = XML::getNode(description, _F("/device"));
-	if(device == nullptr) {
-		debug_e("[UPnP] device node not found");
-		return false;
-	}
-
 	Url baseUrl(location);
 	baseUrl.Path = nullptr;
 	rootConfig.reset(new RootConfig{controlPoint, baseUrl.toString()});

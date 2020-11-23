@@ -203,6 +203,11 @@ public:
 		}
 	}
 
+//	const Search* getActiveSearch() const
+//	{
+//		return activeSearch.get();
+//	}
+
 private:
 	using List = ObjectList<ControlPoint>;
 

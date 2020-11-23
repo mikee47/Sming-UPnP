@@ -2,9 +2,6 @@
 #include <Network/UPnP/ControlPoint.h>
 #include <Network/UPnP/schemas-upnp-org/ClassGroup.h>
 
-#include <FlashString/Array.hpp>
-#include <FlashString/Vector.hpp>
-
 // If you want, you can define WiFi settings globally in Eclipse Environment Variables
 #ifndef WIFI_SSID
 #define WIFI_SSID "PleaseEnterSSID" // Put you SSID and Password here
@@ -14,7 +11,7 @@
 namespace
 {
 NtpClient* ntpClient;
-UPnP::ControlPoint controlPoint(8192);
+UPnP::ControlPoint controlPoint(2048);
 
 void connectFail(const String& ssid, MacAddress bssid, WifiDisconnectReason reason)
 {
@@ -143,7 +140,7 @@ void gotIP(IpAddress ip, IpAddress netmask, IpAddress gateway)
 
 void init()
 {
-	Serial.setTxBufferSize(4096);
+	Serial.setTxBufferSize(1024);
 	Serial.begin(SERIAL_BAUD_RATE);
 	Serial.systemDebugOutput(true);
 

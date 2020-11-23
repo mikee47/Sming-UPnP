@@ -37,6 +37,7 @@ bool ServiceControl::configure(const XML::Node* service)
 
 	description.controlURL = getUrl(F("controlURL"));
 	description.eventSubURL = getUrl(F("eventSubURL"));
+	description.serviceId = XML::getValue(service, F("serviceId"));
 
 	debug_i("[UPnP] controlURL = %s", description.controlURL.c_str());
 
@@ -52,6 +53,8 @@ String ServiceControl::getField(Field desc) const
 		return getClass().type;
 	case Field::version:
 		return String(version());
+	case Field::serviceId:
+		return description.serviceId.c_str();
 	case Field::baseURL:
 		return device().getField(Device::Field::baseURL);
 	case Field::controlURL:

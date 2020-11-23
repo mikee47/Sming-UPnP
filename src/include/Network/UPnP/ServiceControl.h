@@ -78,6 +78,7 @@ private:
 	struct Description {
 		CString controlURL;
 		CString eventSubURL;
+		CString serviceId;
 	};
 	Description description;
 };

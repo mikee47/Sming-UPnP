@@ -21,6 +21,7 @@
 #include "include/Network/UPnP/ControlPoint.h"
 #include <Network/SSDP/Server.h>
 #include "include/Network/UPnP/ActionInfo.h"
+#include "DescriptionParser.h"
 #include "main.h"
 
 namespace UPnP
@@ -35,11 +36,14 @@ const ObjectClass* ControlPoint::findClass(const Urn& objectType)
 	for(unsigned i = 0; i < objectClasses.count(); ++i) {
 		cls = objectClasses[i]->find(objectType);
 		if(cls != nullptr) {
-			debug_i("Found %s", String(cls->type).c_str());
+			debug_i("Found %s class '%s'", toString(cls->kind()).c_str(), String(cls->type).c_str());
 			break;
 		}
 	}
 
+	if(cls == nullptr) {
+		debug_i("Class '%s' not registered", toString(objectType).c_str());
+	}
 	return cls;
 }
 
@@ -111,13 +115,13 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 
 	auto location = message[HTTP_HEADER_LOCATION];
 	if(location == nullptr) {
-		debug_d("CP: No valid Location header found.");
+		debug_w("CP: No valid Location header found.");
 		return;
 	}
 
 	String uniqueServiceName = message["USN"];
 	if(!uniqueServiceName) {
-		debug_d("CP: No valid USN header found.");
+		debug_w("CP: No valid USN header found.");
 		return;
 	}
 
@@ -125,9 +129,9 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 		return; // Already found
 	}
 
-	debug_w("Found match for %s", activeSearch->toString().c_str());
-	debug_w("  location: %s", location);
-	debug_w("  usn: %s", uniqueServiceName.c_str());
+	debug_i("Found match for %s", activeSearch->toString().c_str());
+	debug_i("  location: %s", location);
+	debug_i("  usn: %s", uniqueServiceName.c_str());
 
 	if(activeSearch->kind == Search::Kind::ssdp) {
 		auto& search = *reinterpret_cast<SsdpSearch*>(activeSearch.get());
@@ -141,6 +145,39 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 
 	debug_d("Fetching description from URL: '%s'", location);
 	auto request = new HttpRequest(location);
+
+	if(activeSearch->kind == Search::Kind::desc) {
+		request->onRequestComplete([this, uniqueServiceName](HttpConnection& connection, bool success) -> int {
+			if(!bool(activeSearch)) {
+				// Looks like search was cancelled
+				return 0;
+			}
+
+			if(uniqueServiceNames.contains(uniqueServiceName)) {
+				return 0;
+			}
+			if(success) {
+				// Don't retry
+				uniqueServiceNames += uniqueServiceName;
+			}
+
+			String content;
+			XML::Document description;
+			bool ok = processDescriptionResponse(connection, content, description);
+
+			auto& search = *reinterpret_cast<DescriptionSearch*>(activeSearch.get());
+			if(search.callback) {
+				search.callback(connection, ok ? &description : nullptr);
+			} else {
+				debug_w("[UPnP]: No description callback provided");
+			}
+
+			return 0;
+		});
+		return;
+	}
+
+	request->setResponseStream(new DescriptionParser(*this, location));
 
 	request->onRequestComplete([this, uniqueServiceName](HttpConnection& connection, bool success) -> int {
 		if(!bool(activeSearch)) {
@@ -156,38 +193,26 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 			uniqueServiceNames += uniqueServiceName;
 		}
 
-		String content;
-		XML::Document description;
-		bool ok = processDescriptionResponse(connection, content, description);
+		auto response = connection.getResponse();
 
-		switch(activeSearch->kind) {
-		case Search::Kind::desc: {
-			auto& search = *reinterpret_cast<DescriptionSearch*>(activeSearch.get());
-			if(search.callback) {
-				search.callback(connection, ok ? &description : nullptr);
-			} else {
-				debug_w("[UPnP]: No description callback provided");
-			}
-			break;
+		if(!response->isSuccess()) {
+			debug_e("[UPnP] failed: %s", toString(response->code).c_str());
+			return 0;
 		}
 
+		assert(response->stream != nullptr);
+		auto parser = reinterpret_cast<DescriptionParser*>(response->stream);
+
+		switch(activeSearch->kind) {
 		case Search::Kind::device: {
 			auto& search = *reinterpret_cast<DeviceSearch*>(activeSearch.get());
-			uniqueServiceNames += uniqueServiceName;
 			if(!search.callback) {
 				debug_w("[UPnP]: No device callback provided");
 				break;
 			}
 
-			auto device = search.cls.createRootDevice();
-			if(device == nullptr) {
-				break;
-			}
-
-			if(!device->configure(*this, connection.getRequest()->uri, description)) {
-				delete device;
-				break;
-			}
+			auto device = parser->rootDevice;
+			parser->rootDevice = nullptr;
 
 			rootDevices.add(device);
 
@@ -227,21 +252,9 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 				debug_e("[UPnP] Invalid USN: %s", uniqueServiceName.c_str());
 				break;
 			}
-			const DeviceClass* cls = findDeviceClass(usn);
-			if(cls == nullptr) {
-				debug_e("[UPnP] Device not registered: %s", uniqueServiceName.c_str());
-				break;
-			}
 
-			auto device = cls->createRootDevice();
-			if(device == nullptr) {
-				break;
-			}
-
-			if(!device->configure(*this, connection.getRequest()->uri, description)) {
-				delete device;
-				break;
-			}
+			auto device = parser->rootDevice;
+			parser->rootDevice = nullptr;
 
 			auto service = device->getService(search.cls);
 			if(service == nullptr) {
@@ -338,7 +351,7 @@ bool ControlPoint::sendRequest(ActionInfo& act, const ActionInfo::Callback& call
 	s = req->toString();
 	s += act.toString(true);
 	m_nputs(s.c_str(), s.length());
-	m_putc('\n');
+	m_puts("\r\n");
 #endif
 
 	const Service* service = &act.service;
@@ -346,10 +359,14 @@ bool ControlPoint::sendRequest(ActionInfo& act, const ActionInfo::Callback& call
 		ActionInfo response(*service);
 		String s;
 		if(successful) {
+#if DEBUG_VERBOSE_LEVEL == DBG
+			s = client.getResponse()->toString();
+			m_nputs(s.c_str(), s.length());
+#endif
 			s = client.getResponse()->getBody();
 #if DEBUG_VERBOSE_LEVEL == DBG
 			m_nputs(s.c_str(), s.length());
-			m_putc('\n');
+			m_puts("\r\n");
 #endif
 			response.load(s);
 		}

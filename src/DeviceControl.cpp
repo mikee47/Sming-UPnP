@@ -32,37 +32,6 @@ bool DeviceControl::configure(XML::Node* device)
 	this->description.modelNumber = XML::getValue(device, _F("modelNumber"));
 	this->description.serialNumber = XML::getValue(device, _F("serialNumber"));
 
-	auto serviceList = device->first_node("serviceList");
-	debug_i("serviceList %sfound", serviceList ? "" : "NOT ");
-	if(serviceList != nullptr) {
-		auto svc = serviceList->first_node();
-		while(svc != nullptr) {
-			String svcType = XML::getValue(svc, _F("serviceType"));
-			auto service = getService(svcType);
-			if(service == nullptr) {
-				debug_w("[UPnP] Service not registered: %s", svcType.c_str());
-			} else {
-				service->configure(svc);
-			}
-			svc = svc->next_sibling();
-		}
-	}
-
-	auto deviceList = device->first_node("deviceList");
-	if(deviceList != nullptr) {
-		auto devNode = deviceList->first_node();
-		while(devNode != nullptr) {
-			String devType = XML::getValue(devNode, _F("deviceType"));
-			auto dev = getDevice(devType);
-			if(dev == nullptr) {
-				debug_w("[UPnP] Device not registered: %s", devType.c_str());
-			} else {
-				dev->configure(devNode);
-			}
-			devNode = devNode->next_sibling();
-		}
-	}
-
 	return true;
 }
 

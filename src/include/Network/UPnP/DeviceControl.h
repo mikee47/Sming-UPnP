@@ -112,6 +112,11 @@ public:
 		return reinterpret_cast<DeviceControl*>(next());
 	}
 
+	DeviceControl& parent() const
+	{
+		return reinterpret_cast<DeviceControl&>(Device::parent());
+	}
+
 protected:
 	struct Description {
 		CString udn;

@@ -64,6 +64,16 @@ public:
 
 	RootDevice& root() const;
 
+	String caption() const
+	{
+		String s;
+		s += getField(Field::serviceType);
+		s += " {";
+		s += getField(Field::serviceId);
+		s += '}';
+		return s;
+	}
+
 	void search(const SearchFilter& filter) override;
 	bool formatMessage(Message& msg, MessageSpec& ms) override;
 

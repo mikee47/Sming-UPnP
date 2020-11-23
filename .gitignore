@@ -16,3 +16,5 @@ vssver2.scc
 
 .metadata
 .submodule
+
+.clang-format

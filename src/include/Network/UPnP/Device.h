@@ -132,6 +132,11 @@ public:
 		return devices_.head();
 	}
 
+	Device& parent() const
+	{
+		return parent_;
+	}
+
 private:
 	Device& parent_;
 	Service::OwnedList services_;

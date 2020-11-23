@@ -42,7 +42,7 @@ public:
 
 	bool sendRequest(ActionInfo& request, const ActionInfo::Callback& callback);
 
-	bool configure(ControlPoint& controlPoint, const Url& location, XML::Document& description);
+	bool configure(ControlPoint& controlPoint, const String& location, XML::Node* device);
 
 	String getField(Field desc) const;
 
