@@ -51,10 +51,18 @@ bool ControlPoint::submitSearch(Search* search)
 {
 	if(bool(activeSearch)) {
 		debug_e("Search already in progress");
+		delete search;
+		return false;
+	}
+
+	if(!bool(*search)) {
+		debug_e("Invalid search");
+		delete search;
 		return false;
 	}
 
 	if(!initialize()) {
+		delete search;
 		return false;
 	}
 
@@ -135,11 +143,7 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 
 	if(activeSearch->kind == Search::Kind::ssdp) {
 		auto& search = *reinterpret_cast<SsdpSearch*>(activeSearch.get());
-		if(search.callback) {
-			search.callback(message);
-		} else {
-			debug_w("[UPnP]: No SSDP callback provided");
-		}
+		search.callback(message);
 		return;
 	}
 
@@ -166,11 +170,7 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 			bool ok = processDescriptionResponse(connection, content, description);
 
 			auto& search = *reinterpret_cast<DescriptionSearch*>(activeSearch.get());
-			if(search.callback) {
-				search.callback(connection, ok ? &description : nullptr);
-			} else {
-				debug_w("[UPnP]: No description callback provided");
-			}
+			search.callback(connection, ok ? &description : nullptr);
 
 			return 0;
 		});
@@ -206,10 +206,6 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 		switch(activeSearch->kind) {
 		case Search::Kind::device: {
 			auto& search = *reinterpret_cast<DeviceSearch*>(activeSearch.get());
-			if(!search.callback) {
-				debug_w("[UPnP]: No device callback provided");
-				break;
-			}
 
 			auto device = parser->rootDevice;
 			parser->rootDevice = nullptr;
@@ -242,10 +238,6 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 		case Search::Kind::service: {
 			auto& search = *reinterpret_cast<ServiceSearch*>(activeSearch.get());
 			uniqueServiceNames += uniqueServiceName;
-			if(!search.callback) {
-				debug_w("[UPnP]: No service callback provided");
-				break;
-			}
 
 			Usn usn(uniqueServiceName);
 			if(!usn) {

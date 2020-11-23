@@ -53,6 +53,8 @@ struct Search {
 	{
 	}
 
+	virtual explicit operator bool() const = 0;
+
 	String toString(Search::Kind kind) const
 	{
 		switch(kind) {
@@ -93,6 +95,11 @@ struct SsdpSearch : public Search {
 	{
 	}
 
+	explicit operator bool() const override
+	{
+		return bool(callback);
+	}
+
 	Callback callback;
 };
 
@@ -105,6 +112,11 @@ struct DescriptionSearch : public Search {
 
 	DescriptionSearch(const Urn& urn, Callback callback) : Search(Kind::desc, urn), callback(callback)
 	{
+	}
+
+	explicit operator bool() const override
+	{
+		return bool(callback);
 	}
 
 	Callback callback;
@@ -124,6 +136,11 @@ struct DeviceSearch : public Search {
 	{
 	}
 
+	explicit operator bool() const override
+	{
+		return bool(callback);
+	}
+
 	const DeviceClass& cls;
 	Callback callback;
 };
@@ -141,6 +158,11 @@ struct ServiceSearch : public Search {
 	ServiceSearch(const ServiceClass& cls, Callback callback)
 		: Search(Kind::service, cls.objectType()), cls(cls), callback(callback)
 	{
+	}
+
+	explicit operator bool() const override
+	{
+		return bool(callback);
 	}
 
 	const ServiceClass& cls;
