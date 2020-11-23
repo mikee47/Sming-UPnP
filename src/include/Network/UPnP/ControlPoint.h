@@ -13,7 +13,7 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along with Sming UPnP.
+ * You should have received a copy of the GNU General Public License along with this library.
  * If not, see <https://www.gnu.org/licenses/>.
  *
  ****/
@@ -202,11 +202,6 @@ public:
 			objectClasses.add(&group);
 		}
 	}
-
-//	const Search* getActiveSearch() const
-//	{
-//		return activeSearch.get();
-//	}
 
 private:
 	using List = ObjectList<ControlPoint>;

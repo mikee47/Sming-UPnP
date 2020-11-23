@@ -12,7 +12,7 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along with Sming UPnP.
+ * You should have received a copy of the GNU General Public License along with this library.
  * If not, see <https://www.gnu.org/licenses/>.
  *
  ****/
@@ -97,18 +97,6 @@ XML::Node* Envelope::findBody()
 	if(body == nullptr) {
 		debug_e("[SOAP] Body missing");
 	}
-
-	return body;
-
-	//	auto env = doc.first_node();
-	//	if(!checkValue(F("Envelope"), env)) {
-	//		return nullptr;
-	//	}
-
-	//	auto body = env->first_node();
-	//	if(!checkValue(F("Body"), body)) {
-	//		return nullptr;
-	//	}
 
 	return body;
 }
