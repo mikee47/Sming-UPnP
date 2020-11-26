@@ -33,18 +33,13 @@ ClassGroup::List ControlPoint::objectClasses;
 
 const ObjectClass* ControlPoint::findClass(const Urn& objectType)
 {
-	const ObjectClass* cls{nullptr};
-	for(unsigned i = 0; i < objectClasses.count(); ++i) {
-		cls = objectClasses[i]->find(objectType);
-		if(cls != nullptr) {
-			debug_i("Found %s class '%s'", toString(cls->kind()).c_str(), String(cls->type).c_str());
-			break;
-		}
+	const ObjectClass* cls = objectClasses.find(objectType);
+	if(cls == nullptr) {
+		debug_w("Class '%s' not registered", toString(objectType).c_str());
+	} else {
+		debug_i("Found %s class '%s'", toString(cls->kind()).c_str(), String(cls->type()).c_str());
 	}
 
-	if(cls == nullptr) {
-		debug_i("Class '%s' not registered", toString(objectType).c_str());
-	}
 	return cls;
 }
 

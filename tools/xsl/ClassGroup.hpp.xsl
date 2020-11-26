@@ -23,9 +23,6 @@
  * @note This file is auto-generated ** DO NOT EDIT **
  */
 
-#include &lt;Network/UPnP/ObjectClass.h>
-#include &lt;Network/UPnP/ControlPoint.h>
-
 <xsl:for-each select="s:scpd | d:device">
 #include "<xsl:call-template name="urn-kind"/>/<xsl:call-template name="control-class"/>.h"
 #include "<xsl:call-template name="urn-kind"/>/<xsl:call-template name="template-class"/>.h"<xsl:text/>
@@ -34,16 +31,9 @@
 namespace UPnP {
 namespace <xsl:value-of select="$domain-cpp"/> {
 
-<xsl:if test="$domain != 'schemas-upnp-org'">
-DECLARE_FSTR(domain);
-</xsl:if>
+const FlashString&amp; domain();
 
-extern const ClassGroup classGroup;
-
-inline void registerClasses()
-{
-	ControlPoint::registerClasses(classGroup);
-}
+void registerClasses();
 
 } // namespace <xsl:value-of select="$domain-cpp"/>
 } // namespace UPnP

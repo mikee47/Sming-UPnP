@@ -22,7 +22,7 @@ public:
 
 	const ObjectClass&amp; getClass() const override
 	{
-		return <xsl:value-of select="$controlClass"/>::class_;
+		return <xsl:value-of select="$controlClass"/>_class;
 	}
 };
 <xsl:call-template name="namespace-close"/>

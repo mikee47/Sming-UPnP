@@ -7,29 +7,9 @@
 <xsl:output method="text"/>
 
 <xsl:template match="s:scpd">
-<xsl:call-template name="file-cpp"/>
-namespace UPnP {
-namespace <xsl:call-template name="urn-domain-cpp"/> {
-
-extern const ClassGroup classGroup;
-
-namespace <xsl:call-template name="urn-kind"/> {
-
 <xsl:variable name="controlClass"><xsl:call-template name="control-class"/></xsl:variable>
-
-namespace {
-DEFINE_FSTR(type, "<xsl:call-template name="urn-type"/>")
-IMPORT_FSTR(<xsl:value-of select="$controlClass"/>_schema, COMPONENT_PATH "/schema/<xsl:call-template name="file-path"/>.xml")
-}
-
-const ObjectClass <xsl:value-of select="$controlClass"/>::class_ PROGMEM = {
-	classGroup,
-	type,
-	<xsl:value-of select="$controlClass"/>_schema,
-	<xsl:call-template name="urn-version"/>,
-	Urn::Kind::service,
-	<xsl:call-template name="control-class"/>::createObject
-};
+<xsl:call-template name="file-cpp"/>
+<xsl:call-template name="namespace-open"/>
 
 <xsl:for-each select="s:actionList/s:action">
 

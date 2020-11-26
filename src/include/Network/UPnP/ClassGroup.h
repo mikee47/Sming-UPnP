@@ -1,5 +1,5 @@
 /**
- * Constants.h
+ * ClassGroup.h
  *
  * Copyright 2020 mikee47 <mike@sillyhouse.net>
  *
@@ -19,23 +19,23 @@
 
 #pragma once
 
-#include <FlashString/String.hpp>
+#include "ObjectClass.h"
+#include <WVector.h>
 
 namespace UPnP
 {
-DECLARE_FSTR(fs_xmlns)
+struct ClassGroup {
+	class List : public Vector<ClassGroup>
+	{
+	public:
+		int add(const FlashString& domain, const ObjectClass::List& classes);
+		const ObjectClass* find(const Urn& objectType) const;
+	};
 
-namespace schemas_upnp_org
-{
-DECLARE_FSTR(device_1_0)
-DECLARE_FSTR(service_1_0)
-DECLARE_FSTR(control_1_0)
+	const FlashString& domain;
+	const ObjectClass::List& classes;
 
-namespace device
-{
-DECLARE_FSTR(Basic)
-}
-
-} // namespace schemas_upnp_org
+	const ObjectClass* find(const String& type, uint8_t version) const;
+};
 
 } // namespace UPnP

@@ -103,9 +103,9 @@ String Device::getField(Field desc) const
 	case Field::deviceType:
 		return String(objectType());
 	case Field::domain:
-		return getClass().group.domain;
+		return getClass().domain();
 	case Field::type:
-		return getClass().type;
+		return getClass().type();
 	case Field::version:
 		return String(version());
 

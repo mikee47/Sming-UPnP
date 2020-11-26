@@ -24,7 +24,7 @@ namespace UPnP
 {
 Urn ObjectClass::objectType() const
 {
-	return Urn(kind(), nullptr, String(group.domain), String(type), version());
+	return Urn(kind(), nullptr, domain(), type(), version());
 }
 
 bool ObjectClass::operator==(const ObjectClass& other) const
@@ -37,48 +37,22 @@ bool ObjectClass::operator==(const ObjectClass& other) const
 		return false;
 	}
 
-	if(&group.domain != &other.group.domain && group.domain != other.group.domain) {
+	if(domain_ != other.domain_ && domain() != other.domain()) {
 		return false;
 	}
 
-	return &type == &other.type || type == other.type;
+	return type_ == other.type_ || type() == other.type();
 }
 
 bool ObjectClass::typeIs(const Urn& objectType) const
 {
-	return kind() == objectType.kind && version() == objectType.version && group.domain == objectType.domain &&
-		   type == objectType.type;
+	return kind() == objectType.kind && version() == objectType.version && domain() == objectType.domain &&
+		   type() == objectType.type;
 }
 
 bool ObjectClass::typeIs(const String& type, uint8_t version) const
 {
-	return this->version() == version && this->type == type;
-}
-
-const ObjectClass* ClassGroup::find(const Urn& objectType) const
-{
-	for(unsigned i = 0; i < classes.length(); ++i) {
-		auto cls = classes.data()[i];
-		//		debug_i("%s", toString(cls->objectType()).c_str());
-		if(cls->typeIs(objectType)) {
-			return cls;
-		}
-	}
-
-	return nullptr;
-}
-
-const ObjectClass* ClassGroup::find(const String& type, uint8_t version) const
-{
-	for(unsigned i = 0; i < classes.length(); ++i) {
-		auto cls = classes.data()[i];
-		//		debug_i("%s", toString(cls->objectType()).c_str());
-		if(cls->typeIs(type, version)) {
-			return cls;
-		}
-	}
-
-	return nullptr;
+	return this->version() == version && this->type() == type;
 }
 
 } // namespace UPnP

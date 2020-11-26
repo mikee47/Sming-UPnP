@@ -21,17 +21,18 @@
 
 #include <Network/SSDP/Urn.h>
 #include <WString.h>
-#include <WVector.h>
 #include <FlashString/Vector.hpp>
+#include <assert.h>
 
 namespace UPnP
 {
-struct ClassGroup;
 class Object;
 class DeviceControl;
 class ServiceControl;
 
 struct ObjectClass {
+	using List = const FSTR::Vector<ObjectClass>&;
+
 	/**
 	 * @brief Interface version number
 	 */
@@ -42,12 +43,27 @@ struct ObjectClass {
 	 */
 	using CreateObject = Object* (*)(DeviceControl* owner);
 
-	const ClassGroup& group;
-	const FlashString& type;
-	const FlashString& schema;
+	const FlashString* domain_;
+	const FlashString* type_;
+	const FlashString* schema_;
 	Version version_;
 	Urn::Kind kind_;
-	CreateObject createObject;
+	const CreateObject createObject_;
+
+	const FlashString& domain() const
+	{
+		return *domain_;
+	}
+
+	const FlashString& type() const
+	{
+		return *type_;
+	}
+
+	const FlashString& schema() const
+	{
+		return *schema_;
+	}
 
 	Version version() const
 	{
@@ -61,17 +77,20 @@ struct ObjectClass {
 
 	DeviceControl* createRootDevice() const
 	{
-		return (kind() == Urn::Kind::device) ? reinterpret_cast<DeviceControl*>(createObject(nullptr)) : nullptr;
+		assert(kind() == Urn::Kind::device);
+		return reinterpret_cast<DeviceControl*>(createObject_(nullptr));
 	}
 
 	DeviceControl* createDevice(DeviceControl& owner) const
 	{
-		return (kind() == Urn::Kind::device) ? reinterpret_cast<DeviceControl*>(createObject(&owner)) : nullptr;
+		assert(kind() == Urn::Kind::device);
+		return reinterpret_cast<DeviceControl*>(createObject_(&owner));
 	}
 
 	ServiceControl* createService(DeviceControl& owner) const
 	{
-		return (kind() == Urn::Kind::service) ? reinterpret_cast<ServiceControl*>(createObject(&owner)) : nullptr;
+		assert(kind() == Urn::Kind::service);
+		return reinterpret_cast<ServiceControl*>(createObject_(&owner));
 	}
 
 	Urn objectType() const;
@@ -84,16 +103,6 @@ struct ObjectClass {
 		// We're always valid :-)
 		return true;
 	}
-};
-
-struct ClassGroup {
-	using List = Vector<const ClassGroup*>;
-
-	const FlashString& domain;
-	const FSTR::Vector<ObjectClass>& classes;
-
-	const ObjectClass* find(const Urn& objectType) const;
-	const ObjectClass* find(const String& type, uint8_t version) const;
 };
 
 } // namespace UPnP

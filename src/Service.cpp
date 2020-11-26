@@ -83,7 +83,7 @@ XML::Node* Service::getDescription(XML::Document& doc, DescType descType) const
 
 IDataSourceStream* Service::createDescription()
 {
-	return new FSTR::Stream(getClass().schema);
+	return new FSTR::Stream(getClass().schema());
 }
 
 String Service::getField(Field desc) const
@@ -92,13 +92,10 @@ String Service::getField(Field desc) const
 	switch(desc) {
 	case Field::serviceType:
 		return String(objectType());
-
 	case Field::domain:
-		return getClass().group.domain;
-
+		return getClass().domain();
 	case Field::type:
-		return getClass().type;
-
+		return getClass().type();
 	case Field::version:
 		return String(version());
 

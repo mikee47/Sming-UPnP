@@ -22,6 +22,7 @@
 
 #include "Object.h"
 #include "ObjectList.h"
+#include "ClassGroup.h"
 #include <Network/SSDP/Message.h>
 #include <Network/HttpClient.h>
 #include "Constants.h"
@@ -164,11 +165,9 @@ public:
 
 	static const ObjectClass* findClass(const Urn& objectType);
 
-	static void registerClasses(const ClassGroup& group)
+	static void registerClasses(const FlashString& domain, const ObjectClass::List& classes)
 	{
-		if(!objectClasses.contains(&group)) {
-			objectClasses.add(&group);
-		}
+		objectClasses.add(domain, classes);
 	}
 
 private:
