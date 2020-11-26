@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "RootDevice.h"
+#include "Device.h"
 
 namespace UPnP
 {
@@ -35,9 +35,9 @@ public:
 
 	bool isActive() const;
 
-	bool registerDevice(RootDevice* device);
+	bool registerDevice(Device* device);
 
-	bool unRegisterDevice(RootDevice* device);
+	bool unRegisterDevice(Device* device);
 
 	bool onHttpRequest(HttpServerConnection& connection);
 
@@ -46,9 +46,9 @@ public:
 	 */
 	IDataSourceStream* generateDebugPage(const String& title);
 
-	RootDevice* firstRootDevice()
+	Device::List& devices()
 	{
-		return rootDevices.head();
+		return devices_;
 	}
 
 	void notify(Device* device, NotifySubtype subype);
@@ -61,7 +61,7 @@ public:
 private:
 	void search(SearchFilter& filter, Device* device);
 
-	RootDevice::List rootDevices;
+	Device::List devices_;
 };
 
 extern DeviceHost deviceHost;

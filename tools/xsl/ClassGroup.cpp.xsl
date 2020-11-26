@@ -28,10 +28,12 @@
 namespace UPnP {
 namespace <xsl:value-of select="$domain-cpp"/> {
 
+<xsl:if test="$domain != 'schemas-upnp-org'">
 DEFINE_FSTR(domain, "<xsl:value-of select="$domain"/>");
+</xsl:if>
 
 DEFINE_FSTR_VECTOR_LOCAL(classes, ObjectClass,
-	<xsl:for-each select="s:scpd | d:device">&amp;<xsl:call-template name="control-class"/>::class_,
+	<xsl:for-each select="s:scpd | d:device">&amp;<xsl:call-template name="urn-kind"/>::<xsl:call-template name="control-class"/>::class_,
 	</xsl:for-each>)
 
 const ClassGroup classGroup PROGMEM = {

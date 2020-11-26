@@ -37,18 +37,24 @@
 	XX(type, custom_required)                                                                                          \
 	XX(version, custom)                                                                                                \
 	XX(serverId, custom)                                                                                               \
+	XX(productNameAndVersion, custom)                                                                                  \
 	XX(baseURL, custom)                                                                                                \
 	XX(descriptionURL, custom)
 
 namespace UPnP
 {
+struct SpecVersion {
+	uint8_t major;
+	uint8_t minor;
+};
+
 class Device;
 class Request;
 
 /**
  * @brief Represents any kind of device, including a root device
  */
-class Device : public ObjectTemplate<Device>
+class Device : public ObjectTemplate<Device, Object>
 {
 public:
 	enum class Field {
@@ -66,7 +72,7 @@ public:
 	{
 	}
 
-	Device(Device* parent) : parent_(*(parent ?: this))
+	Device(Device* parent = nullptr) : parent_(*(parent ?: this))
 	{
 	}
 
@@ -80,11 +86,38 @@ public:
 		return s;
 	}
 
-	RootDevice& root() const;
+	Url getUrl(const String& path);
+
+	Device& root();
+
+	const Device& root() const
+	{
+		return const_cast<Device*>(this)->root();
+	}
 
 	bool isRoot() const
 	{
-		return static_cast<const Device*>(this) == &parent_;
+		return this == &parent_;
+	}
+
+	template <class S, typename T> S* getService(const T& serviceType)
+	{
+		return reinterpret_cast<S*>(services_.find(serviceType));
+	}
+
+	template <typename T> Service* getService(const T& serviceType)
+	{
+		return getService<Service>(serviceType);
+	}
+
+	template <class D, typename T> D* getDevice(const T& deviceType)
+	{
+		return reinterpret_cast<D*>(devices_.find(deviceType));
+	}
+
+	template <typename T> Device* getDevice(const T& deviceType)
+	{
+		return getDevice<Device>(deviceType);
 	}
 
 	void search(const SearchFilter& filter) override;
@@ -92,9 +125,9 @@ public:
 
 	virtual String getField(Field desc) const;
 
-	String deviceType() const
+	Urn objectType() const override
 	{
-		return getField(Field::deviceType);
+		return DeviceUrn(getField(Field::domain), getField(Field::type), version());
 	}
 
 	String friendlyName() const
@@ -122,19 +155,19 @@ public:
 
 	void sendXml(HttpResponse& response, IDataSourceStream* content);
 
-	Service* firstService()
-	{
-		return services_.head();
-	}
-
-	Device* firstDevice()
-	{
-		return devices_.head();
-	}
-
-	Device& parent() const
+	Device& parent()
 	{
 		return parent_;
+	}
+
+	Service::OwnedList& services()
+	{
+		return services_;
+	}
+
+	OwnedList& devices()
+	{
+		return devices_;
 	}
 
 private:

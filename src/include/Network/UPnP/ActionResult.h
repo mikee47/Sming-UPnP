@@ -1,7 +1,7 @@
 /**
- * ServiceClass.h
+ * ActionResult.h
  *
- * Copyright 2020 mikee47 <mike@sillyhouse.net>
+ * Copyright 2019 mikee47 <mike@sillyhouse.net>
  *
  * This file is part of the Sming UPnP Library
  *
@@ -19,14 +19,36 @@
 
 #pragma once
 
-#include "ObjectClass.h"
+#include <Network/Http/HttpConnection.h>
+#include "Envelope.h"
 
 namespace UPnP
 {
 /**
- * @brief Provides information required for UPnP to construct a ServiceControl object
+ * @brief All action results inherit from this class.
+ * We keep it as basic as possible to avoid name conflicts
  */
-struct ServiceClass : public ObjectClass {
+class ActionResult
+{
+public:
+	ActionResult(Envelope& envelope) : envelope(envelope)
+	{
+	}
+
+	template <typename T> T getArg(const FlashString& name)
+	{
+		T value;
+		envelope.getArg(name, value);
+		return value;
+	}
+
+	Envelope::Fault fault() const
+	{
+		return envelope.fault();
+	}
+
+private:
+	Envelope& envelope;
 };
 
 } // namespace UPnP

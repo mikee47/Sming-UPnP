@@ -25,13 +25,13 @@
 #include <Network/SSDP/Message.h>
 #include <Network/HttpClient.h>
 #include "Constants.h"
-#include "RootDeviceControl.h"
+#include "DeviceControl.h"
 #include "Search.h"
 #include <memory>
 
 namespace UPnP
 {
-class ControlPoint : public ObjectTemplate<ControlPoint>
+class ControlPoint : public ObjectTemplate<ControlPoint, BaseObject>
 {
 public:
 	/**
@@ -94,7 +94,7 @@ public:
 	 * @param callback Invoked with constructed control object
 	 * @retval bool true on success, false if request queue is full
 	 */
-	bool beginSearch(const DeviceClass& cls, DeviceSearch::Callback callback)
+	bool beginSearch(const ObjectClass& cls, DeviceSearch::Callback callback)
 	{
 		return submitSearch(new DeviceSearch(cls, callback));
 	}
@@ -105,14 +105,14 @@ public:
 	 * @param callback Invoked with constructed control object
 	 * @retval bool true on success, false if request queue is full
 	 */
-	bool beginSearch(const ServiceClass& cls, ServiceSearch::Callback callback)
+	bool beginSearch(const ObjectClass& cls, ServiceSearch::Callback callback)
 	{
 		return submitSearch(new ServiceSearch(cls, callback));
 	}
 
 	template <typename Device> bool beginSearch(Delegate<bool(Device&)> callback)
 	{
-		return beginSearch(Device(nullptr).getClass(),
+		return beginSearch(Device().getClass(),
 						   [callback](DeviceControl& device) { return callback(reinterpret_cast<Device&>(device)); });
 	}
 
@@ -138,25 +138,9 @@ public:
 	 */
 	virtual void onNotify(BasicMessage& msg);
 
-	/* Object */
-
-	Version version() const
-	{
-		return 0;
-	}
-
-	void search(const SearchFilter& filter) override
-	{
-	}
-
 	bool formatMessage(Message& msg, MessageSpec& ms) override;
 
-	bool onHttpRequest(HttpServerConnection& connection) override
-	{
-		return false;
-	}
-
-	bool sendRequest(ActionInfo& request, const ActionInfo::Callback& callback);
+	bool sendRequest(Envelope& request, const Envelope::Callback& callback);
 
 	/**
 	 * @brief Send a request
@@ -180,22 +164,6 @@ public:
 
 	static const ObjectClass* findClass(const Urn& objectType);
 
-	template <typename Class> static const Class* findClass()
-	{
-		const Class* cls = findClass(Class().objectType());
-		return reinterpret_cast<const Class*>(cls);
-	}
-
-	static const ServiceClass* findServiceClass(const Urn& urn)
-	{
-		return (urn.kind == Urn::Kind::service) ? reinterpret_cast<const ServiceClass*>(findClass(urn)) : nullptr;
-	}
-
-	static const DeviceClass* findDeviceClass(const Urn& urn)
-	{
-		return (urn.kind == Urn::Kind::device) ? reinterpret_cast<const DeviceClass*>(findClass(urn)) : nullptr;
-	}
-
 	static void registerClasses(const ClassGroup& group)
 	{
 		if(!objectClasses.contains(&group)) {
@@ -211,7 +179,7 @@ private:
 
 	static List controlPoints;
 	static ClassGroup::List objectClasses;
-	RootDeviceControl::OwnedList rootDevices;
+	DeviceControl::OwnedList rootDevices;
 	static HttpClient http;
 	size_t maxResponseSize; // <<< Maximum size of XML description that can be processed
 	CStringArray uniqueServiceNames;

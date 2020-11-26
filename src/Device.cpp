@@ -17,17 +17,23 @@
  *
  ****/
 
-#include "include/Network/UPnP/RootDevice.h"
+#include "include/Network/UPnP/Device.h"
 #include "include/Network/UPnP/ItemEnumerator.h"
 #include "include/Network/UPnP/DescriptionStream.h"
+#include <Network/SSDP/Server.h>
 #include <Network/Http/HttpConnection.h>
 #include <Network/Url.h>
 #include <assert.h>
 #include <SystemClock.h>
+#include <Platform/Station.h>
 #include <FlashString/Vector.hpp>
+#include <FlashString/TemplateStream.hpp>
 
 namespace
 {
+IMPORT_FSTR_LOCAL(upnp_default_page, COMPONENT_PATH "/resource/default.html");
+DEFINE_FSTR_LOCAL(defaultPresentationURL, "index.html");
+
 #define XX(name, req) DEFINE_FSTR_LOCAL(fn_##name, #name);
 UPNP_DEVICE_FIELD_MAP(XX);
 #undef XX
@@ -39,9 +45,9 @@ DEFINE_FSTR_VECTOR(fieldNames, FlashString, UPNP_DEVICE_FIELD_MAP(XX))
 
 namespace UPnP
 {
-RootDevice& Device::root() const
+Device& Device::root()
 {
-	return isRoot() ? const_cast<RootDevice&>(reinterpret_cast<const RootDevice&>(*this)) : parent_.root();
+	return isRoot() ? *this : parent_.root();
 }
 
 /*
@@ -65,7 +71,7 @@ XML::Node* Device::getDescription(XML::Document& doc, DescType descType) const
 	switch(descType) {
 	case DescType::header: {
 		auto root = XML::appendNode(&doc, "root");
-		XML::appendAttribute(root, "xmlns", F("urn:schemas-upnp-org:device-1-0"));
+		XML::appendAttribute(root, fs_xmlns, schemas_upnp_org::device_1_0);
 		return root;
 	}
 
@@ -95,29 +101,42 @@ String Device::getField(Field desc) const
 	// Provide defaults for required fields
 	switch(desc) {
 	case Field::deviceType:
-		return DeviceUrn(getField(Field::domain), getField(Field::type), version()).toString();
+		return String(objectType());
+	case Field::domain:
+		return getClass().group.domain;
 	case Field::type:
-		return DeviceType::Basic;
+		return getClass().type;
+	case Field::version:
+		return String(version());
+
+	case Field::presentationURL:
+		return getField(Field::baseURL) + defaultPresentationURL;
+
 	case Field::friendlyName:
 	case Field::manufacturer:
 	case Field::modelName:
 	case Field::UDN:
-		return F("REQUIRED FIELD");
-	case Field::domain:
-		return F("schemas-upnp-org");
+		return nullptr;
+
 	case Field::descriptionURL: {
 		String url = getField(Field::baseURL);
 		url += _F("desc.xml");
 		return url;
 	}
+
 	case Field::baseURL: {
-		String url = root().getField(desc);
+		String url;
+		url += '/';
 		url += getField(Field::type);
 		url += '/';
 		return url;
 	}
+
 	case Field::serverId:
-		return isRoot() ? nullptr : root().getField(desc);
+		return SSDP::getServerId(getField(Field::productNameAndVersion));
+
+	case Field::productNameAndVersion:
+		return F("MyApp/1.0");
 	default:
 		return nullptr;
 	}
@@ -145,7 +164,16 @@ ItemEnumerator* Device::getList(unsigned index, String& name)
 void Device::search(const SearchFilter& filter)
 {
 	switch(filter.ms.target()) {
+	case SearchTarget::root:
+		if(isRoot()) {
+			filter.callback(this, SearchMatch::root);
+			return;
+		}
+		break;
 	case SearchTarget::all:
+		if(isRoot()) {
+			filter.callback(this, SearchMatch::root);
+		}
 		filter.callback(this, SearchMatch::uuid);
 		filter.callback(this, SearchMatch::type);
 		break;
@@ -174,10 +202,21 @@ void Device::search(const SearchFilter& filter)
 	}
 }
 
+Url Device::getUrl(const String& path)
+{
+	return Url(URI_SCHEME_HTTP, nullptr, nullptr, WifiStation.getIP().toString(), 80, path);
+}
+
 bool Device::formatMessage(Message& msg, MessageSpec& ms)
 {
-	msg[HTTP_HEADER_SERVER] = getField(Field::serverId);
-	msg[HTTP_HEADER_LOCATION] = root().getURL(getField(Field::descriptionURL));
+	msg[HTTP_HEADER_LOCATION] = getUrl(getField(Field::descriptionURL));
+
+	String serverId = SSDP::getServerId(getField(Field::productNameAndVersion));
+	if(ms.type() == MessageType::notify) {
+		msg[HTTP_HEADER_SERVER] = serverId;
+	} else {
+		msg[HTTP_HEADER_USER_AGENT] = serverId;
+	}
 
 	String st;
 	String usn = getField(Field::UDN);
@@ -212,6 +251,23 @@ bool Device::formatMessage(Message& msg, MessageSpec& ms)
 bool Device::onHttpRequest(HttpServerConnection& connection)
 {
 	auto request = connection.getRequest();
+
+	if(isRoot() && request->uri.Path == getField(Field::presentationURL)) {
+		debug_i("[UPnP] Sending default presentation page for '%s'", getField(Field::type).c_str());
+		auto response = connection.getResponse();
+		auto tmpl = new FSTR::TemplateStream(upnp_default_page);
+		tmpl->onGetValue([this](const char* name) -> String {
+			Field field;
+			String s;
+			if(fromString(name, field)) {
+				s = getField(field);
+			}
+			return s;
+		});
+		response->sendDataStream(tmpl, MIME_HTML);
+		return true;
+	}
+
 	if(request->uri.Path == getField(Field::descriptionURL)) {
 		debug_i("[UPnP] Sending '%s' for '%s' to %s:%u", request->uri.Path.c_str(), getField(Field::type).c_str(),
 				connection.getRemoteIp().toString().c_str(), connection.getRemotePort());

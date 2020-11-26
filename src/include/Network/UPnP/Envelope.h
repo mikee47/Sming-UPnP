@@ -1,5 +1,5 @@
 /**
- * ActionInfo.h
+ * Envelope.h
  *
  * Copyright 2019 mikee47 <mike@sillyhouse.net>
  *
@@ -19,45 +19,161 @@
 
 #pragma once
 
-#include <Network/Http/HttpConnection.h>
-#include "Soap.h"
+#include <RapidXML.h>
+#include "Error.h"
+#include "ErrorCode.h"
 
 namespace UPnP
 {
+using Error = UPnP::Error;
 class Service;
 
-class ActionInfo
+/**
+ * @brief Class to manage a SOAP envelope for service request/response
+ */
+class Envelope
 {
 public:
-	using Callback = Delegate<void(ActionInfo& info)>;
+	enum class ContentType {
+		none,
+		fault,
+		request,
+		response,
+	};
 
-	ActionInfo(const Service& service) : service(service)
+	using Callback = Delegate<void(Envelope&)>;
+
+	class Fault
+	{
+	public:
+		Fault(Envelope& envelope) : envelope(envelope)
+		{
+		}
+
+		explicit operator bool() const
+		{
+			return envelope.isFault();
+		}
+
+		String faultCode() const;
+		String faultString() const;
+		ErrorCode errorCode() const;
+		String errorDescription() const;
+
+		size_t printTo(Print& p) const;
+
+	private:
+		Envelope& envelope;
+		XML::Node* detail() const;
+		XML::Node* error() const;
+	};
+
+	Envelope(const Service& service) : service(service)
 	{
 	}
 
 	/**
-	 * @brief Parse request content into document
-	 * @param request MUST remain for the lifetime of action parsing
+	 * @brief Wipe the envelope contents
 	 */
-	bool load(String& request);
+	void clear();
+
+	bool isEmpty() const
+	{
+		return type == ContentType::none;
+	}
+
+	bool isFault() const
+	{
+		return type == ContentType::fault;
+	}
 
 	/**
-	 * @brief Prepare for new outgoing request
+	 * @brief Load a SOAP document
+	 * @param content MUST remain valid for the lifetime of this Envelope,
+	 * or until initialise() is called.
+	 * @{
 	 */
-	bool createRequest(const String& name);
+	Error load(String&& content);
+
+	Error load(const FlashString& content);
+	/** @} */
 
 	/**
-	 * @brief Prepare for new outgoing response. Request will be discarded.
+	 * @brief Obtain content as XML string
 	 */
-	bool createResponse();
+	String serialize(bool pretty) const
+	{
+		return XML::serialize(doc, pretty);
+	}
+
+	/**
+	 * @brief Serialize XML content to a stream
+	 */
+	size_t serialize(Print& p, bool pretty)
+	{
+		return XML::serialize(doc, p, pretty);
+	}
+
+	/**
+	 * @brief Get the current envelope content type
+	 */
+	ContentType contentType() const
+	{
+		return type;
+	}
+
+	/**
+	 * @brief Get the action name
+	 */
+	String actionName() const
+	{
+		return name;
+	}
+
+	/**
+	 * @brief Initialise the envelope as a request
+	 */
+	void createRequest(const String& actionName);
+
+	/**
+	 * @brief Initialise the envelope as a response
+	 */
+	void createResponse(const String& actionName);
+
+	/**
+	 * @brief Initialise the envelope as a fault
+	 */
+	Fault createFault(ErrorCode error);
+
+	/**
+	 * @name Fetch fault object
+	 * @{
+	 */
+	Fault fault()
+	{
+		return Fault(*this);
+	}
+
+	const Fault fault() const
+	{
+		return Fault(*const_cast<Envelope*>(this));
+	}
+
+	/** @} */
 
 	/**
 	 * @name Argument getters
 	 * @{
 	 */
-	String getArg(const String& name)
+	const char* getArgValue(const String& name) const
 	{
-		return SOAP::getNodeValue(content, name);
+		auto node = XML::getNode(content, name, "");
+		return node ? node->value() : nullptr;
+	}
+
+	String getArg(const String& name) const
+	{
+		return XML::getValue(content, name, "");
 	}
 
 	bool getArg(const String& name, char& value, char defaultValue = '?')
@@ -118,14 +234,16 @@ public:
 	 * @name Argument setters
 	 * @{
 	 */
-	bool addArg(const String& name, const char* value)
-	{
-		return SOAP::addNodeValue(content, name, value);
-	}
-
 	bool addArg(const String& name, const String& value)
 	{
-		return SOAP::addNodeValue(content, name, value);
+		assert(type == ContentType::request || type == ContentType::response);
+		XML::appendNode(content, name, value);
+		return true;
+	}
+
+	bool addArg(const String& name, const char* value)
+	{
+		return addArg(name, String(value));
 	}
 
 	bool addArg(const String& name, char value)
@@ -160,50 +278,21 @@ public:
 
 	/** @} */
 
-	bool actionIs(const FlashString& name) const
-	{
-		return content ? name.equals(content->name(), content->name_size()) : false;
-	}
-
-	bool actionIs(const String& name) const
-	{
-		return content ? name.equals(content->name()) : false;
-	}
-
-	String actionName() const
-	{
-		return name;
-	}
-
-	explicit operator bool() const
-	{
-		return content != nullptr;
-	}
-
-	String toString(bool pretty) const
-	{
-		return envelope.toString(pretty);
-	}
-
-	size_t serialize(ReadWriteStream& stream, bool pretty)
-	{
-		return XML::serialize(envelope.doc, stream, pretty);
-	}
+	String soapAction() const;
 
 	const Service& service;
 
 private:
-	char* getArgValue(const String& name)
-	{
-		auto node = SOAP::getNode(content, name);
-		return node ? node->value() : nullptr;
-	}
+	Error parseBody();
+	Error verifyObjectType(const String& objectType) const;
+	XML::Node* initialise(ContentType contentType);
 
-	bool findAction();
-
-	SOAP::Envelope envelope;
+	XML::Document doc;
+	String buffer;
 	String name;
 	XML::Node* content{nullptr};
+	ContentType type{};
+	Error lastError{};
 };
 
 } // namespace UPnP

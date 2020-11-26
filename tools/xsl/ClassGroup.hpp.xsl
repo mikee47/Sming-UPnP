@@ -27,13 +27,16 @@
 #include &lt;Network/UPnP/ControlPoint.h>
 
 <xsl:for-each select="s:scpd | d:device">
-#include "<xsl:call-template name="urn-kind"/>/<xsl:call-template name="control-class"/>.h"<xsl:text/>
+#include "<xsl:call-template name="urn-kind"/>/<xsl:call-template name="control-class"/>.h"
+#include "<xsl:call-template name="urn-kind"/>/<xsl:call-template name="template-class"/>.h"<xsl:text/>
 </xsl:for-each>
 
 namespace UPnP {
 namespace <xsl:value-of select="$domain-cpp"/> {
 
+<xsl:if test="$domain != 'schemas-upnp-org'">
 DECLARE_FSTR(domain);
+</xsl:if>
 
 extern const ClassGroup classGroup;
 

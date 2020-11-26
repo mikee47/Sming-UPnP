@@ -17,7 +17,7 @@
  *
  ****/
 
-#include "include/Network/UPnP/RootDevice.h"
+#include "include/Network/UPnP/Device.h"
 #include "include/Network/UPnP/ItemEnumerator.h"
 #include "include/Network/UPnP/DescriptionStream.h"
 #include <Data/Stream/MemoryDataStream.h>
@@ -45,7 +45,7 @@ String toString(UPnP::Service::Field field)
 
 namespace UPnP
 {
-RootDevice& Service::root() const
+Device& Service::root()
 {
 	return device_.root();
 }
@@ -55,7 +55,7 @@ XML::Node* Service::getDescription(XML::Document& doc, DescType descType) const
 	switch(descType) {
 	case DescType::header: {
 		auto root = XML::appendNode(&doc, "scpd");
-		XML::appendAttribute(root, _F("xmlns"), _F("urn:schemas-upnp-org:service-1-0"));
+		XML::appendAttribute(root, fs_xmlns, schemas_upnp_org::service_1_0);
 		return root;
 	}
 
@@ -83,7 +83,7 @@ XML::Node* Service::getDescription(XML::Document& doc, DescType descType) const
 
 IDataSourceStream* Service::createDescription()
 {
-	return new DescriptionStream(*this, root().getField(Device::Field::descriptionURL));
+	return new FSTR::Stream(getClass().schema);
 }
 
 String Service::getField(Field desc) const
@@ -91,16 +91,19 @@ String Service::getField(Field desc) const
 	// Provide defaults for required fields
 	switch(desc) {
 	case Field::serviceType:
-		return ServiceUrn(getField(Field::domain), getField(Field::type), version()).toString();
+		return String(objectType());
+
+	case Field::domain:
+		return getClass().group.domain;
 
 	case Field::type:
-		return F("{type REQUIRED}");
-
-	case Field::serviceId:
-		return F("{serviceId REQUIRED}");
+		return getClass().type;
 
 	case Field::version:
 		return String(version());
+
+	case Field::serviceId:
+		return nullptr;
 
 	case Field::SCPDURL:
 		return getField(Field::baseURL) + _F("desc.xml");
@@ -110,9 +113,6 @@ String Service::getField(Field desc) const
 
 	case Field::eventSubURL:
 		return getField(Field::baseURL) + _F("event");
-
-	case Field::domain:
-		return device_.getField(Device::Field::domain);
 
 	case Field::baseURL: {
 		String url = device_.getField(Device::Field::baseURL);
@@ -148,7 +148,7 @@ void Service::search(const SearchFilter& filter)
 		filter.callback(this, SearchMatch::type);
 		break;
 	case SearchTarget::type:
-		if(filter.targetString == getField(Field::serviceType)) {
+		if(typeIs(filter.targetString)) {
 			filter.callback(this, SearchMatch::type);
 		}
 		break;
@@ -165,9 +165,9 @@ bool Service::formatMessage(Message& msg, MessageSpec& ms)
 	}
 
 	msg[HTTP_HEADER_SERVER] = device_.getField(Device::Field::serverId);
-	msg[HTTP_HEADER_LOCATION] = root().getURL(getField(Field::SCPDURL)).toString();
+	msg[HTTP_HEADER_LOCATION] = device().getUrl(getField(Field::SCPDURL)).toString();
 
-	String st = getField(Field::serviceType);
+	String st = String(objectType());
 	String usn = device_.getField(Device::Field::UDN);
 	usn += "::";
 	usn += st;
@@ -205,36 +205,39 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 
 	auto handleControl = [&]() {
 		String req = request.getBody();
-		if(req.length() == 0) {
-			debug_w("Service: Empty request body");
-			return;
-		}
 
 #if DEBUG_VERBOSE_LEVEL >= DBG
 		m_puts(req.c_str());
 		m_puts("\r\n");
 #endif
 
-		ActionInfo info(*this);
-		if(!info.load(req)) {
+		Envelope env(*this);
+		auto err = env.load(std::move(req));
+		if(!!err) {
 			return;
 		}
 
-		String actionName = info.actionName();
-		handleAction(info);
+		String actionName = env.actionName();
+		handleAction(env);
 
-		if(!bool(info)) {
+		switch(env.contentType()) {
+		case Envelope::ContentType::response:
+			break;
+		case Envelope::ContentType::fault:
+			response.code = HTTP_STATUS_INTERNAL_SERVER_ERROR;
+			break;
+		default:
 			debug_w("[UPnP] Unhandled action: %s", actionName.c_str());
-			info.createResponse();
-			// TODO: Set an error code in the response
+			env.createFault(ErrorCode::OptionalActionNotImplemented);
+			response.code = HTTP_STATUS_INTERNAL_SERVER_ERROR;
 		}
 
 		auto stream = new MemoryDataStream;
-		info.serialize(*stream, false);
+		env.serialize(*stream, false);
 		device_.sendXml(response, stream);
 
 #if DEBUG_VERBOSE_LEVEL >= DBG
-		String s = info.toString(true);
+		String s = env.serialize(true);
 		m_puts(s.c_str());
 		m_puts("\r\n");
 #endif

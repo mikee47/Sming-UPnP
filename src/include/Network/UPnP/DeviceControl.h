@@ -19,105 +19,21 @@
 
 #pragma once
 
-#include "DeviceClass.h"
 #include "Device.h"
-#include "ServiceClass.h"
 #include "ServiceControl.h"
 #include <Data/CString.h>
 #include <Network/SSDP/Uuid.h>
 
 namespace UPnP
 {
-class RootDeviceControl;
 class ControlPoint;
 
 class DeviceControl : public Device
 {
 public:
-	DeviceControl(DeviceControl& parent) : Device(parent)
-	{
-	}
+	using List = ObjectList<DeviceControl>;
+	using OwnedList = OwnedObjectList<DeviceControl>;
 
-	DeviceControl(DeviceControl* parent) : Device(parent)
-	{
-	}
-
-	RootDeviceControl& root() const
-	{
-		return reinterpret_cast<RootDeviceControl&>(Device::root());
-	}
-
-	ServiceControl* getService(const Urn& serviceType);
-
-	ServiceControl* getService(const String& serviceType)
-	{
-		return getService(Urn(serviceType));
-	}
-
-	ServiceControl* getService(const ServiceClass& serviceClass)
-	{
-		return getService(serviceClass.objectType());
-	}
-
-	template <class Control> Control* getService()
-	{
-		return reinterpret_cast<Control*>(getService(Control(*this).getClass().objectType()));
-	}
-
-	DeviceControl* getDevice(const Urn& deviceType);
-
-	DeviceControl* getDevice(const String& deviceType)
-	{
-		return getDevice(Urn(deviceType));
-	}
-
-	DeviceControl* getDevice(const DeviceClass& deviceClass)
-	{
-		return getDevice(deviceClass.objectType());
-	}
-
-	template <class Control> Control* getDevice()
-	{
-		return reinterpret_cast<Control*>(getDevice(Control(*this).getClass().objectType()));
-	}
-
-	String getField(Field desc) const override;
-
-	virtual const DeviceClass& getClass() const = 0;
-
-	Version version() const override
-	{
-		return getClass().version();
-	}
-
-	const String udn() const
-	{
-		return String(description.udn);
-	}
-
-	bool configure(XML::Node* device);
-
-	ServiceControl* firstService()
-	{
-		return reinterpret_cast<ServiceControl*>(Device::firstService());
-	}
-
-	DeviceControl* firstDevice()
-	{
-		return reinterpret_cast<DeviceControl*>(Device::firstDevice());
-	}
-
-	DeviceControl* getNext()
-	{
-		return reinterpret_cast<DeviceControl*>(next());
-	}
-
-	DeviceControl& parent() const
-	{
-		return reinterpret_cast<DeviceControl&>(Device::parent());
-	}
-
-protected:
 	struct Description {
 		CString udn;
 		CString friendlyName;
@@ -127,7 +43,78 @@ protected:
 		CString modelDescription;
 		CString serialNumber;
 	};
-	Description description;
+
+	DeviceControl(DeviceControl& parent) : Device(parent)
+	{
+	}
+
+	DeviceControl(DeviceControl* parent = nullptr) : Device(parent)
+	{
+	}
+
+	/**
+	 * @brief Called on root device only during discovery
+	 */
+	bool configureRoot(ControlPoint& controlPoint, const String& location, XML::Node* device);
+
+	DeviceControl& root()
+	{
+		return reinterpret_cast<DeviceControl&>(Device::root());
+	}
+
+	const DeviceControl& root() const
+	{
+		return reinterpret_cast<const DeviceControl&>(Device::root());
+	}
+
+	String baseURL() const
+	{
+		return root().rootConfig->baseUrl.c_str();
+	}
+
+	ControlPoint& controlPoint() const
+	{
+		return root().rootConfig->controlPoint;
+	}
+
+	template <typename T> ServiceControl* getService(const T& serviceType)
+	{
+		return Device::getService<ServiceControl>(serviceType);
+	}
+
+	template <typename T> DeviceControl* getDevice(const T& deviceType)
+	{
+		return getDevice<DeviceControl>(deviceType);
+	}
+
+	String getField(Field desc) const override;
+
+	const String udn() const
+	{
+		return String(description_.udn);
+	}
+
+	bool configure(XML::Node* device);
+
+	DeviceControl* getNext()
+	{
+		return reinterpret_cast<DeviceControl*>(next());
+	}
+
+	DeviceControl& parent()
+	{
+		return reinterpret_cast<DeviceControl&>(Device::parent());
+	}
+
+	Description& description()
+	{
+		return description_;
+	}
+
+	bool sendRequest(Envelope& request, const Envelope::Callback& callback);
+
+protected:
+	Description description_;
 
 	struct RootConfig {
 		ControlPoint& controlPoint;

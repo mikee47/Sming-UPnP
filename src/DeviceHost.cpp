@@ -95,7 +95,7 @@ void DeviceHost::onSearchRequest(const BasicMessage& request)
 
 void DeviceHost::search(SearchFilter& filter, Device* device)
 {
-	filter.callback = [&](Object* object, SearchMatch match) {
+	filter.callback = [&](BaseObject* object, SearchMatch match) {
 		auto item = new MessageSpec(filter.ms, match, object);
 		server.messageQueue.add(item, filter.delayMs);
 		filter.delayMs += 100;
@@ -106,8 +106,8 @@ void DeviceHost::search(SearchFilter& filter, Device* device)
 #endif
 
 	if(device == nullptr) {
-		for(auto dev = deviceHost.firstRootDevice(); dev != nullptr; dev = dev->getNext()) {
-			dev->search(filter);
+		for(auto& dev : deviceHost.devices()) {
+			dev.search(filter);
 		}
 	} else {
 		device->search(filter);
@@ -165,9 +165,9 @@ bool DeviceHost::isActive() const
 	return SSDP::server.isActive();
 }
 
-bool DeviceHost::registerDevice(RootDevice* device)
+bool DeviceHost::registerDevice(Device* device)
 {
-	if(!rootDevices.add(device)) {
+	if(!devices_.add(device)) {
 		return false;
 	}
 
@@ -179,9 +179,9 @@ bool DeviceHost::registerDevice(RootDevice* device)
 	return true;
 }
 
-bool DeviceHost::unRegisterDevice(RootDevice* device)
+bool DeviceHost::unRegisterDevice(Device* device)
 {
-	if(!rootDevices.remove(device)) {
+	if(!devices_.remove(device)) {
 		// Device wasn't running
 		return false;
 	}
@@ -203,13 +203,12 @@ bool DeviceHost::onHttpRequest(HttpServerConnection& connection)
 		return false;
 	}
 
-	auto device = rootDevices.head();
-	while(device != nullptr) {
-		if(device->onHttpRequest(connection)) {
+	for(auto& device : devices_) {
+		if(device.onHttpRequest(connection)) {
 			return true;
 		}
-		device = device->getNext();
 	}
+
 	return false;
 }
 
@@ -224,9 +223,9 @@ IDataSourceStream* DeviceHost::generateDebugPage(const String& title)
 				   "The following devices are being advertised:<p>"
 				   "<ul>"));
 
-	for(auto dev = firstRootDevice(); dev != nullptr; dev = dev->getNext()) {
-		String fn = dev->getField(UPnP::Device::Field::friendlyName);
-		String url = dev->getField(UPnP::Device::Field::presentationURL);
+	for(auto& dev : devices()) {
+		String fn = dev.getField(UPnP::Device::Field::friendlyName);
+		String url = dev.getField(UPnP::Device::Field::presentationURL);
 		mem->print(_F("<li><a href=\""));
 		mem->print(url);
 		mem->print(_F("\">"));

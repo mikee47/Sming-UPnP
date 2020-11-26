@@ -21,7 +21,7 @@
 
 #include "Object.h"
 #include "ObjectList.h"
-#include "ActionInfo.h"
+#include "Envelope.h"
 #include "Constants.h"
 #include <Network/SSDP/Urn.h>
 
@@ -44,7 +44,7 @@ class Service;
 /**
  * @brief Represents any kind of device, including a root device
  */
-class Service : public ObjectTemplate<Service>
+class Service : public ObjectTemplate<Service, Object>
 {
 public:
 	enum class Field {
@@ -62,12 +62,12 @@ public:
 	{
 	}
 
-	RootDevice& root() const;
+	Device& root();
 
 	String caption() const
 	{
 		String s;
-		s += getField(Field::serviceType);
+		s += String(objectType());
 		s += " {";
 		s += getField(Field::serviceId);
 		s += '}';
@@ -81,9 +81,9 @@ public:
 
 	virtual String getField(Field desc) const;
 
-	String serviceType() const
+	Urn objectType() const override
 	{
-		return getField(Field::serviceType);
+		return ServiceUrn(getField(Field::domain), getField(Field::type), version());
 	}
 
 	String serviceId() const
@@ -109,7 +109,7 @@ public:
 	 * information to `invoke()`, which is code generated for each service type.
 	 * The user then gets a set of methods to implement for their service.
 	 */
-	virtual void handleAction(ActionInfo& info) = 0;
+	virtual void handleAction(Envelope& env) = 0;
 
 private:
 	Device& device_;

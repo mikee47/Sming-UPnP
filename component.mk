@@ -1,12 +1,12 @@
+ifeq ($(GCC_VERSION_COMPATIBLE),0)
+$(error UPnP requires a recent compiler - please upgrade!)
+endif
+
 COMPONENT_DEPENDS := SSDP RapidXML
 
 COMPONENT_PYTHON_REQUIREMENTS := requirements.txt
 
 UPNP_TOOLS		:= $(COMPONENT_PATH)/tools
-
-# Application can set these in their component.mk file (which is always parsed first)
-UPNP_APP_SCHEMA	?=
-UPNP_APP_INCDIR	?= $(CMP_App_BUILD_BASE)/src/Network/UPnP
 
 COMPONENT_INCDIRS := \
 	src/include \
@@ -32,7 +32,7 @@ upnp_schema_relpath = $(patsubst $(call upnp_schema_dir,$1)/%,%,$1)
 # $1 -> Template kind (hpp or cpp)
 define upnp_generate_template
 	$$(info UPnP generate $$(<F) -> $$(@F))
-	$(Q) $(UPNP_TOOLS)/gen.py -t $(UPNP_TOOLS)/xsl/$$(if $$(findstring /device/,$$<),DeviceControl,ServiceControl).$1.xsl -i $$< -o $$@
+	$(Q) $(UPNP_TOOLS)/gen.py -t $(UPNP_TOOLS)/xsl/$$(if $$(findstring /device/,$$<),Device,Service)$1.xsl -i $$< -o $$@
 endef
 
 # Internal function to generate source creation targets
@@ -40,13 +40,17 @@ endef
 # $2 -> Directory for schema
 # $3 -> Directory for output source code
 define upnp_generate_target
+UPNP_INCFILES += $3$(1:.xml=Template.h)
+$3$(1:.xml=Template.h): $2$1
+	$(call upnp_generate_template,Template)
+
 UPNP_INCFILES += $3$(1:.xml=.h)
 $3$(1:.xml=.h): $2$1
-	$(call upnp_generate_template,hpp)
+	$(call upnp_generate_template,Control.hpp)
 
 UPNP_SRCFILES += $3$(1:.xml=.cpp)
 $3$(1:.xml=.cpp): $2$1
-	$(call upnp_generate_template,cpp)
+	$(call upnp_generate_template,Control.cpp)
 endef
 
 # Generate group class info target
@@ -75,19 +79,18 @@ $$(foreach c,$$(UPNP_DESCRIPTIONS),$$(eval $$(call upnp_generate_target,$$(notdi
 $$(foreach d,$$(UPNP_GROUPS),$$(eval $$(call upnp_generate_group_target,$$d,$2/$$(notdir $$d))))
 endef
 
-# If specified, create targets for application source generation
-ifneq (,$(UPNP_APP_SCHEMA))
-ifeq (,$(UPNP_APP_SCHEMA_FLAG))
-$(eval $(call upnp_generate,$(UPNP_APP_SCHEMA),$(UPNP_APP_INCDIR)))
-COMPONENT_APPCODE := $(abspath $(sort $(call dirx,$(UPNP_SRCFILES))))
-CMP_App_PREREQUISITES += upnp_app_prerequisites
+# Prevent parsing of following section more than once
+ifeq (,$(UPNP_PARSED_FLAG))
+
+# Create targets for application schema
+UPNP_APP_INCDIR			:= $(abspath $(CMP_App_BUILD_BASE)/src)
+$(eval $(call upnp_generate,schema,$(UPNP_APP_INCDIR)/Network/UPnP))
+COMPONENT_INCDIRS		+= $(UPNP_APP_INCDIR)
+COMPONENT_APPCODE		:= $(abspath $(sort $(call dirx,$(UPNP_SRCFILES))))
+CMP_App_PREREQUISITES	+= upnp_app_prerequisites
 
 .PHONY: upnp_app_prerequisites
 upnp_app_prerequisites: $(UPNP_SRCFILES) $(UPNP_INCFILES)
-
-UPNP_APP_SCHEMA_FLAG := X
-endif
-endif
 
 #
 # Tool for scanning, fetching and parsing. Needs to be pre-built
@@ -120,3 +123,6 @@ upnp-parse: $(UPNP_SCAN_TOOL) ##Parse raw device descriptions (use HOST_PARAMETE
 .PHONY: upnp-fetch
 upnp-fetch: $(UPNP_SCAN_TOOL) ##Fetch device description by URL (use HOST_PARAMETERS)
 	$(UPNP_FETCH)
+
+UPNP_PARSED_FLAG := X
+endif

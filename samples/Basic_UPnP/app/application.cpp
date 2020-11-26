@@ -12,18 +12,22 @@
 #define WIFI_PWD "PleaseEnterPass"
 #endif
 
+//
+#define LED_PIN 2
+
 namespace
 {
 NtpClient* ntpClient;
 HttpServer server;
-TeaPot teapot(1);
-Wemo::Controllee wemo1(1, "Socket #1");
-Wemo::Controllee wemo2(2, "Socket #2");
+UPnP::schemas_sming_org::TeaPot teapot(1);
+UPnP::Belkin::Controllee wemo1(1, "Socket #1");
+UPnP::Belkin::Controllee wemo2(2, "Socket #2");
 UPnP::ControlPoint controlPoint;
 
 void connectFail(const String& ssid, MacAddress bssid, WifiDisconnectReason reason)
 {
-	debugf("I'm NOT CONNECTED!");
+	Serial.print(F("I'm NOT CONNECTED! "));
+	Serial.println(WifiEvents.getDisconnectReasonDesc(reason));
 }
 
 int onHttpRequest(HttpServerConnection& connection, HttpRequest& request, HttpResponse& response)
@@ -51,7 +55,7 @@ int onHttpRequest(HttpServerConnection& connection, HttpRequest& request, HttpRe
 
 void simpleSearch()
 {
-	ServiceUrn urn("dial-multiscreen-org", "dial", 1);
+	ServiceUrn urn(F("dial-multiscreen-org"), F("dial"), 1);
 	controlPoint.beginSearch(urn, [](HttpConnection& connection, XML::Document* description) {
 		if(description == nullptr) {
 			Serial.println(F("Search failed"));
@@ -59,7 +63,7 @@ void simpleSearch()
 		}
 
 		debug_e("Found service!");
-		auto node = XML::getNode(description, F("/device/friendlyName"));
+		auto node = XML::getNode(*description, F("/device/friendlyName"));
 		if(node == nullptr) {
 			Serial.println(_F("UNEXPECTED! friendlyName missing from device description"));
 		} else {
@@ -95,6 +99,14 @@ void initUPnP()
 	// These two devices handle service requests
 	UPnP::deviceHost.registerDevice(&wemo1);
 	UPnP::deviceHost.registerDevice(&wemo2);
+
+	// Control LED in response to wemo1 SetBinaryState action
+	pinMode(LED_PIN, OUTPUT);
+	digitalWrite(LED_PIN, true);
+	wemo1.onStateChange([](auto& device) {
+		// LED pin output is inverted
+		digitalWrite(LED_PIN, !device.getState());
+	});
 
 	// Simple search for devices
 	simpleSearch();

@@ -18,6 +18,7 @@
  ****/
 
 #include "include/Network/UPnP/ObjectClass.h"
+#include "include/Network/UPnP/Object.h"
 
 namespace UPnP
 {

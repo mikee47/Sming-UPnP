@@ -19,10 +19,11 @@
  ****/
 
 #include "include/Network/UPnP/ControlPoint.h"
+#include "include/Network/UPnP/Envelope.h"
 #include <Network/SSDP/Server.h>
-#include "include/Network/UPnP/ActionInfo.h"
 #include "DescriptionParser.h"
 #include "main.h"
+#include <Data/Stream/MemoryDataStream.h>
 
 namespace UPnP
 {
@@ -248,7 +249,7 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 			auto device = parser->rootDevice;
 			parser->rootDevice = nullptr;
 
-			auto service = device->getService(search.cls);
+			ServiceControl* service = device->getService(search.cls);
 			if(service == nullptr) {
 				delete device;
 				break;
@@ -316,52 +317,46 @@ bool ControlPoint::processDescriptionResponse(HttpConnection& connection, String
 	return true;
 }
 
-bool ControlPoint::sendRequest(ActionInfo& act, const ActionInfo::Callback& callback)
+bool ControlPoint::sendRequest(Envelope& env, const Envelope::Callback& callback)
 {
 	auto req = new HttpRequest;
 	req->setMethod(HttpMethod::POST);
-	String url = act.service.getField(Service::Field::controlURL);
+	String url = env.service.getField(Service::Field::controlURL);
 	if(!url) {
 		debug_e("[UPnP] No service endpoint defined");
 		return false;
 	}
 	req->uri = url;
-	req->setBody(act.toString(false));
+	auto stream = new MemoryDataStream;
+	env.serialize(*stream, false);
+	req->setBody(stream);
 
 	String s = toString(MimeType::XML);
 	s += F("; charset=\"utf-8\"");
 	req->headers[HTTP_HEADER_CONTENT_TYPE] = s;
-
-	s = '"';
-	s += act.service.getField(Service::Field::serviceType);
-	s += '#';
-	s += act.actionName();
-	s += '"';
-	req->headers[F("SOAPACTION")] = s;
+	req->headers[F("SOAPACTION")] = env.soapAction();
 
 #if DEBUG_VERBOSE_LEVEL == DBG
 	s = req->toString();
-	s += act.toString(true);
+	s += env.serialize(true);
 	m_nputs(s.c_str(), s.length());
 	m_puts("\r\n");
 #endif
 
-	const Service* service = &act.service;
+	const Service* service = &env.service;
 	req->onRequestComplete([service, callback](HttpConnection& client, bool successful) -> int {
-		ActionInfo response(*service);
+		Envelope response(*service);
 		String s;
-		if(successful) {
 #if DEBUG_VERBOSE_LEVEL == DBG
-			s = client.getResponse()->toString();
-			m_nputs(s.c_str(), s.length());
+		s = client.getResponse()->toString();
+		m_nputs(s.c_str(), s.length());
 #endif
-			s = client.getResponse()->getBody();
+		s = client.getResponse()->getBody();
 #if DEBUG_VERBOSE_LEVEL == DBG
-			m_nputs(s.c_str(), s.length());
-			m_puts("\r\n");
+		m_nputs(s.c_str(), s.length());
+		m_puts("\r\n");
 #endif
-			response.load(s);
-		}
+		response.load(std::move(s));
 		callback(response);
 		return 0;
 	});

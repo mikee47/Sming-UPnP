@@ -7,24 +7,21 @@
 <xsl:output method="text" />
 
 <xsl:template match="d:device">
-<xsl:call-template name="file-hpp"/>
-
+<xsl:variable name="controlClass"><xsl:call-template name="control-class"/></xsl:variable>
+<xsl:call-template name="file-control-hpp"/>
 <xsl:for-each select="d:serviceList/d:service">
-#include &lt;Network/UPnP/<xsl:call-template name="header-path" select="d:serviceType"/>&gt;
+<xsl:text/>#include &lt;Network/UPnP/<xsl:call-template name="file-path"/>.h&gt;
 </xsl:for-each>
 
 <xsl:call-template name="namespace-open"/>
-
-<xsl:variable name="controlClass"><xsl:call-template name="control-class"/></xsl:variable>
-
-class <xsl:value-of select="$controlClass"/>: public UPnP::DeviceControl
+class <xsl:value-of select="$controlClass"/>: public DeviceControl
 {
 public:
 	using DeviceControl::DeviceControl;
 	
-	static const DeviceClass class_;
+	static const ObjectClass class_;
 
-	const DeviceClass&amp; getClass() const override
+	const ObjectClass&amp; getClass() const override
 	{
 		return class_;
 	}
@@ -37,18 +34,26 @@ public:
 	<xsl:for-each select="d:serviceList/d:service">
 	<xsl:text>
 	</xsl:text>
-	<xsl:call-template name="control-class"/>* get<xsl:call-template name="control-name"/>()
+	<xsl:variable name="class"><xsl:call-template name="control-class-full"/></xsl:variable>
+	<xsl:value-of select="$class"/>* get<xsl:call-template name="control-name"/>()
 	{
-		return getService&lt;<xsl:call-template name="control-class"/>>();
+		using Class = <xsl:value-of select="$class"/>;
+		return reinterpret_cast&lt;Class*>(getService(Class::class_.objectType()));
+	}
+	</xsl:for-each>
+
+	<xsl:for-each select="d:deviceList/d:device">
+	<xsl:text>
+	</xsl:text>
+	<xsl:variable name="class"><xsl:call-template name="control-class-full"/></xsl:variable>
+	<xsl:value-of select="$class"/>* get<xsl:call-template name="control-name"/>()
+	{
+		using Class = <xsl:value-of select="$class"/>;
+		return reinterpret_cast&lt;Class*>(getDevice(Class::class_.objectType()));
 	}
 	</xsl:for-each>
 };
-
 <xsl:call-template name="namespace-close"/>
-
-// Alias for easier use
-using <xsl:call-template name="control-class"/> = UPnP::<xsl:call-template name="urn-domain-cpp"/>::device::<xsl:call-template name="control-class"/>;
-
 </xsl:template>
 
 </xsl:stylesheet>

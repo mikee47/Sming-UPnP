@@ -18,7 +18,7 @@
  ****/
 
 #include "include/Network/UPnP/ServiceControl.h"
-#include "include/Network/UPnP/RootDeviceControl.h"
+#include "include/Network/UPnP/DeviceControl.h"
 
 namespace UPnP
 {
@@ -28,18 +28,18 @@ bool ServiceControl::configure(const XML::Node* service)
 	auto getUrl = [&](const String& name) {
 		String url = XML::getValue(service, name);
 		if(!url) {
-			debug_e("[UPnP] %s missing from %s", name.c_str(), serviceType().c_str());
+			debug_e("[UPnP] %s missing from %s", name.c_str(), String(objectType()).c_str());
 		} else if(url[0] == '/') {
 			url.remove(0, 1);
 		}
 		return url;
 	};
 
-	description.controlURL = getUrl(F("controlURL"));
-	description.eventSubURL = getUrl(F("eventSubURL"));
-	description.serviceId = XML::getValue(service, F("serviceId"));
+	description_.controlURL = getUrl(F("controlURL"));
+	description_.eventSubURL = getUrl(F("eventSubURL"));
+	description_.serviceId = XML::getValue(service, F("serviceId"));
 
-	debug_i("[UPnP] controlURL = %s", description.controlURL.c_str());
+	debug_i("[UPnP] controlURL = %s", description_.controlURL.c_str());
 
 	return true;
 }
@@ -47,25 +47,19 @@ bool ServiceControl::configure(const XML::Node* service)
 String ServiceControl::getField(Field desc) const
 {
 	switch(desc) {
-	case Field::domain:
-		return getClass().group.domain;
-	case Field::type:
-		return getClass().type;
-	case Field::version:
-		return String(version());
 	case Field::serviceId:
-		return description.serviceId.c_str();
+		return description_.serviceId.c_str();
 	case Field::baseURL:
 		return device().getField(Device::Field::baseURL);
 	case Field::controlURL:
-		if(description.controlURL) {
-			return getField(Field::baseURL) + description.controlURL.c_str();
+		if(description_.controlURL) {
+			return getField(Field::baseURL) + description_.controlURL.c_str();
 		} else {
 			return nullptr;
 		}
 	case Field::eventSubURL:
-		if(description.eventSubURL) {
-			return getField(Field::baseURL) + description.eventSubURL.c_str();
+		if(description_.eventSubURL) {
+			return getField(Field::baseURL) + description_.eventSubURL.c_str();
 		} else {
 			return nullptr;
 		}
@@ -74,9 +68,9 @@ String ServiceControl::getField(Field desc) const
 	}
 }
 
-bool ServiceControl::sendRequest(ActionInfo& request, const ActionInfo::Callback& callback)
+bool ServiceControl::sendRequest(Envelope& request, const Envelope::Callback& callback)
 {
-	return root().sendRequest(request, callback);
+	return device().sendRequest(request, callback);
 }
 
 } // namespace UPnP

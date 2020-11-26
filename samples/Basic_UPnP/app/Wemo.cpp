@@ -1,57 +1,30 @@
 #include <Wemo.h>
 #include <Platform/Station.h>
 
-IMPORT_FSTR(WEMO_SERVICE_SCPD, COMPONENT_PATH "/config/wemo-service.xml");
-IMPORT_FSTR(WEMO_METAINFO_SCPD, COMPONENT_PATH "/config/wemo-metainfo.xml");
-
-namespace Wemo
+namespace UPnP
 {
-String BasicEventService::getField(Field desc) const
+namespace Belkin
 {
-	switch(desc) {
-	case Field::type:
-		return F("basicevent");
-	case Field::serviceId:
-		return F("urn:Belkin:serviceId:basicevent1");
-	default:
-		return WemoService::getField(desc);
-	}
-}
-
-void BasicEventService::handleAction(ActionInfo& info)
+void BasicEventService::handleAction(Envelope& env)
 {
-	auto act = info.actionName();
+	auto act = env.actionName();
 	if(act == "GetBinaryState") {
-		if(info.createResponse()) {
-			info.addArg("BinaryState", device()->getState());
-		}
+		env.createResponse(act);
+		env.addArg("BinaryState", controllee().getState());
 		return;
 	}
 
 	if(act == "SetBinaryState") {
 		bool state;
-		if(info.getArg("BinaryState", state)) {
-			debug_i("state = %u", state);
-			device()->setState(state);
-			info.createResponse();
+		if(env.getArg("BinaryState", state)) {
+			controllee().setState(state);
+			env.createResponse(act);
 		}
 		return;
 	}
 }
 
-String MetaInfoService::getField(Field desc) const
-{
-	switch(desc) {
-	case Field::type:
-		return F("metainfo");
-	case Field::serviceId:
-		return F("urn:Belkin:serviceId:metainfo1");
-	default:
-		return WemoService::getField(desc);
-	}
-}
-
-void MetaInfoService::handleAction(ActionInfo& info)
+void MetaInfoService::handleAction(Envelope& env)
 {
 	// TODO
 	//	auto res = createEnvelope(action);
@@ -62,28 +35,9 @@ void MetaInfoService::handleAction(ActionInfo& info)
 String Controllee::getField(Field desc) const
 {
 	switch(desc) {
-	case Field::domain:
-		return F("Belkin");
-
-	case Field::type:
-		return F("controllee");
-
 	case Field::friendlyName:
 		return name_;
 
-	case Field::manufacturer:
-		return F("Belkin International Inc.");
-	case Field::manufacturerURL:
-		return F("http://www.belkin.com");
-	case Field::modelDescription:
-		return F("Belkin Plugin Socket 1.0");
-
-	case Field::modelName:
-		return F("Emulated Socket");
-	case Field::modelNumber:
-		return F("3.1415");
-	case Field::modelURL:
-		return F("http://www.belkin.com/plugin/");
 	case Field::serialNumber: {
 		String s = F("221517K01017xxxx");
 		s[12] = hexchar((id_ >> 16) & 0x0f);
@@ -92,27 +46,24 @@ String Controllee::getField(Field desc) const
 		s[15] = hexchar((id_ >> 0) & 0x0f);
 		return s;
 	}
-
 	case Field::UDN: {
 		String s;
 		s += "uuid:Socket-1_0-";
 		s += getField(Field::serialNumber);
 		return s;
 	}
-
 	case Field::baseURL: {
-		String url = RootDevice::getField(desc);
-		url += _F("wemo/");
+		String url;
+		url += F("/wemo/");
 		url += id_;
 		url += '/';
 		return url;
 	}
-
-	case Field::serverId:
-		return RootDevice::getField(desc) + " Unspecified"; //" Wemo/1.0";
+	case Field::productNameAndVersion:
+		return F("Wemo/1.0");
 
 	default:
-		return RootDevice::getField(desc);
+		return Device::getField(desc);
 	}
 }
 
@@ -121,7 +72,8 @@ bool Controllee::formatMessage(Message& msg, MessageSpec& ms)
 	msg["01-NLS"] = F("b9200ebb-736d-4b93-bf03-835149d13983");
 	msg["OPT"] = F("\"http://schemas.upnp.org/upnp/1/0/\"; ns=01");
 	msg["X-User-Agent"] = F("redsonic");
-	return RootDevice::formatMessage(msg, ms);
+	return Device::formatMessage(msg, ms);
 }
 
-} // namespace Wemo
+} // namespace Belkin
+} // namespace UPnP

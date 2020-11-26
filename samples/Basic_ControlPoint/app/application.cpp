@@ -11,11 +11,24 @@
 namespace
 {
 NtpClient* ntpClient;
-UPnP::ControlPoint controlPoint(2048);
+UPnP::ControlPoint controlPoint;
+
+using namespace UPnP::schemas_upnp_org::device;
+using namespace UPnP::schemas_upnp_org::service;
 
 void connectFail(const String& ssid, MacAddress bssid, WifiDisconnectReason reason)
 {
 	debugf("I'm NOT CONNECTED!");
+}
+
+bool checkResult(UPnP::ActionResult& result)
+{
+	if(auto fault = result.fault()) {
+		fault.printTo(Serial);
+		return false;
+	}
+
+	return true;
 }
 
 void findMediaRenderers()
@@ -31,37 +44,45 @@ void findMediaRenderers()
 		auto render = device.getRenderingControl();
 		if(render != nullptr) {
 			render->listPresets(0, [&device](auto& result) {
-				Serial.print(device.friendlyName());
-				Serial.print(_F(": Current presets = "));
-				Serial.println(result.currentPresetNameList);
+				if(checkResult(result)) {
+					Serial.print(device.friendlyName());
+					Serial.print(_F(": Current presets = "));
+					Serial.println(result.currentPresetNameList());
+				}
 			});
 
-			render->getVolume(0, nullptr, [&device](auto& result) {
-				Serial.print(device.friendlyName());
-				Serial.print(_F(": Current Volume = "));
-				Serial.println(result.currentVolume);
+			render->getVolume(0, RenderingControl1::Channel::fs_Master, [&device](auto& result) {
+				if(checkResult(result)) {
+					Serial.print(device.friendlyName());
+					Serial.print(_F(": Current Volume = "));
+					Serial.println(result.currentVolume());
+				}
 			});
 		}
 
 		auto conn = device.getConnectionManager();
 		if(conn != nullptr) {
 			conn->getCurrentConnectionInfo(0, [&device](auto& result) {
-				Serial.print(device.friendlyName());
-				Serial.println(_F(": Current Connection Info = "));
-				result.printTo(Serial);
-				Serial.println(_F("---"));
-				Serial.println();
+				if(checkResult(result)) {
+					Serial.print(device.friendlyName());
+					Serial.println(_F(": Current Connection Info = "));
+					result.printTo(Serial);
+					Serial.println(_F("---"));
+					Serial.println();
+				}
 			});
 		}
 
 		auto transport = device.getAVTransport();
 		if(transport != nullptr) {
 			transport->getDeviceCapabilities(0, [&device](auto& result) {
-				Serial.print(device.friendlyName());
-				Serial.println(_F(": Device Capabilities = "));
-				result.printTo(Serial);
-				Serial.println(_F("---"));
-				Serial.println();
+				if(checkResult(result)) {
+					Serial.print(device.friendlyName());
+					Serial.println(_F(": Device Capabilities = "));
+					result.printTo(Serial);
+					Serial.println(_F("---"));
+					Serial.println();
+				}
 			});
 		}
 
@@ -92,14 +113,16 @@ void findMediaServers()
 
 		auto dir = device.getContentDirectory();
 		if(dir != nullptr) {
-			auto printBrowseResult = [&device](ContentDirectory1::BrowseResult& result) {
-				Serial.print(device.friendlyName());
-				Serial.println(_F(": Browse result ="));
-				XML::Document doc;
-				XML::deserialize(doc, result.result);
-				XML::serialize(doc, Serial, true);
-				result.result = nullptr;
-				result.printTo(Serial);
+			auto printBrowseResult = [&device](auto& result) {
+				if(checkResult(result)) {
+					Serial.print(device.friendlyName());
+					Serial.println(_F(": Browse result ="));
+					XML::Document doc;
+					String s = result.result();
+					XML::deserialize(doc, s);
+					XML::serialize(doc, Serial, true);
+					result.printTo(Serial);
+				}
 			};
 
 			dir->browse("0", ContentDirectory1::BrowseFlag::fs_BrowseMetadata, "*", 0, 10, nullptr, printBrowseResult);

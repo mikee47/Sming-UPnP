@@ -99,7 +99,7 @@ size_t DescriptionParser::write(const uint8_t* data, size_t size)
 		} else if(foundTag == Tag::device) {
 			if(rootDevice == nullptr) {
 				auto dev = cls->createRootDevice();
-				if(dev->configure(controlPoint, location, objectNode)) {
+				if(dev->configureRoot(controlPoint, location, objectNode)) {
 					debug_i("Configured root device '%s'", dev->caption().c_str());
 					rootDevice = dev;
 					device = dev;

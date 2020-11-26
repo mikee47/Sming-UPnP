@@ -1,5 +1,4 @@
-<?xml version="1.0"?>
-<scpd xmlns="urn:Belkin:service-1-0">
+<scpd xmlns="urn:schemas-upnp-org:service-1-0">
 	<specVersion>
 		<major>1</major>
 		<minor>0</minor>
@@ -39,4 +38,5 @@
 			<defaultValue>0</defaultValue>
 		</stateVariable>
 	</serviceStateTable>
+	<serviceType>urn:Belkin:service:basicevent:1</serviceType>
 </scpd>

@@ -21,21 +21,20 @@
 
 namespace UPnP
 {
-namespace DeviceType
-{
-#define XX(tag, str) DEFINE_FSTR(tag, str)
-UPNP_DEVICETYPE_MAP(XX)
-#undef XX
-} // namespace DeviceType
+DEFINE_FSTR(fs_xmlns, "xmlns")
 
-namespace ServiceType
+namespace schemas_upnp_org
 {
-namespace upnp_org
+DEFINE_FSTR(domain, "schemas-upnp-org")
+DEFINE_FSTR(device_1_0, "urn:schemas-upnp-org:device-1-0")
+DEFINE_FSTR(service_1_0, "urn:schemas-upnp-org:service-1-0")
+DEFINE_FSTR(control_1_0, "urn:schemas-upnp-org:control-1-0")
+
+namespace device
 {
-#define XX(tag, str) DEFINE_FSTR(tag, str)
-UPNP_SERVICETYPE_MAP(XX)
-#undef XX
-} // namespace upnp_org
-} // namespace ServiceType
+DEFINE_FSTR(Basic, "Basic")
+}
+
+} // namespace schemas_upnp_org
 
 } // namespace UPnP

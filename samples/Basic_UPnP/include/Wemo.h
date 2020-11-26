@@ -1,64 +1,74 @@
 #pragma once
 
-#include <Network/UPnP/RootDevice.h>
-#include <Network/UPnP/Enumerator.h>
+#include <Network/UPnP/Belkin/ClassGroup.h>
 #include <Data/Stream/FlashMemoryStream.h>
 
-DECLARE_FSTR(WEMO_SERVICE_SCPD);
-DECLARE_FSTR(WEMO_METAINFO_SCPD);
-
-namespace Wemo
+namespace UPnP
 {
-using namespace UPnP;
+namespace Belkin
+{
 class Controllee;
 
-class WemoService : public Service
+class BasicEventService : public service::basicevent1Template
 {
 public:
-	Controllee* device() const
+	using basicevent1Template::basicevent1Template;
+
+	String getField(Field desc) const override
 	{
-		return reinterpret_cast<Controllee*>(Service::device());
+		switch(desc) {
+		case Field::serviceId:
+			return F("urn:Belkin:serviceId:basicevent1");
+		default:
+			return basicevent1Template::getField(desc);
+		}
 	}
+
+	Controllee& controllee()
+	{
+		return reinterpret_cast<Controllee&>(device());
+	}
+
+	void handleAction(Envelope& env) override;
 };
 
-class BasicEventService : public WemoService
+class MetaInfoService : public service::metainfo1Template
 {
 public:
-	String getField(Field desc) const override;
+	using metainfo1Template::metainfo1Template;
 
-	IDataSourceStream* createDescription() const override
+	String getField(Field desc) const override
 	{
-		return new FlashMemoryStream(WEMO_SERVICE_SCPD);
+		switch(desc) {
+		case Field::serviceId:
+			return F("urn:Belkin:serviceId:metainfo1");
+		default:
+			return Service::getField(desc);
+		}
 	}
 
-	void handleAction(ActionInfo& info) override;
+	Controllee& controllee()
+	{
+		return reinterpret_cast<Controllee&>(device());
+	}
+
+	void handleAction(Envelope& env) override;
 };
 
-class MetaInfoService : public WemoService
+class Controllee : public device::controllee1Template
 {
 public:
-	String getField(Field desc) const override;
+	using StateChange = Delegate<void(Controllee& device)>;
 
-	IDataSourceStream* createDescription() const override
+	Controllee(unsigned id, const String& name) : device::controllee1Template(), id_(id), name_(name)
 	{
-		return new FlashMemoryStream(WEMO_METAINFO_SCPD);
+		addService(new BasicEventService(*this));
+		addService(new MetaInfoService(*this));
 	}
 
-	void handleAction(ActionInfo& info) override;
-};
-
-class Controllee : public RootDevice
-{
-public:
-	using StateChangeDelegate = Delegate<void(Controllee& device)>;
-
-	Controllee(unsigned id, const String& name) : id_(id), name_(name), eventService(*this), metaInfoService(*this)
+	void onStateChange(StateChange delegate)
 	{
-	}
-
-	void onStateChange(StateChangeDelegate delegate)
-	{
-		stateChangeDelegate = delegate;
+		stateChange = delegate;
 	}
 
 	unsigned id() const
@@ -74,21 +84,20 @@ public:
 	virtual void setState(bool state)
 	{
 		state_ = state;
-		if(stateChangeDelegate) {
-			stateChangeDelegate(*this);
+		if(stateChange) {
+			stateChange(*this);
 		}
 	}
 
 	String getField(Field desc) const override;
-	bool formatMessage(Message& msg, MessageSpec& ms) override;
+	bool formatMessage(SSDP::Message& msg, SSDP::MessageSpec& ms) override;
 
 private:
-	BasicEventService eventService;
-	MetaInfoService metaInfoService;
 	unsigned id_{0};
 	String name_;
 	bool state_{false};
-	StateChangeDelegate stateChangeDelegate;
+	StateChange stateChange;
 };
 
-} // namespace Wemo
+} // namespace Belkin
+} // namespace UPnP

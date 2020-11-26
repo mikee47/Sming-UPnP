@@ -1,5 +1,5 @@
 /**
- * DeviceClass.cpp
+ * Error.cpp
  *
  * Copyright 2020 mikee47 <mike@sillyhouse.net>
  *
@@ -17,9 +17,35 @@
  *
  ****/
 
-#include "include/Network/UPnP/DeviceClass.h"
-#include "include/Network/UPnP/RootDeviceControl.h"
+#include "include/Network/UPnP/Error.h"
+#include <FlashString/Vector.hpp>
 
-namespace UPnP
+namespace
 {
-} // namespace UPnP
+#define XX(tag, text) DEFINE_FSTR_LOCAL(str##tag, #tag)
+UPNP_ERROR_MAP(XX)
+#undef XX
+
+#define XX(tag, text) &str##tag,
+DEFINE_FSTR_VECTOR(strings, FlashString, UPNP_ERROR_MAP(XX))
+#undef XX
+
+#define XX(tag, text) DEFINE_FSTR_LOCAL(longstr##tag, text)
+UPNP_ERROR_MAP(XX)
+#undef XX
+
+#define XX(tag, text) &longstr##tag,
+DEFINE_FSTR_VECTOR(longStrings, FlashString, UPNP_ERROR_MAP(XX))
+#undef XX
+
+} // namespace
+
+String toString(UPnP::Error error)
+{
+	return strings[unsigned(error)];
+}
+
+String toLongString(UPnP::Error error)
+{
+	return longStrings[unsigned(error)];
+}

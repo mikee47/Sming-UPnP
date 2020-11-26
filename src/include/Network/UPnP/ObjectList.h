@@ -20,6 +20,7 @@
 #pragma once
 
 #include "LinkedItemList.h"
+#include "ObjectClass.h"
 
 namespace UPnP
 {
@@ -38,6 +39,35 @@ public:
 	const ObjectType* head() const
 	{
 		return reinterpret_cast<const ObjectType*>(LinkedItemList::head());
+	}
+
+	typename ObjectType::Iterator begin()
+	{
+		return this->head();
+	}
+
+	typename ObjectType::Iterator end()
+	{
+		return nullptr;
+	}
+
+	/*
+	 * T can be Urn or String
+	 */
+	template <typename T> ObjectType* find(const T& objectType)
+	{
+		for(auto it = begin(); it != end(); it++) {
+			if(it->typeIs(objectType)) {
+				return &(*it);
+			}
+		}
+
+		return nullptr;
+	}
+
+	ObjectType* find(const ObjectClass& objectClass)
+	{
+		return this->find(objectClass.objectType());
 	}
 };
 

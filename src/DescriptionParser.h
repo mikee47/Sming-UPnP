@@ -20,7 +20,7 @@
 #pragma once
 
 #include <Data/Stream/ReadWriteStream.h>
-#include "include/Network/UPnP/RootDeviceControl.h"
+#include "include/Network/UPnP/DeviceControl.h"
 #include "XmlBuffer.h"
 
 namespace UPnP
@@ -62,7 +62,7 @@ public:
 	/**
 	 * Parser creates root device
 	 */
-	RootDeviceControl* rootDevice{nullptr};
+	DeviceControl* rootDevice{nullptr};
 
 private:
 	// Identifies which section of description is being parsed

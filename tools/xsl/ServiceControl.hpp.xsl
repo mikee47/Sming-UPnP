@@ -11,14 +11,22 @@
  -->
 
 <xsl:template match="s:scpd">
-<xsl:call-template name="file-hpp"/>
-<xsl:call-template name="namespace-open"/>
-
 <xsl:variable name="controlClass"><xsl:call-template name="control-class"/></xsl:variable>
-
+<xsl:call-template name="file-control-hpp"/>
+<xsl:text/>#include &lt;Network/UPnP/ActionResult.h>
+<xsl:call-template name="namespace-open"/>
 class <xsl:value-of select="$controlClass"/>: public ServiceControl
 {
 public:
+	/*
+	 * Action names
+	 */
+	struct Action {<xsl:text/>
+	<xsl:for-each select="s:actionList/s:action">
+		DEFINE_FSTR_LOCAL(<xsl:apply-templates select="." mode="name"/>, "<xsl:value-of select="s:name"/>")<xsl:text/>
+	</xsl:for-each>
+	};
+
 	/*
 	 * Pre-defined values (from allowed value lists)
 	 */
@@ -32,9 +40,9 @@ public:
 
 	using ServiceControl::ServiceControl;
 
-	static const ServiceClass class_;
+	static const ObjectClass class_;
 
-	const ServiceClass&amp; getClass() const override
+	const ObjectClass&amp; getClass() const override
 	{
 		return class_;
 	}
@@ -46,12 +54,7 @@ public:
 
 	<xsl:apply-templates select="s:actionList/s:action"/>
 };
-
 <xsl:call-template name="namespace-close"/>
-
-// Alias for easier use
-using <xsl:value-of select="$controlClass"/> = UPnP::<xsl:call-template name="urn-domain-cpp"/>::service::<xsl:value-of select="$controlClass"/>;
-
 </xsl:template>
 
 <xsl:template match="s:action">
@@ -59,22 +62,28 @@ using <xsl:value-of select="$controlClass"/> = UPnP::<xsl:call-template name="ur
 	/**
 	 * @brief Action: <xsl:value-of select="s:name"/>
 	 * @{
-	 */<xsl:text/>
+	 */
+	struct <xsl:apply-templates select="." mode="name"/> {
+		struct Arg {<xsl:text/>
+			<xsl:for-each select="s:argumentList/s:argument">
+			DEFINE_FSTR_LOCAL(<xsl:call-template name="varname"/>, "<xsl:value-of select="s:name"/>")<xsl:text/>
+			</xsl:for-each>
+		};
+		class Result: public UPnP::ActionResult
+		{
+		public:
+			using ActionResult::ActionResult;
 
-	<xsl:choose>
-	<xsl:when test="s:argumentList/s:argument[s:direction='out']">
-	struct <xsl:call-template name="action-result"/> {
-		<xsl:for-each select="s:argumentList/s:argument[s:direction='out']">
-		<xsl:apply-templates select="." mode="type"/><xsl:text> </xsl:text><xsl:call-template name="varname-cpp"/>;
-		</xsl:for-each>
-		size_t printTo(Print&amp; p);
+			<xsl:for-each select="s:argumentList/s:argument[s:direction='out']">
+			<xsl:apply-templates select="." mode="type"/><xsl:text> </xsl:text><xsl:call-template name="varname-cpp"/>()
+			{
+				return ActionResult::getArg&lt;<xsl:apply-templates select="." mode="type"/>>(Arg::<xsl:call-template name="varname"/>);
+			}
+			</xsl:for-each>
+			size_t printTo(Print&amp; p);
+		};
+		using Callback = Delegate&lt;void(Result&amp; result)>;<xsl:text/>
 	};
-	using <xsl:call-template name="action-result-callback"/> = Delegate&lt;void(<xsl:call-template name="action-result"/>&amp; result)>;<xsl:text/>
-	</xsl:when>
-	<xsl:otherwise>
-	using <xsl:call-template name="action-result-callback"/> = Delegate&lt;void()>;<xsl:text/>
-	</xsl:otherwise>
-	</xsl:choose>
 
 	bool <xsl:apply-templates select="." mode="method"/>;
 	/** @} */

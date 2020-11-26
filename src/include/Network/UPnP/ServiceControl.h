@@ -19,7 +19,6 @@
 
 #pragma once
 
-#include "ServiceClass.h"
 #include "Service.h"
 #include <Data/CString.h>
 #include <memory>
@@ -35,6 +34,12 @@ public:
 	using OwnedList = OwnedObjectList<ServiceControl>;
 	using Field = Service::Field;
 
+	struct Description {
+		CString controlURL;
+		CString eventSubURL;
+		CString serviceId;
+	};
+
 	ServiceControl() = delete;
 	ServiceControl(const ServiceControl&) = delete;
 
@@ -42,28 +47,26 @@ public:
 	{
 	}
 
-	RootDeviceControl& root() const
+	DeviceControl& root()
 	{
-		return reinterpret_cast<RootDeviceControl&>(Service::root());
+		return reinterpret_cast<DeviceControl&>(Service::root());
+	}
+
+	const DeviceControl& root() const
+	{
+		return const_cast<ServiceControl*>(this)->root();
 	}
 
 	String getField(Field desc) const override;
-
-	virtual const ServiceClass& getClass() const = 0;
-
-	Version version() const override
-	{
-		return getClass().version();
-	}
 
 	ServiceControl* getNext() const
 	{
 		return reinterpret_cast<ServiceControl*>(next());
 	}
 
-	bool sendRequest(ActionInfo& request, const ActionInfo::Callback& callback);
+	bool sendRequest(Envelope& request, const Envelope::Callback& callback);
 
-	void handleAction(ActionInfo& info) override
+	void handleAction(Envelope& env) override
 	{
 	}
 
@@ -74,13 +77,13 @@ public:
 		return reinterpret_cast<DeviceControl&>(Service::device());
 	}
 
+	Description& description()
+	{
+		return description_;
+	}
+
 private:
-	struct Description {
-		CString controlURL;
-		CString eventSubURL;
-		CString serviceId;
-	};
-	Description description;
+	Description description_;
 };
 
 } // namespace UPnP

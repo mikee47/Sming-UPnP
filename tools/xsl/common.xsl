@@ -10,8 +10,8 @@
 <xsl:variable name="vLower" select="'abcdefghijklmnopqrstuvwxyz'"/>
 <xsl:variable name="vUpper" select="'ABCDEFGHIJKLMNOPQRSTUVWXYZ'"/>
  
- <!-- Header file opening -->
-<xsl:template name="file-hpp">
+ <!-- Header file opening for Control classes -->
+<xsl:template name="file-control-hpp">
 /**
  * @brief <xsl:value-of select="d:deviceType | s:serviceType"/>
  *
@@ -28,6 +28,20 @@
 
 #include &lt;Network/UPnP/DeviceControl.h>
 #include &lt;Network/UPnP/ServiceControl.h>
+</xsl:template>
+
+ <!-- Header file opening for Template classes -->
+<xsl:template name="file-template">
+/**
+ * @brief <xsl:value-of select="d:deviceType | s:serviceType"/>
+ *
+ * @note This file is auto-generated ** DO NOT EDIT **
+ *
+ */
+
+#pragma once
+
+#include &lt;Network/UPnP/Device.h>
 </xsl:template>
 
 <!-- Source file comment -->
@@ -57,10 +71,16 @@ namespace <xsl:call-template name="urn-kind"/> {
 } // namespace UPnP
 </xsl:template>
 
-<!-- Breaks device/service URN into a valid C++ directory path -->
-<xsl:template name="header-path">
+<!-- Breaks device/service URN into a valid C++ path -->
+<xsl:template name="file-path">
 <xsl:variable name="elem" select="str:tokenize(d:deviceType | d:serviceType | s:serviceType, ':')"/>
-<xsl:value-of select="concat($elem[2], '/', $elem[3], '/', $elem[4], $elem[5], '.h')"/>
+<xsl:value-of select="concat($elem[2], '/', $elem[3], '/', $elem[4], $elem[5])"/>
+</xsl:template>
+
+<!-- Breaks device/service URN into a valid C++ directory path -->
+<xsl:template name="header-template-path">
+<xsl:variable name="elem" select="str:tokenize(d:deviceType | d:serviceType | s:serviceType, ':')"/>
+<xsl:value-of select="concat($elem[2], '/', $elem[3], '/', $elem[4], $elem[5], 'Template.h')"/>
 </xsl:template>
 
 <!-- Device or service type with version, e.g. RenderingControl1 -->
@@ -68,6 +88,15 @@ namespace <xsl:call-template name="urn-kind"/> {
 <xsl:variable name="elem" select="str:tokenize(d:deviceType | d:serviceType | s:serviceType, ':')"/>
 <xsl:value-of select="concat($elem[4], $elem[5])"/>
 </xsl:template>
+
+<!-- Device or service type with full namespace -->
+<xsl:template name="control-class-full">
+<xsl:variable name="elem" select="str:tokenize(d:deviceType | d:serviceType | s:serviceType, ':')"/>
+<xsl:text/>UPnP::<xsl:call-template name="urn-domain-cpp"/>::<xsl:value-of select="concat($elem[3], '::', $elem[4], $elem[5])"/>
+</xsl:template>
+
+<!-- Device or service template type with version, e.g. RenderingControl1Template -->
+<xsl:template name="template-class"><xsl:call-template name="control-class"/>Template</xsl:template>
 
 <!-- Just the device or service type, no version, e.g. RenderingControl -->
 <xsl:template name="control-name"><xsl:call-template name="urn-type"/></xsl:template>
@@ -127,12 +156,6 @@ namespace <xsl:call-template name="urn-kind"/> {
 	<xsl:value-of select="concat(translate(substring($name,1,1), $vUpper, $vLower), substring($name, 2))"/>
 </xsl:template>
 
-<!-- Name of structure containing action result -->
-<xsl:template name="action-result"><xsl:apply-templates select="." mode="name"/>Result</xsl:template>
-
-<!-- Name of result Delegate type -->
-<xsl:template name="action-result-callback"><xsl:call-template name="action-result"/>Callback</xsl:template>
-
 <!-- Method declaration for service action -->
 <xsl:template match="s:action" mode="method">
 	<xsl:variable name="name"><xsl:apply-templates select="." mode="name"/></xsl:variable>
@@ -143,7 +166,7 @@ namespace <xsl:call-template name="urn-kind"/> {
 		</xsl:apply-templates>
 		<xsl:text> </xsl:text><xsl:call-template name="varname-cpp"/>,
 		</xsl:for-each>
-		<xsl:call-template name="action-result-callback"/> callback)<xsl:text/>
+		<xsl:value-of select="$name"/>::Callback callback)<xsl:text/>
 </xsl:template>
 
 <!-- Map an action variable type onto the appropriate C++ one -->

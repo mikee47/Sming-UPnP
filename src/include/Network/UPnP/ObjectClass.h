@@ -19,7 +19,6 @@
 
 #pragma once
 
-#include "Object.h"
 #include <Network/SSDP/Urn.h>
 #include <WString.h>
 #include <WVector.h>
@@ -28,20 +27,29 @@
 namespace UPnP
 {
 struct ClassGroup;
-class RootDeviceControl;
+class Object;
 class DeviceControl;
 class ServiceControl;
 
 struct ObjectClass {
+	/**
+	 * @brief Interface version number
+	 */
+	using Version = uint8_t;
+
+	/**
+	 * @brief Object constructor function
+	 */
 	using CreateObject = Object* (*)(DeviceControl* owner);
 
 	const ClassGroup& group;
 	const FlashString& type;
-	Object::Version version_;
+	const FlashString& schema;
+	Version version_;
 	Urn::Kind kind_;
 	CreateObject createObject;
 
-	uint8_t version() const
+	Version version() const
 	{
 		return FSTR::readValue(&version_);
 	}
@@ -51,9 +59,9 @@ struct ObjectClass {
 		return FSTR::readValue(&kind_);
 	}
 
-	RootDeviceControl* createRootDevice() const
+	DeviceControl* createRootDevice() const
 	{
-		return (kind() == Urn::Kind::device) ? reinterpret_cast<RootDeviceControl*>(createObject(nullptr)) : nullptr;
+		return (kind() == Urn::Kind::device) ? reinterpret_cast<DeviceControl*>(createObject(nullptr)) : nullptr;
 	}
 
 	DeviceControl* createDevice(DeviceControl& owner) const
@@ -70,6 +78,12 @@ struct ObjectClass {
 	bool operator==(const ObjectClass& other) const;
 	bool typeIs(const Urn& objectType) const;
 	bool typeIs(const String& type, uint8_t version) const;
+
+	explicit operator bool() const
+	{
+		// We're always valid :-)
+		return true;
+	}
 };
 
 struct ClassGroup {

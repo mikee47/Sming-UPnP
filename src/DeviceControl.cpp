@@ -22,15 +22,24 @@
 
 namespace UPnP
 {
+bool DeviceControl::configureRoot(ControlPoint& controlPoint, const String& location, XML::Node* device)
+{
+	Url baseUrl(location);
+	baseUrl.Path = nullptr;
+	rootConfig.reset(new RootConfig{controlPoint, baseUrl.toString()});
+
+	return DeviceControl::configure(device);
+}
+
 bool DeviceControl::configure(XML::Node* device)
 {
-	this->description.udn = XML::getValue(device, _F("UDN"));
-	this->description.friendlyName = XML::getValue(device, _F("friendlyName"));
-	this->description.manufacturer = XML::getValue(device, _F("manufacturer"));
-	this->description.modelDescription = XML::getValue(device, _F("modelDescription"));
-	this->description.modelName = XML::getValue(device, _F("modelName"));
-	this->description.modelNumber = XML::getValue(device, _F("modelNumber"));
-	this->description.serialNumber = XML::getValue(device, _F("serialNumber"));
+	description_.udn = XML::getValue(device, _F("UDN"));
+	description_.friendlyName = XML::getValue(device, _F("friendlyName"));
+	description_.manufacturer = XML::getValue(device, _F("manufacturer"));
+	description_.modelDescription = XML::getValue(device, _F("modelDescription"));
+	description_.modelName = XML::getValue(device, _F("modelName"));
+	description_.modelNumber = XML::getValue(device, _F("modelNumber"));
+	description_.serialNumber = XML::getValue(device, _F("serialNumber"));
 
 	return true;
 }
@@ -38,77 +47,30 @@ bool DeviceControl::configure(XML::Node* device)
 String DeviceControl::getField(Field desc) const
 {
 	switch(desc) {
-	case Field::domain:
-		return getClass().group.domain;
-	case Field::type:
-		return getClass().type;
-	case Field::version:
-		return String(version());
 	case Field::UDN:
-		return String(description.udn);
+		return String(description_.udn);
 	case Field::friendlyName:
-		return String(description.friendlyName);
+		return String(description_.friendlyName);
 	case Field::manufacturer:
-		return String(description.manufacturer);
+		return String(description_.manufacturer);
 	case Field::modelDescription:
-		return String(description.modelDescription);
+		return String(description_.modelDescription);
 	case Field::modelName:
-		return String(description.modelName);
+		return String(description_.modelName);
 	case Field::modelNumber:
-		return String(description.modelNumber);
+		return String(description_.modelNumber);
 	case Field::serialNumber:
-		return String(description.serialNumber);
+		return String(description_.serialNumber);
 	case Field::baseURL:
-		return root().baseURL();
+		return baseURL();
 	default:
 		return Device::getField(desc);
 	}
 }
 
-ServiceControl* DeviceControl::getService(const Urn& serviceType)
+bool DeviceControl::sendRequest(Envelope& request, const Envelope::Callback& callback)
 {
-	if(!serviceType) {
-		debug_e("[UPnP] DeviceControl::getService(): Invalid serviceType");
-		return nullptr;
-	}
-
-	for(auto service = firstService(); service != nullptr; service = service->getNext()) {
-		if(service->getClass().typeIs(serviceType)) {
-			return service;
-		}
-	}
-
-	auto cls = ControlPoint::findServiceClass(serviceType);
-	if(cls == nullptr) {
-		return nullptr;
-	}
-
-	auto service = cls->createService(*this);
-	addService(service);
-	return service;
-}
-
-DeviceControl* DeviceControl::getDevice(const Urn& deviceType)
-{
-	if(!deviceType) {
-		debug_e("[UPnP] DeviceControl::getDevice(): Invalid deviceType");
-		return nullptr;
-	}
-
-	for(auto device = firstDevice(); device != nullptr; device = device->getNext()) {
-		if(device->getClass().typeIs(deviceType)) {
-			return device;
-		}
-	}
-
-	const ObjectClass* cls = ControlPoint::findDeviceClass(deviceType);
-	if(cls == nullptr) {
-		return nullptr;
-	}
-
-	auto device = cls->createDevice(*this);
-	addDevice(device);
-	return device;
+	return controlPoint().sendRequest(request, callback);
 }
 
 } // namespace UPnP

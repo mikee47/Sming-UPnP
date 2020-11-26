@@ -23,29 +23,20 @@
 
 namespace UPnP
 {
-#define UPNP_DEVICETYPE_MAP(XX) XX(Basic, "Basic")
+DECLARE_FSTR(fs_xmlns)
 
-namespace DeviceType
+namespace schemas_upnp_org
 {
-#define XX(tag, str) DECLARE_FSTR(tag)
-UPNP_DEVICETYPE_MAP(XX)
-#undef XX
-} // namespace DeviceType
+DECLARE_FSTR(domain)
+DECLARE_FSTR(device_1_0)
+DECLARE_FSTR(service_1_0)
+DECLARE_FSTR(control_1_0)
 
-#define UPNP_SERVICETYPE_MAP(XX)                                                                                       \
-	XX(ContentDirectory, "ContentDirectory")                                                                           \
-	XX(ConnectionManager, "ConnectionManager")                                                                         \
-	XX(X_MS_MediaReceiverRegistrar, "X_MS_MediaReceiverRegistrar")                                                     \
-	XX(RenderingControl, "RenderingControl")
+namespace device
+{
+DECLARE_FSTR(Basic)
+}
 
-namespace ServiceType
-{
-namespace upnp_org
-{
-#define XX(tag, str) DECLARE_FSTR(tag)
-UPNP_SERVICETYPE_MAP(XX)
-#undef XX
-} // namespace upnp_org
-} // namespace ServiceType
+} // namespace schemas_upnp_org
 
 } // namespace UPnP

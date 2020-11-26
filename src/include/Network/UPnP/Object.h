@@ -19,7 +19,8 @@
 
 #pragma once
 
-#include "LinkedItem.h"
+#include "BaseObject.h"
+#include "ObjectClass.h"
 #include <WString.h>
 #include <Delegate.h>
 #include <Network/SSDP/MessageSpec.h>
@@ -27,63 +28,53 @@
 #include <Network/Http/HttpServerConnection.h>
 #include <Network/Http/HttpRequest.h>
 #include <Network/Http/HttpResponse.h>
+#include <Network/SSDP/Urn.h>
 
 namespace UPnP
 {
-using namespace SSDP;
-
 class Object;
-class RootDevice;
 
-struct SearchFilter {
-	using Callback = Delegate<void(Object* object, SearchMatch match)>;
-
-	SearchFilter(const MessageSpec& ms, uint32_t delayMs) : ms(ms), delayMs(delayMs)
-	{
-	}
-
-	const MessageSpec& ms; ///< Specification for message to be sent
-	uint32_t delayMs;	  ///< Message delay
-	String targetString;   ///< Full search target value
-	Callback callback;	 ///< Called on a match
-};
-
-class Object : public LinkedItem
+class Object : public BaseObject
 {
 public:
-	/**
-	 * @brief Interface version number
-	 */
-	using Version = uint8_t;
+	using Version = ObjectClass::Version;
+
+	virtual const ObjectClass& getClass() const = 0;
 
 	Object* getNext() const
 	{
 		return reinterpret_cast<Object*>(LinkedItem::next());
 	}
 
-	virtual Version version() const = 0;
+	bool typeIs(const Urn& objectType) const
+	{
+		return objectType == this->objectType();
+	}
+
+	bool typeIs(const String& objectType) const
+	{
+		return this->objectType() == objectType;
+	}
+
+	bool typeIs(const ObjectClass& objectClass) const
+	{
+		return typeIs(objectClass.objectType());
+	}
+
+	virtual Urn objectType() const
+	{
+		return getClass().objectType();
+	}
+
+	virtual Version version() const
+	{
+		return getClass().version();
+	}
 
 	/**
 	 * @brief Called during SSDP search operation
 	 */
 	virtual void search(const SearchFilter& filter) = 0;
-
-	/**
-	 * @brief Standard fields have been completed
-	 * @note Fields can be modified typically by adding any custom fields
-	 * before sending response.
-	 * @param msg The message being constructed
-	 * @param ms Template spec. for message
-	 * @retval bool Return true to send message, false to cancel
-	 */
-	virtual bool formatMessage(Message& msg, MessageSpec& ms) = 0;
-
-	/**
-	 * @brief Called by framework to construct then send a message.
-	 * @param msg Message to send
-	 * @param ms Template spec.
-	 */
-	virtual void sendMessage(Message& msg, MessageSpec& ms);
 
 	/**
 	 * @brief Called by framework to handle an incoming HTTP request.
@@ -107,18 +98,6 @@ public:
 	virtual IDataSourceStream* createDescription()
 	{
 		return nullptr;
-	}
-};
-
-/**
- * @brief Base class template for linked items with type casting
- */
-template <typename ObjectType> class ObjectTemplate : public Object
-{
-public:
-	ObjectType* getNext() const
-	{
-		return reinterpret_cast<ObjectType*>(Object::next());
 	}
 };
 

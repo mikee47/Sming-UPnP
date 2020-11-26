@@ -1,5 +1,5 @@
 /**
- * RootDevice.h
+ * BaseObject.cpp
  *
  * Copyright 2019 mikee47 <mike@sillyhouse.net>
  *
@@ -17,51 +17,16 @@
  *
  ****/
 
-#pragma once
-
-#include "Device.h"
-#include <Network/SSDP/Message.h>
+#include "include/Network/UPnP/BaseObject.h"
+#include <Network/SSDP/Server.h>
 
 namespace UPnP
 {
-struct SpecVersion {
-	uint8_t major;
-	uint8_t minor;
-};
-
-class RootDevice : public Device
+void BaseObject::sendMessage(Message& msg, MessageSpec& ms)
 {
-public:
-	using List = ObjectList<RootDevice>;
-
-	Url getURL(const String& path);
-
-	String getField(Field desc) const override;
-
-	bool onHttpRequest(HttpServerConnection& connection) override;
-
-	void search(const SearchFilter& filter) override;
-
-	RootDevice* getNext() const
-	{
-		return reinterpret_cast<RootDevice*>(next());
+	if(formatMessage(msg, ms)) {
+		server.sendMessage(msg);
 	}
-
-	/*
-	 * Set port that HTTP requests will be received on
-	 */
-	void setTcpPort(uint16_t port)
-	{
-		tcpPort = port;
-	}
-
-	uint16_t getTcpPort() const
-	{
-		return tcpPort;
-	}
-
-private:
-	uint16_t tcpPort{80};
-};
+}
 
 } // namespace UPnP
