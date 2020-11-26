@@ -51,6 +51,20 @@ public:
 		return nullptr;
 	}
 
+	bool isEmpty() const
+	{
+		return head() == nullptr;
+	}
+
+	size_t count() const
+	{
+		size_t n{0};
+		for(auto it = begin(); it != end(); it++) {
+			++n;
+		}
+		return n;
+	}
+
 	/*
 	 * T can be Urn or String
 	 */

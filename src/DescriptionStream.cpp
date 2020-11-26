@@ -96,7 +96,7 @@ void DescriptionStream::getContent()
 			XML::appendNode(ver, _F("major"), specVersion.major);
 			XML::appendNode(ver, _F("minor"), specVersion.minor);
 
-			XML::serialize(doc, content, XML_PRETTY);
+			XML::serialize(doc, content);
 			splitTag(node);
 			state = State::item;
 			break;

@@ -149,16 +149,19 @@ IDataSourceStream* Device::createDescription()
 
 ItemEnumerator* Device::getList(unsigned index, String& name)
 {
-	switch(index) {
-	case 0:
+	int serviceList = services_.isEmpty() ? -1 : 0;
+	if(int(index) == serviceList) {
 		name = F("serviceList");
 		return new ItemEnumerator(services_.head());
-	case 1:
+	}
+
+	int deviceList = devices_.isEmpty() ? -1 : serviceList + 1;
+	if(int(index) == deviceList) {
 		name = F("deviceList");
 		return new ItemEnumerator(devices_.head());
-	default:
-		return nullptr;
 	}
+
+	return nullptr;
 }
 
 void Device::search(const SearchFilter& filter)
