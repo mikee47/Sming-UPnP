@@ -128,6 +128,9 @@ void findMediaServers()
 			dir->browse("0", ContentDirectory1::BrowseFlag::fs_BrowseMetadata, "*", 0, 10, nullptr, printBrowseResult);
 			dir->browse("0", ContentDirectory1::BrowseFlag::fs_BrowseDirectChildren, "*", 0, 10, nullptr,
 						printBrowseResult);
+
+			// Send a bad request, should return a fault condition
+			dir->browse("bad robot", "chicken", "", 0, 10, nullptr, printBrowseResult);
 		}
 
 		return true;
