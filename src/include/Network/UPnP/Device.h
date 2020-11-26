@@ -38,7 +38,7 @@
 	XX(version, custom)                                                                                                \
 	XX(serverId, custom)                                                                                               \
 	XX(productNameAndVersion, custom)                                                                                  \
-	XX(baseURL, custom)                                                                                                \
+	XX(URLBase, deprecated)                                                                                            \
 	XX(descriptionURL, custom)
 
 namespace UPnP
@@ -86,7 +86,20 @@ public:
 		return s;
 	}
 
-	Url getUrl(const String& path);
+	/**
+	 * @brief Get fully qualified URL
+	 */
+	virtual String getUrl(const String& path) const;
+
+	/**
+	 * @brief Get the base URL path
+	 */
+	virtual String getUrlBasePath() const;
+
+	/**
+	 * @brief Resolve a path (relative or absolute) into an absolute path
+	 */
+	String resolvePath(const String& path) const;
 
 	Device& root();
 

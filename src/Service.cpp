@@ -103,20 +103,13 @@ String Service::getField(Field desc) const
 		return nullptr;
 
 	case Field::SCPDURL:
-		return getField(Field::baseURL) + _F("desc.xml");
+		return getField(Field::type) + ".xml";
 
 	case Field::controlURL:
-		return getField(Field::baseURL) + _F("control");
+		return getField(Field::type) + F("-control");
 
 	case Field::eventSubURL:
-		return getField(Field::baseURL) + _F("event");
-
-	case Field::baseURL: {
-		String url = device_.getField(Device::Field::baseURL);
-		url += getField(Field::type);
-		url += '/';
-		return url;
-	}
+		return getField(Field::type) + F("-event");
 
 	default:
 		return nullptr;
@@ -162,7 +155,7 @@ bool Service::formatMessage(Message& msg, MessageSpec& ms)
 	}
 
 	msg[HTTP_HEADER_SERVER] = device_.getField(Device::Field::serverId);
-	msg[HTTP_HEADER_LOCATION] = device().getUrl(getField(Field::SCPDURL)).toString();
+	msg[HTTP_HEADER_LOCATION] = device().getUrl(getField(Field::SCPDURL));
 
 	String st = String(objectType());
 	String usn = device_.getField(Device::Field::UDN);
@@ -251,7 +244,7 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 		response.code = HTTP_STATUS_OK;
 	};
 
-	if(uri.Path == getField(Field::SCPDURL)) {
+	if(uri.Path == device().resolvePath(getField(Field::SCPDURL))) {
 		printRequest();
 		if(request.method == HTTP_GET) {
 			device_.sendXml(response, createDescription());
@@ -261,7 +254,7 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 		return true;
 	}
 
-	if(uri.Path == getField(Field::controlURL)) {
+	if(uri.Path == device().resolvePath(getField(Field::controlURL))) {
 		printRequest();
 		if(request.method == HTTP_POST) {
 			handleControl();
@@ -271,7 +264,7 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 		return true;
 	}
 
-	if(uri.Path == getField(Field::eventSubURL)) {
+	if(uri.Path == device().resolvePath(getField(Field::eventSubURL))) {
 		printRequest(true);
 		// TODO: Handle this URL
 		if(request.method == HTTP_SUBSCRIBE || request.method == HTTP_UNSUBSCRIBE) {

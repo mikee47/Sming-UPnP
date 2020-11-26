@@ -32,7 +32,6 @@
 	XX(controlURL, required)                                                                                           \
 	XX(eventSubURL, required)                                                                                          \
 	XX(domain, custom)                                                                                                 \
-	XX(baseURL, custom)                                                                                                \
 	XX(type, custom)                                                                                                   \
 	XX(version, custom)
 

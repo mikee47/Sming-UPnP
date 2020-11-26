@@ -110,7 +110,7 @@ String Device::getField(Field desc) const
 		return String(version());
 
 	case Field::presentationURL:
-		return getField(Field::baseURL) + defaultPresentationURL;
+		return getUrl(defaultPresentationURL);
 
 	case Field::friendlyName:
 	case Field::manufacturer:
@@ -118,19 +118,11 @@ String Device::getField(Field desc) const
 	case Field::UDN:
 		return nullptr;
 
-	case Field::descriptionURL: {
-		String url = getField(Field::baseURL);
-		url += _F("desc.xml");
-		return url;
-	}
+	case Field::URLBase:
+		return getUrl(getUrlBasePath());
 
-	case Field::baseURL: {
-		String url;
-		url += '/';
-		url += getField(Field::type);
-		url += '/';
-		return url;
-	}
+	case Field::descriptionURL:
+		return F("desc.xml");
 
 	case Field::serverId:
 		return SSDP::getServerId(getField(Field::productNameAndVersion));
@@ -205,9 +197,29 @@ void Device::search(const SearchFilter& filter)
 	}
 }
 
-Url Device::getUrl(const String& path)
+String Device::getUrl(const String& path) const
 {
-	return Url(URI_SCHEME_HTTP, nullptr, nullptr, WifiStation.getIP().toString(), 80, path);
+	Url url(URI_SCHEME_HTTP, nullptr, nullptr, WifiStation.getIP().toString(), 80, resolvePath(path));
+	return url.toString();
+}
+
+String Device::getUrlBasePath() const
+{
+	String path;
+	path += '/';
+	path += getField(Field::type);
+	return path;
+}
+
+String Device::resolvePath(const String& path) const
+{
+	String s;
+	if(path[0] != '/') {
+		s += getUrlBasePath();
+		s += '/';
+	}
+	s += path;
+	return s;
 }
 
 bool Device::formatMessage(Message& msg, MessageSpec& ms)
@@ -255,7 +267,7 @@ bool Device::onHttpRequest(HttpServerConnection& connection)
 {
 	auto request = connection.getRequest();
 
-	if(isRoot() && request->uri.Path == getField(Field::presentationURL)) {
+	if(isRoot() && request->uri.Path == Url(getField(Field::presentationURL)).Path) {
 		debug_i("[UPnP] Sending default presentation page for '%s'", getField(Field::type).c_str());
 		auto response = connection.getResponse();
 		auto tmpl = new FSTR::TemplateStream(upnp_default_page);
@@ -271,7 +283,7 @@ bool Device::onHttpRequest(HttpServerConnection& connection)
 		return true;
 	}
 
-	if(request->uri.Path == getField(Field::descriptionURL)) {
+	if(request->uri.Path == resolvePath(getField(Field::descriptionURL))) {
 		debug_i("[UPnP] Sending '%s' for '%s' to %s:%u", request->uri.Path.c_str(), getField(Field::type).c_str(),
 				connection.getRemoteIp().toString().c_str(), connection.getRemotePort());
 		auto response = connection.getResponse();

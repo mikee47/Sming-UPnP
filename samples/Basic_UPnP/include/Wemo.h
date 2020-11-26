@@ -90,6 +90,15 @@ public:
 	}
 
 	String getField(Field desc) const override;
+
+	String getUrlBasePath() const override
+	{
+		String path = Device::getUrlBasePath();
+		path += '/';
+		path += id_;
+		return path;
+	}
+
 	bool formatMessage(SSDP::Message& msg, SSDP::MessageSpec& ms) override;
 
 private:

@@ -21,16 +21,18 @@ public:
 			return F("Sming Tea Pot");
 		case Field::serialNumber:
 			return F("12345678");
-		case Field::baseURL: {
-			// Ensure URL is unique if there are multiple devices
-			String s = Device::getField(desc);
-			s += id_;
-			s += '/';
-			return s;
-		}
 		default:
 			return Device::getField(desc);
 		}
+	}
+
+	// Ensure URL is unique if there are multiple devices
+	String getUrlBasePath() const override
+	{
+		String path = Device::getUrlBasePath();
+		path += '/';
+		path += id_;
+		return path;
 	}
 
 private:

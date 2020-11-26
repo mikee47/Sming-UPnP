@@ -67,9 +67,14 @@ public:
 		return reinterpret_cast<const DeviceControl&>(Device::root());
 	}
 
-	String baseURL() const
+	String getUrl(const String& path) const override
 	{
-		return root().rootConfig->baseUrl.c_str();
+		return String(root().rootConfig->baseUrl) + path;
+	}
+
+	String getUrlBasePath() const override
+	{
+		return root().rootConfig->basePath.c_str();
 	}
 
 	ControlPoint& controlPoint() const
@@ -118,7 +123,8 @@ protected:
 
 	struct RootConfig {
 		ControlPoint& controlPoint;
-		CString baseUrl; ///< Includes trailing path separator, e.g. "http://192.168.1.1/"
+		CString baseUrl;  ///< e.g. "http://192.168.1.1:80"
+		CString basePath; ///< Includes trailing path separator, e.g. "/devices/1/"
 	};
 	std::unique_ptr<RootConfig> rootConfig;
 };

@@ -25,8 +25,12 @@ namespace UPnP
 bool DeviceControl::configureRoot(ControlPoint& controlPoint, const String& location, XML::Node* device)
 {
 	Url baseUrl(location);
-	baseUrl.Path = nullptr;
-	rootConfig.reset(new RootConfig{controlPoint, baseUrl.toString()});
+	String path = std::move(baseUrl.Path);
+	int i = path.lastIndexOf('/');
+	if(i >= 0) {
+		path.setLength(i);
+	}
+	rootConfig.reset(new RootConfig{controlPoint, baseUrl.toString(), path});
 
 	return DeviceControl::configure(device);
 }
@@ -61,8 +65,6 @@ String DeviceControl::getField(Field desc) const
 		return String(description_.modelNumber);
 	case Field::serialNumber:
 		return String(description_.serialNumber);
-	case Field::baseURL:
-		return baseURL();
 	default:
 		return Device::getField(desc);
 	}

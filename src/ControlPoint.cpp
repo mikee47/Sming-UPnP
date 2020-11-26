@@ -316,7 +316,7 @@ bool ControlPoint::sendRequest(Envelope& env, const Envelope::Callback& callback
 {
 	auto req = new HttpRequest;
 	req->setMethod(HttpMethod::POST);
-	String url = env.service.getField(Service::Field::controlURL);
+	String url = env.service.device().getUrl(env.service.getField(Service::Field::controlURL));
 	if(!url) {
 		debug_e("[UPnP] No service endpoint defined");
 		return false;

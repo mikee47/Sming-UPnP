@@ -52,13 +52,6 @@ String Controllee::getField(Field desc) const
 		s += getField(Field::serialNumber);
 		return s;
 	}
-	case Field::baseURL: {
-		String url;
-		url += F("/wemo/");
-		url += id_;
-		url += '/';
-		return url;
-	}
 	case Field::productNameAndVersion:
 		return F("Wemo/1.0");
 
