@@ -37,7 +37,8 @@ public:
 	<xsl:variable name="class"><xsl:call-template name="control-class-full"/></xsl:variable>
 	<xsl:value-of select="$class"/>* get<xsl:call-template name="control-name"/>()
 	{
-		return reinterpret_cast&lt;<xsl:value-of select="$class"/>*>(getService(<xsl:call-template name="control-class-full"/>_class.objectType()));
+		auto service = getService(<xsl:value-of select="$class"/>_class.objectType());
+		return reinterpret_cast&lt;<xsl:value-of select="$class"/>*>(service);
 	}
 	</xsl:for-each>
 
@@ -47,7 +48,8 @@ public:
 	<xsl:variable name="class"><xsl:call-template name="control-class-full"/></xsl:variable>
 	<xsl:value-of select="$class"/>* get<xsl:call-template name="control-name"/>()
 	{
-		return reinterpret_cast&lt;<xsl:value-of select="$class"/>*>(getDevice(<xsl:call-template name="control-class-full"/>_class.objectType()));
+		auto device = getDevice(<xsl:value-of select="$class"/>_class.objectType());
+		return reinterpret_cast&lt;<xsl:value-of select="$class"/>*>(device);
 	}
 	</xsl:for-each>
 };

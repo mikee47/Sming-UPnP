@@ -20,15 +20,7 @@ extern const ObjectClass <xsl:value-of select="$controlClass"/>_class;
 class <xsl:value-of select="$controlClass"/>: public ServiceControl
 {
 public:
-	/*
-	 * Action names
-	 */
-	struct Action {<xsl:text/>
-	<xsl:for-each select="s:actionList/s:action">
-		DEFINE_FSTR_LOCAL(<xsl:apply-templates select="." mode="name"/>, "<xsl:value-of select="s:name"/>")<xsl:text/>
-	</xsl:for-each>
-	};
-
+	<xsl:if test="s:serviceStateTable/s:stateVariable[s:allowedValueList]">
 	/*
 	 * Pre-defined values (from allowed value lists)
 	 */
@@ -39,6 +31,7 @@ public:
 	</xsl:for-each>
 	};
 	</xsl:for-each>
+	</xsl:if>
 
 	using ServiceControl::ServiceControl;
 
@@ -64,6 +57,7 @@ public:
 	 * @{
 	 */
 	struct <xsl:apply-templates select="." mode="name"/> {
+		DEFINE_FSTR_LOCAL(actionName, "<xsl:value-of select="s:name"/>")<xsl:text/>
 		struct Arg {<xsl:text/>
 			<xsl:for-each select="s:argumentList/s:argument">
 			DEFINE_FSTR_LOCAL(<xsl:call-template name="varname"/>, "<xsl:value-of select="s:name"/>")<xsl:text/>
@@ -75,14 +69,19 @@ public:
 			using ActionResult::ActionResult;
 
 			<xsl:for-each select="s:argumentList/s:argument[s:direction='out']">
-			<xsl:apply-templates select="." mode="type"/><xsl:text> </xsl:text><xsl:call-template name="varname-cpp"/>()
+			<xsl:apply-templates select="." mode="type"/> get<xsl:call-template name="varname"/>()
 			{
 				return ActionResult::getArg&lt;<xsl:apply-templates select="." mode="type"/>>(Arg::<xsl:call-template name="varname"/>);
+			}
+
+			void set<xsl:call-template name="varname"/>(<xsl:apply-templates select="." mode="type"><xsl:with-param name="const" select="1"/></xsl:apply-templates> value)
+			{
+				ActionResult::setArg&lt;<xsl:apply-templates select="." mode="type"/>>(Arg::<xsl:call-template name="varname"/>, value);
 			}
 			</xsl:for-each>
 			size_t printTo(Print&amp; p);
 		};
-		using Callback = Delegate&lt;void(Result&amp; result)>;<xsl:text/>
+		using Callback = Delegate&lt;void(Result result)>;<xsl:text/>
 	};
 
 	bool <xsl:apply-templates select="." mode="method"/>;

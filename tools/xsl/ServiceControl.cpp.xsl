@@ -20,7 +20,7 @@ size_t <xsl:value-of select="$controlClass"/>::<xsl:apply-templates select="." m
 	<xsl:for-each select="s:argumentList/s:argument[s:direction='out']">
 	n += p.print(Arg::<xsl:call-template name="varname"/>);
 	n += p.print(" = ");
-	n += p.println(<xsl:call-template name="varname-cpp"/>());
+	n += p.println(get<xsl:call-template name="varname"/>());
 	</xsl:for-each>
 	return n;
 }
@@ -32,7 +32,7 @@ bool <xsl:value-of select="$controlClass"/>::<xsl:apply-templates select="." mod
 	<!-- Build request and send it, using a lambda wrapper for response handling -->
 	Envelope request(*this);
 	<xsl:variable name="action"><xsl:apply-templates select="." mode="name"/></xsl:variable>
-	request.createRequest(Action::<xsl:value-of select="$action"/>);<xsl:text/>
+	request.createRequest(<xsl:value-of select="$action"/>::actionName);<xsl:text/>
 	<xsl:for-each select="s:argumentList/s:argument[s:direction='in']">
 	request.addArg(<xsl:value-of select="$action"/>::Arg::<xsl:call-template name="varname"/>, <xsl:call-template name="varname-cpp"/>);<xsl:text/>
 	</xsl:for-each>

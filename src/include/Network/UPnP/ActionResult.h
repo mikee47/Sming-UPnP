@@ -42,6 +42,11 @@ public:
 		return value;
 	}
 
+	template <typename T> void setArg(const FlashString& name, const T& value)
+	{
+		envelope.addArg(name, value);
+	}
+
 	Envelope::Fault fault() const
 	{
 		return envelope.fault();
@@ -50,5 +55,7 @@ public:
 private:
 	Envelope& envelope;
 };
+
+using ActionRequest = ActionResult;
 
 } // namespace UPnP

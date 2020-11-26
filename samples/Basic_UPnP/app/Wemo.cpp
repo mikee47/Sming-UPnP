@@ -5,31 +5,19 @@ namespace UPnP
 {
 namespace Belkin
 {
-void BasicEventService::handleAction(Envelope& env)
+void BasicEventService::getBinaryState(GetBinaryState::Result result)
 {
-	auto act = env.actionName();
-	if(act == "GetBinaryState") {
-		env.createResponse(act);
-		env.addArg("BinaryState", controllee().getState());
-		return;
-	}
-
-	if(act == "SetBinaryState") {
-		bool state;
-		if(env.getArg("BinaryState", state)) {
-			controllee().setState(state);
-			env.createResponse(act);
-		}
-		return;
-	}
+	result.setBinaryState(controllee().getState());
 }
 
-void MetaInfoService::handleAction(Envelope& env)
+void BasicEventService::setBinaryState(bool state, SetBinaryState::Result result)
 {
-	// TODO
-	//	auto res = createEnvelope(action);
-	//	XML::appendNode(res, "BinaryState", 1);
-	//	return res;
+	controllee().setState(state);
+}
+
+void MetaInfoService::getMetaInfo(GetMetaInfo::Result result)
+{
+	//		result.setBinaryState(controllee().getState());
 }
 
 String Controllee::getField(Field desc) const

@@ -43,26 +43,26 @@ void findMediaRenderers()
 
 		auto render = device.getRenderingControl();
 		if(render != nullptr) {
-			render->listPresets(0, [&device](auto& result) {
+			render->listPresets(0, [&device](auto result) {
 				if(checkResult(result)) {
 					Serial.print(device.friendlyName());
 					Serial.print(_F(": Current presets = "));
-					Serial.println(result.currentPresetNameList());
+					Serial.println(result.getCurrentPresetNameList());
 				}
 			});
 
-			render->getVolume(0, RenderingControl1::Channel::fs_Master, [&device](auto& result) {
+			render->getVolume(0, RenderingControl1::Channel::fs_Master, [&device](auto result) {
 				if(checkResult(result)) {
 					Serial.print(device.friendlyName());
 					Serial.print(_F(": Current Volume = "));
-					Serial.println(result.currentVolume());
+					Serial.println(result.getCurrentVolume());
 				}
 			});
 		}
 
 		auto conn = device.getConnectionManager();
 		if(conn != nullptr) {
-			conn->getCurrentConnectionInfo(0, [&device](auto& result) {
+			conn->getCurrentConnectionInfo(0, [&device](auto result) {
 				if(checkResult(result)) {
 					Serial.print(device.friendlyName());
 					Serial.println(_F(": Current Connection Info = "));
@@ -75,7 +75,7 @@ void findMediaRenderers()
 
 		auto transport = device.getAVTransport();
 		if(transport != nullptr) {
-			transport->getDeviceCapabilities(0, [&device](auto& result) {
+			transport->getDeviceCapabilities(0, [&device](auto result) {
 				if(checkResult(result)) {
 					Serial.print(device.friendlyName());
 					Serial.println(_F(": Device Capabilities = "));
@@ -113,12 +113,12 @@ void findMediaServers()
 
 		auto dir = device.getContentDirectory();
 		if(dir != nullptr) {
-			auto printBrowseResult = [&device](auto& result) {
+			auto printBrowseResult = [&device](auto result) {
 				if(checkResult(result)) {
 					Serial.print(device.friendlyName());
 					Serial.println(_F(": Browse result ="));
 					XML::Document doc;
-					String s = result.result();
+					String s = result.getResult();
 					XML::deserialize(doc, s);
 					XML::serialize(doc, Serial, true);
 					result.printTo(Serial);

@@ -15,7 +15,7 @@
 </xsl:for-each>
 <xsl:text/>#include "<xsl:value-of select="$controlClass"/>.h"
 <xsl:call-template name="namespace-open"/>
-class <xsl:value-of select="$templateClass"/>: public Device
+template &lt;class D> class <xsl:value-of select="$templateClass"/>: public Device
 {
 public:
 	using Device::Device;

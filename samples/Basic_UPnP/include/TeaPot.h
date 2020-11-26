@@ -4,7 +4,7 @@ namespace UPnP
 {
 namespace schemas_sming_org
 {
-class TeaPot : public device::TeaPot1Template
+class TeaPot : public device::TeaPot1Template<TeaPot>
 {
 public:
 	TeaPot(uint8_t id) : id_(id)

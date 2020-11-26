@@ -133,12 +133,12 @@ public:
 	/**
 	 * @brief Initialise the envelope as a request
 	 */
-	void createRequest(const String& actionName);
+	Envelope& createRequest(const String& actionName);
 
 	/**
 	 * @brief Initialise the envelope as a response
 	 */
-	void createResponse(const String& actionName);
+	Envelope& createResponse(const String& actionName);
 
 	/**
 	 * @brief Initialise the envelope as a fault

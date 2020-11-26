@@ -9,7 +9,7 @@ namespace Belkin
 {
 class Controllee;
 
-class BasicEventService : public service::basicevent1Template
+class BasicEventService : public service::basicevent1Template<BasicEventService>
 {
 public:
 	using basicevent1Template::basicevent1Template;
@@ -29,10 +29,11 @@ public:
 		return reinterpret_cast<Controllee&>(device());
 	}
 
-	void handleAction(Envelope& env) override;
+	void getBinaryState(GetBinaryState::Result result);
+	void setBinaryState(bool state, SetBinaryState::Result result);
 };
 
-class MetaInfoService : public service::metainfo1Template
+class MetaInfoService : public service::metainfo1Template<MetaInfoService>
 {
 public:
 	using metainfo1Template::metainfo1Template;
@@ -52,15 +53,15 @@ public:
 		return reinterpret_cast<Controllee&>(device());
 	}
 
-	void handleAction(Envelope& env) override;
+	void getMetaInfo(GetMetaInfo::Result result);
 };
 
-class Controllee : public device::controllee1Template
+class Controllee : public device::controllee1Template<Controllee>
 {
 public:
 	using StateChange = Delegate<void(Controllee& device)>;
 
-	Controllee(unsigned id, const String& name) : device::controllee1Template(), id_(id), name_(name)
+	Controllee(unsigned id, const String& name) : controllee1Template(), id_(id), name_(name)
 	{
 		addService(new BasicEventService(*this));
 		addService(new MetaInfoService(*this));

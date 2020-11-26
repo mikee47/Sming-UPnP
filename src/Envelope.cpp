@@ -150,7 +150,7 @@ XML::Node* Envelope::initialise(ContentType contentType)
 	return XML::appendNode(env, s_Body);
 }
 
-void Envelope::createRequest(const String& actionName)
+Envelope& Envelope::createRequest(const String& actionName)
 {
 	auto body = initialise(ContentType::request);
 
@@ -163,9 +163,10 @@ void Envelope::createRequest(const String& actionName)
 	XML::appendAttribute(content, xmlns_u, service.objectType());
 
 	name = actionName;
+	return *this;
 }
 
-void Envelope::createResponse(const String& actionName)
+Envelope& Envelope::createResponse(const String& actionName)
 {
 	auto body = initialise(ContentType::response);
 
@@ -179,6 +180,7 @@ void Envelope::createResponse(const String& actionName)
 	XML::appendAttribute(content, xmlns_u, service.objectType());
 
 	name = actionName;
+	return *this;
 }
 
 Envelope::Fault Envelope::createFault(ErrorCode error)
