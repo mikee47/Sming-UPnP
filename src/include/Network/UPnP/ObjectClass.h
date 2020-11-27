@@ -32,6 +32,7 @@ class ServiceControl;
 
 struct ObjectClass {
 	using List = const FSTR::Vector<ObjectClass>&;
+	using Kind = Urn::Kind;
 
 	/**
 	 * @brief Interface version number
@@ -43,12 +44,32 @@ struct ObjectClass {
 	 */
 	using CreateObject = Object* (*)(DeviceControl* owner);
 
+	struct Device {
+		const FlashString* friendlyName;
+		const FlashString* manufacturer;
+		const FlashString* manufacturerURL;
+		const FlashString* modelDescription;
+		const FlashString* modelName;
+		const FlashString* modelNumber;
+		const FlashString* modelURL;
+		const FlashString* serialNumber;
+		const FlashString* UDN;
+	};
+
+	struct Service {
+		const FlashString* serviceId;
+		const FlashString* schema;
+	};
+
+	Kind kind_;
+	Version version_;
 	const FlashString* domain_;
 	const FlashString* type_;
-	const FlashString* schema_;
-	Version version_;
-	Urn::Kind kind_;
 	const CreateObject createObject_;
+	union {
+		const Device* device_;
+		const Service* service_;
+	};
 
 	const FlashString& domain() const
 	{
@@ -60,9 +81,16 @@ struct ObjectClass {
 		return *type_;
 	}
 
-	const FlashString& schema() const
+	const Device& device() const
 	{
-		return *schema_;
+		assert(kind() == Kind::device);
+		return *device_;
+	}
+
+	const Service& service() const
+	{
+		assert(kind() == Kind::service);
+		return *service_;
 	}
 
 	Version version() const
@@ -70,26 +98,26 @@ struct ObjectClass {
 		return FSTR::readValue(&version_);
 	}
 
-	Urn::Kind kind() const
+	Kind kind() const
 	{
 		return FSTR::readValue(&kind_);
 	}
 
 	DeviceControl* createRootDevice() const
 	{
-		assert(kind() == Urn::Kind::device);
+		assert(kind() == Kind::device);
 		return reinterpret_cast<DeviceControl*>(createObject_(nullptr));
 	}
 
 	DeviceControl* createDevice(DeviceControl& owner) const
 	{
-		assert(kind() == Urn::Kind::device);
+		assert(kind() == Kind::device);
 		return reinterpret_cast<DeviceControl*>(createObject_(&owner));
 	}
 
 	ServiceControl* createService(DeviceControl& owner) const
 	{
-		assert(kind() == Urn::Kind::service);
+		assert(kind() == Kind::service);
 		return reinterpret_cast<ServiceControl*>(createObject_(&owner));
 	}
 

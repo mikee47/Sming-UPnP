@@ -83,7 +83,7 @@ XML::Node* Service::getDescription(XML::Document& doc, DescType descType) const
 
 IDataSourceStream* Service::createDescription()
 {
-	return new FSTR::Stream(getClass().schema());
+	return new FSTR::Stream(*getClass().service().schema);
 }
 
 String Service::getField(Field desc) const
@@ -100,7 +100,7 @@ String Service::getField(Field desc) const
 		return String(version());
 
 	case Field::serviceId:
-		return nullptr;
+		return *getClass().service().serviceId;
 
 	case Field::SCPDURL:
 		return getField(Field::type) + ".xml";

@@ -98,6 +98,8 @@ XML::Node* Device::getDescription(XML::Document& doc, DescType descType) const
 
 String Device::getField(Field desc) const
 {
+	auto fstr = [](const FlashString* s) { return s && s->length() ? String(*s) : nullptr; };
+
 	// Provide defaults for required fields
 	switch(desc) {
 	case Field::deviceType:
@@ -113,10 +115,23 @@ String Device::getField(Field desc) const
 		return getUrl(defaultPresentationURL);
 
 	case Field::friendlyName:
+		return fstr(getClass().device().friendlyName);
 	case Field::manufacturer:
+		return fstr(getClass().device().manufacturer);
+	case Field::manufacturerURL:
+		return fstr(getClass().device().manufacturerURL);
+	case Field::modelDescription:
+		return fstr(getClass().device().modelDescription);
 	case Field::modelName:
+		return fstr(getClass().device().modelName);
+	case Field::modelNumber:
+		return fstr(getClass().device().modelNumber);
+	case Field::modelURL:
+		return fstr(getClass().device().modelURL);
+	case Field::serialNumber:
+		return fstr(getClass().device().serialNumber);
 	case Field::UDN:
-		return nullptr;
+		return fstr(getClass().device().UDN);
 
 	case Field::URLBase:
 		return getUrl(getUrlBasePath());

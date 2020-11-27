@@ -17,8 +17,6 @@ public:
 		case Field::UDN:
 			// This is the unique id of the device
 			return F("uuid:68317e07-d356-455a-813b-d23f2556354a");
-		case Field::friendlyName:
-			return F("Sming Tea Pot");
 		case Field::serialNumber:
 			return F("12345678");
 		default:
