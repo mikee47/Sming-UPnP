@@ -7,65 +7,12 @@ namespace UPnP
 {
 namespace Belkin
 {
-class Controllee;
-
-class BasicEventService : public service::basicevent1Template<BasicEventService>
-{
-public:
-	using basicevent1Template::basicevent1Template;
-
-	String getField(Field desc) const override
-	{
-		switch(desc) {
-		case Field::serviceId:
-			return F("urn:Belkin:serviceId:basicevent1");
-		default:
-			return basicevent1Template::getField(desc);
-		}
-	}
-
-	Controllee& controllee()
-	{
-		return reinterpret_cast<Controllee&>(device());
-	}
-
-	ErrorCode getBinaryState(GetBinaryState::Result result);
-	ErrorCode setBinaryState(bool state, SetBinaryState::Result result);
-};
-
-class MetaInfoService : public service::metainfo1Template<MetaInfoService>
-{
-public:
-	using metainfo1Template::metainfo1Template;
-
-	String getField(Field desc) const override
-	{
-		switch(desc) {
-		case Field::serviceId:
-			return F("urn:Belkin:serviceId:metainfo1");
-		default:
-			return Service::getField(desc);
-		}
-	}
-
-	Controllee& controllee()
-	{
-		return reinterpret_cast<Controllee&>(device());
-	}
-
-	ErrorCode getMetaInfo(GetMetaInfo::Result result);
-};
-
 class Controllee : public device::controllee1Template<Controllee>
 {
 public:
 	using StateChange = Delegate<void(Controllee& device)>;
 
-	Controllee(unsigned id, const String& name) : controllee1Template(), id_(id), name_(name)
-	{
-		addService(new BasicEventService(*this));
-		addService(new MetaInfoService(*this));
-	}
+	Controllee(unsigned id, const String& name);
 
 	void onStateChange(StateChange delegate)
 	{
@@ -107,6 +54,66 @@ private:
 	String name_;
 	bool state_{false};
 	StateChange stateChange;
+};
+
+class BasicEventService : public service::basicevent1Template<BasicEventService>
+{
+public:
+	using basicevent1Template::basicevent1Template;
+
+	String getField(Field desc) const override
+	{
+		switch(desc) {
+		case Field::serviceId:
+			return F("urn:Belkin:serviceId:basicevent1");
+		default:
+			return basicevent1Template::getField(desc);
+		}
+	}
+
+	Controllee& controllee()
+	{
+		return reinterpret_cast<Controllee&>(device());
+	}
+
+	ErrorCode getBinaryState(GetBinaryState::Result result)
+	{
+		result.setBinaryState(controllee().getState());
+		return ErrorCode::Success;
+	}
+
+	ErrorCode setBinaryState(bool state, SetBinaryState::Result result)
+	{
+		controllee().setState(state);
+		return ErrorCode::Success;
+	}
+};
+
+class MetaInfoService : public service::metainfo1Template<MetaInfoService>
+{
+public:
+	using metainfo1Template::metainfo1Template;
+
+	String getField(Field desc) const override
+	{
+		switch(desc) {
+		case Field::serviceId:
+			return F("urn:Belkin:serviceId:metainfo1");
+		default:
+			return Service::getField(desc);
+		}
+	}
+
+	Controllee& controllee()
+	{
+		return reinterpret_cast<Controllee&>(device());
+	}
+
+	ErrorCode getMetaInfo(GetMetaInfo::Result result)
+	{
+		// Not implemented
+		return ErrorCode::ActionFailed;
+	}
 };
 
 } // namespace Belkin

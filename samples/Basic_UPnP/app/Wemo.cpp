@@ -5,22 +5,10 @@ namespace UPnP
 {
 namespace Belkin
 {
-ErrorCode BasicEventService::getBinaryState(GetBinaryState::Result result)
+Controllee::Controllee(unsigned id, const String& name) : controllee1Template(), id_(id), name_(name)
 {
-	result.setBinaryState(controllee().getState());
-	return ErrorCode::Success;
-}
-
-ErrorCode BasicEventService::setBinaryState(bool state, SetBinaryState::Result result)
-{
-	controllee().setState(state);
-	return ErrorCode::Success;
-}
-
-ErrorCode MetaInfoService::getMetaInfo(GetMetaInfo::Result result)
-{
-	// Not implemented
-	return ErrorCode::ActionFailed;
+	addService(new BasicEventService(*this));
+	addService(new MetaInfoService(*this));
 }
 
 String Controllee::getField(Field desc) const
