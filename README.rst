@@ -37,7 +37,7 @@ knowledge of how it all works.
 The ESP8266 is a 'Class II IoT Device'
    This classification is from `RFC7228: Terminology for Constrained-Node Networks <https://tools.ietf.org/html/rfc7228>`__,
    and considers the resources available for an embedded device.
-   
+
    Basically, it *can't* run Linux but it *can* support IP networking.
 
    Whilst the ESP32 is 'less constrained', it's still class II and without care and
@@ -77,7 +77,7 @@ How do we deal with XML on a memory-constrained device?
 
    If we want to discover other networked devices and control them, we'll also
    need to parse the XML data in a similar way.
-   
+
    -  `Tiny XML-2 <https://github.com/leethomason/tinyxml2>`__ is a very popular library.
       It's a `DOM parser <https://en.wikipedia.org/wiki/Document_Object_Model>`__ so memory
       consumption is likely to be an issue.
@@ -103,7 +103,7 @@ Most of the UPnP libraries are for Linux or Windows
    -  `C++ Micro Services <https://github.com/CppMicroServices/CppMicroServices>`__
 
    Others:
-   
+
    -  `gUPnP <https://gitlab.gnome.org/GNOME/gupnp-av>`__ object-oriented framework in C.
 
    Curiously, I've failed to turn up anything for FreeRTOS.
@@ -173,9 +173,9 @@ Features
 
 Discovery
    UPnP requires a minimal amount of information exchange to advertise services,
-   however device descriptions can be relatively large and therefore unsafe to 
+   however device descriptions can be relatively large and therefore unsafe to
    manipulate in a limited RAM system.
-   
+
    Sming's template streams are one possible solution to this problem.
    The IMPORT_FSTR feature allows applications to easily define their own
    descriptions (templates or otherwise). The alternative is to use SPIFFS,
@@ -217,13 +217,15 @@ Windows:
 Linux:
 
    Under Ubuntu Linux you can install `gupnp-tools`::
-   
+
       sudo apt install gupnp-tools
 
    And then discover devices on the local network using the following command::
-      
-      gssdp-discover
 
-   Filter like this::
-   
-      gssdp-discover --target=upnp:rootdevice
+       gupnp-universal-cp
+
+.. image:: upnp-browser.png
+
+   You can also start a "software" smart bulb device and use it to test your control point application::
+
+      gupnp-network-light
