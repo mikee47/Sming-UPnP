@@ -44,45 +44,55 @@ void findMediaRenderers()
 		auto render = device.getRenderingControl();
 		if(render != nullptr) {
 			render->listPresets(0, [&device](auto result) {
+				Serial.println();
+				Serial.println(_F("render->listPresets(0):"));
 				if(checkResult(result)) {
 					Serial.print(device.friendlyName());
 					Serial.print(_F(": Current presets = "));
 					Serial.println(result.getCurrentPresetNameList());
 				}
+				Serial.println();
 			});
 
 			render->getVolume(0, RenderingControl1::Channel::fs_Master, [&device](auto result) {
+				Serial.println();
+				Serial.println(_F("render->getVolume(0, Master):"));
 				if(checkResult(result)) {
 					Serial.print(device.friendlyName());
 					Serial.print(_F(": Current Volume = "));
 					Serial.println(result.getCurrentVolume());
 				}
+				Serial.println();
 			});
 		}
 
 		auto conn = device.getConnectionManager();
 		if(conn != nullptr) {
 			conn->getCurrentConnectionInfo(0, [&device](auto result) {
+				Serial.println();
+				Serial.println(_F("conn->getCurrentConnectionInfo(0):"));
 				if(checkResult(result)) {
 					Serial.print(device.friendlyName());
 					Serial.println(_F(": Current Connection Info = "));
 					result.printTo(Serial);
 					Serial.println(_F("---"));
-					Serial.println();
 				}
+				Serial.println();
 			});
 		}
 
 		auto transport = device.getAVTransport();
 		if(transport != nullptr) {
 			transport->getDeviceCapabilities(0, [&device](auto result) {
+				Serial.println();
+				Serial.println(_F("transport->getDeviceCapabilities(0):"));
 				if(checkResult(result)) {
 					Serial.print(device.friendlyName());
 					Serial.println(_F(": Device Capabilities = "));
 					result.printTo(Serial);
 					Serial.println(_F("---"));
-					Serial.println();
 				}
+				Serial.println();
 			});
 		}
 
@@ -114,15 +124,18 @@ void findMediaServers()
 		auto dir = device.getContentDirectory();
 		if(dir != nullptr) {
 			auto printBrowseResult = [&device](auto result) {
+				Serial.println();
+				Serial.print(_F("Browse result for "));
+				Serial.print(device.friendlyName());
+				Serial.println(':');
 				if(checkResult(result)) {
-					Serial.print(device.friendlyName());
-					Serial.println(_F(": Browse result ="));
 					XML::Document doc;
 					String s = result.getResult();
 					XML::deserialize(doc, s);
 					XML::serialize(doc, Serial, true);
 					result.printTo(Serial);
 				}
+				Serial.println();
 			};
 
 			dir->browse("0", ContentDirectory1::BrowseFlag::fs_BrowseMetadata, "*", 0, 10, nullptr, printBrowseResult);
@@ -130,7 +143,7 @@ void findMediaServers()
 						printBrowseResult);
 
 			// Send a bad request, should return a fault condition
-			dir->browse("bad robot", "chicken", "", 0, 10, nullptr, printBrowseResult);
+			dir->browse(F("bad robot"), F("chicken"), "", 0, 10, nullptr, printBrowseResult);
 		}
 
 		return true;
