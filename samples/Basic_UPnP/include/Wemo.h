@@ -29,8 +29,8 @@ public:
 		return reinterpret_cast<Controllee&>(device());
 	}
 
-	void getBinaryState(GetBinaryState::Result result);
-	void setBinaryState(bool state, SetBinaryState::Result result);
+	ErrorCode getBinaryState(GetBinaryState::Result result);
+	ErrorCode setBinaryState(bool state, SetBinaryState::Result result);
 };
 
 class MetaInfoService : public service::metainfo1Template<MetaInfoService>
@@ -53,7 +53,7 @@ public:
 		return reinterpret_cast<Controllee&>(device());
 	}
 
-	void getMetaInfo(GetMetaInfo::Result result);
+	ErrorCode getMetaInfo(GetMetaInfo::Result result);
 };
 
 class Controllee : public device::controllee1Template<Controllee>

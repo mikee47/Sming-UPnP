@@ -31,23 +31,23 @@ public:
 		return <xsl:value-of select="$controlClass"/>_class;
 	}
 
-	void handleAction(Envelope&amp; env) override
+	ErrorCode handleAction(Envelope&amp; env) override
 	{
 		String actionName = env.actionName();
 		ActionRequest req(env);
 		<xsl:for-each select="s:actionList/s:action">
 		<xsl:variable name="name"><xsl:apply-templates select="." mode="name"/></xsl:variable>
-		<xsl:variable name="Arg" select="concat($name, '::Arg::')"/>
-		if(<xsl:value-of select="concat($name, '::actionName')"/> == actionName) {
-			static_cast&lt;S*>(this)-><xsl:value-of select="concat(translate(substring($name,1,1), $vUpper, $vLower), substring($name, 2))"/>(<xsl:text/>
+		if(<xsl:value-of select="concat($name, '::actionName')"/> == actionName) {<xsl:text/>
+			<xsl:if test="s:argumentList/s:argument[s:direction='in']">
+			using Arg = <xsl:value-of select="$name"/>::Arg;</xsl:if>
+			return static_cast&lt;S*>(this)-><xsl:value-of select="concat(translate(substring($name,1,1), $vUpper, $vLower), substring($name, 2))"/>(
 			<xsl:for-each select="s:argumentList/s:argument[s:direction='in']">
-				req.getArg&lt;<xsl:apply-templates select="." mode="type"/>>(<xsl:text/>
-				<xsl:value-of select="$Arg"/><xsl:call-template name="varname"/>),<xsl:text/>
+				<xsl:text/>req.getArg&lt;<xsl:apply-templates select="." mode="type"/>>(Arg::<xsl:call-template name="varname"/>),
 				</xsl:for-each>
 				<xsl:value-of select="concat($name, '::Result')"/>(env.createResponse(actionName)));
-			return;
 		}
 		</xsl:for-each>
+		return ErrorCode::InvalidAction;
 	}
 };
 <xsl:call-template name="namespace-close"/>

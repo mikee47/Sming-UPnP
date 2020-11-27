@@ -208,16 +208,15 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 		}
 
 		String actionName = env.actionName();
-		handleAction(env);
+		ErrorCode errorCode = handleAction(env);
 
-		switch(env.contentType()) {
-		case Envelope::ContentType::response:
-			break;
-		case Envelope::ContentType::fault:
+		if(env.contentType() == Envelope::ContentType::fault) {
 			response.code = HTTP_STATUS_INTERNAL_SERVER_ERROR;
-			break;
-		default:
-			debug_w("[UPnP] Unhandled action: %s", actionName.c_str());
+		} else if(errorCode != ErrorCode::Success) {
+			env.createFault(errorCode);
+			response.code = HTTP_STATUS_INTERNAL_SERVER_ERROR;
+		} else if(env.contentType() != Envelope::ContentType::response) {
+			debug_e("[UPnP] Unhandled action: %s", actionName.c_str());
 			env.createFault(ErrorCode::OptionalActionNotImplemented);
 			response.code = HTTP_STATUS_INTERNAL_SERVER_ERROR;
 		}

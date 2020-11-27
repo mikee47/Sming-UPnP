@@ -76,7 +76,7 @@ public:
 
 			void set<xsl:call-template name="varname"/>(<xsl:apply-templates select="." mode="type"><xsl:with-param name="const" select="1"/></xsl:apply-templates> value)
 			{
-				ActionResult::setArg&lt;<xsl:apply-templates select="." mode="type"/>>(Arg::<xsl:call-template name="varname"/>, value);
+				ActionResult::setArg(Arg::<xsl:call-template name="varname"/>, value);
 			}
 			</xsl:for-each>
 			size_t printTo(Print&amp; p);

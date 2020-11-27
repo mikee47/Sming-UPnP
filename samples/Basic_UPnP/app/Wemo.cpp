@@ -5,19 +5,22 @@ namespace UPnP
 {
 namespace Belkin
 {
-void BasicEventService::getBinaryState(GetBinaryState::Result result)
+ErrorCode BasicEventService::getBinaryState(GetBinaryState::Result result)
 {
 	result.setBinaryState(controllee().getState());
+	return ErrorCode::Success;
 }
 
-void BasicEventService::setBinaryState(bool state, SetBinaryState::Result result)
+ErrorCode BasicEventService::setBinaryState(bool state, SetBinaryState::Result result)
 {
 	controllee().setState(state);
+	return ErrorCode::Success;
 }
 
-void MetaInfoService::getMetaInfo(GetMetaInfo::Result result)
+ErrorCode MetaInfoService::getMetaInfo(GetMetaInfo::Result result)
 {
-	//		result.setBinaryState(controllee().getState());
+	// Not implemented
+	return ErrorCode::ActionFailed;
 }
 
 String Controllee::getField(Field desc) const

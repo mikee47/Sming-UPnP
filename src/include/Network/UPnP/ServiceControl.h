@@ -66,8 +66,9 @@ public:
 
 	bool sendRequest(Envelope& request, const Envelope::Callback& callback);
 
-	void handleAction(Envelope& env) override
+	ErrorCode handleAction(Envelope& env) override
 	{
+		return ErrorCode::InvalidAction;
 	}
 
 	bool configure(const XML::Node* service);

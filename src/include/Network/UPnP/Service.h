@@ -103,12 +103,29 @@ public:
 
 	/**
 	 * @brief An action request has been received
-	 * @todo We need to define actions for a service, accessed via enumerator.
-	 * We can also then parse the arguments and check for validity, then pass this
-	 * information to `invoke()`, which is code generated for each service type.
-	 * The user then gets a set of methods to implement for their service.
+	 * @param env Contains the action request
+	 * @retval ErrorCode
+	 *
+	 * Implementation should place response into `env` after reading parameters, e.g.:
+	 *
+	 *		if(env.actionName() == "MyAction") {
+	 * 			String arg1;
+	 * 			int arg2;
+	 * 			env.getArg("arg1", arg1);
+	 * 			env.getArg("arg2", arg2);
+	 * 			auto& response = env.createResponse();
+	 * 			// Process command here
+	 * 			int arg3 = processMyAction(arg1, arg2);
+	 * 			response.setArg("arg3", arg3);
+	 * 			return ErrorCode::Success;
+	 * 		}
+	 *
+	 * 		return ErrorCode::InvalidAction;
+	 *
+	 * This is usually handled by generated wrapper class templates.
+	 *
 	 */
-	virtual void handleAction(Envelope& env) = 0;
+	virtual ErrorCode handleAction(Envelope& env) = 0;
 
 private:
 	Device& device_;
