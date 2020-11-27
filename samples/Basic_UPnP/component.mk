@@ -1,4 +1,2 @@
 DISABLE_SPIFFS := 1
-ARDUINO_LIBRARIES := UPnP UPnP-Schema
-
-COMPONENT_DEPENDS := malloc_count
+COMPONENT_DEPENDS := UPnP-Schema malloc_count
