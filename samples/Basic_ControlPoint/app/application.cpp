@@ -1,6 +1,6 @@
 #include <SmingCore.h>
 #include <Network/UPnP/ControlPoint.h>
-#include <device/hg1.h>
+#include <Network/UPnP/device/Panasonic/42AS500_Series/MediaRenderer1.h>
 
 // If you want, you can define WiFi settings globally in Eclipse Environment Variables
 #ifndef WIFI_SSID
@@ -13,6 +13,8 @@ namespace
 NtpClient* ntpClient;
 UPnP::ControlPoint controlPoint(8192);
 
+using MediaRenderer1 = UPnP::device::schemas_upnp_org::MediaRenderer1;
+
 void connectFail(const String& ssid, MacAddress bssid, WifiDisconnectReason reason)
 {
 	debugf("I'm NOT CONNECTED!");
@@ -20,7 +22,7 @@ void connectFail(const String& ssid, MacAddress bssid, WifiDisconnectReason reas
 
 void initUPnP()
 {
-	controlPoint.beginSearch(Delegate<bool(Device_MediaRenderer&)>([](auto& device) {
+	controlPoint.beginSearch(Delegate<bool(UPnP::device::schemas_upnp_org::MediaRenderer1&)>([](auto& device) {
 		// Stop at the first response
 		//		controlPoint.cancelSearch();
 
@@ -32,13 +34,13 @@ void initUPnP()
 		render.action_ListPresets(0, [&device](auto& result) {
 			Serial.print(device.caption());
 			Serial.print(_F(": Current presets = "));
-			Serial.println(result.CurrentPresetNameList);
+			Serial.println(result.vCurrentPresetNameList);
 		});
 
 		render.action_GetVolume(0, nullptr, [&device](auto& result) {
 			Serial.print(device.caption());
 			Serial.print(_F(": Current Volume = "));
-			Serial.println(result.CurrentVolume);
+			Serial.println(result.vCurrentVolume);
 		});
 
 		auto& conn = device.getConnectionManager();

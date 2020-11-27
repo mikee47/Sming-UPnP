@@ -186,9 +186,10 @@ private:
 
 	template <typename Class> const DeviceClass& getDeviceClass()
 	{
+		Class cls;
 		const DeviceClass* c = deviceClasses.head();
 		while(c != nullptr) {
-			if(c->equals<Class>()) {
+			if(*c == cls) {
 				return *c;
 			}
 

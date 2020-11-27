@@ -2,9 +2,15 @@
 #include <Network/UPnP/ControlPoint.h>
 #include <Data/BitSet.h>
 #include <Data/CString.h>
+#include "Fetch.h"
 
 #ifdef ARCH_HOST
+#ifdef __WIN32__
 #include <io.h>
+#endif
+
+#include <hostlib/CommandLine.h>
+#include <sys/stat.h>
 #include <Data/Stream/HostFileStream.h>
 #endif
 
@@ -16,8 +22,7 @@
 
 namespace
 {
-NtpClient* ntpClient;
-UPnP::ControlPoint controlPoint(65536);
+UPnP::ControlPoint controlPoint(0x20000);
 Timer queueTimer;
 Timer statusTimer;
 Timer fetchTimer;
@@ -26,182 +31,27 @@ void beginNextSearch();
 void fetchNextDescription();
 
 enum class Option {
-	networkTree,
+	networkScan,
+	writeDeviceTree,
+	writeDeviceSchema,
+	writeServiceSchema,
+	overwriteExisting,
 };
 
-BitSet<uint32_t, Option> options = Option::networkTree;
+BitSet<uint32_t, Option> options;
 
 constexpr unsigned maxDescriptionFetchAttempts{3};
 constexpr unsigned descriptionFetchTimeout{5000};
 
-// Fetch one description file at a time to avoid swamping the TCP stack
-struct Fetch {
-	UPnP::Urn::Kind kind{};
-	String url;
-	String root;
-	String path;
-	unsigned attempts{0};
-
-	Fetch() = default;
-	Fetch(const Fetch&) = default;
-
-	Fetch(const String& url, const String& root, const String& path)
-		: kind(UPnP::Urn(path).kind), url(url), root(root), path(path)
-	{
-	}
-
-	Fetch(const UPnP::Urn& urn) : kind(urn.kind), path(urn.toString())
-	{
-	}
-
-	explicit operator bool() const
-	{
-		return kind != UPnP::Urn::Kind::none;
-	}
-
-	bool operator==(const Fetch& other)
-	{
-		return path == other.path;
-	}
-
-	UPnP::Urn urn() const
-	{
-		return UPnP::Urn(path);
-	}
-
-	String fullPath() const
-	{
-		String s;
-		s += root;
-		s += path;
-		return s;
-	}
-
-	String toString() const
-	{
-		String s;
-		if(url) {
-			s += url;
-			s += F("' -> '");
-			s += root;
-			s += path;
-			s += '\'';
-		} else {
-			s = path;
-		}
-		return s;
-	}
-};
-
-class FetchList
-{
-public:
-	FetchList(const String& name) : name(name)
-	{
-	}
-
-	bool contains(const Fetch& f)
-	{
-		return queue.contains(f) || done.contains(f);
-	}
-
-	bool isDone(const Fetch& f)
-	{
-		return done.contains(f);
-	}
-
-	bool add(Fetch f)
-	{
-		if(f.kind > UPnP::Urn::Kind::service) {
-			f.kind = UPnP::Urn::Kind::none;
-		}
-
-		if(contains(f)) {
-			return false;
-		}
-
-		if(f.kind == UPnP::Urn::Kind::service) {
-			//			unsigned i = 0;
-			//			while(i < queue.count()) {
-			//				if(queue[i].)
-			//			}
-			queue.insertElementAt(f, 0);
-		} else {
-			queue.add(f);
-		}
-
-		Serial.print(_F("Queuing '"));
-		Serial.println(f.toString());
-
-		return true;
-	}
-
-	Fetch& peek()
-	{
-		if(queue.count() == 0) {
-			nil = Fetch();
-			return nil;
-		} else {
-			return queue[0];
-		}
-	}
-
-	Fetch pop()
-	{
-		if(queue.count() == 0) {
-			return Fetch{};
-		}
-
-		Fetch f = queue.at(0);
-		queue.remove(0);
-		return f;
-	}
-
-	void finished(const Fetch& f)
-	{
-		done.add(f);
-		queue.removeElement(f);
-	}
-
-	void finished(const String& url)
-	{
-		Fetch f;
-		f.url = url;
-		finished(f);
-	}
-
-	unsigned count() const
-	{
-		return queue.count();
-	}
-
-	String toString() const
-	{
-		String s;
-		s += name;
-		s += F(": fetched ");
-		s += done.count();
-		s += F(" of ");
-		s += done.count() + queue.count();
-		return s;
-	}
-
-private:
-	using List = Vector<Fetch>;
-	static Fetch nil;
-	String name;
-	List queue;
-	List done;
-};
-
-Fetch FetchList::nil{};
-
 FetchList descriptionQueue("Descriptions");
 FetchList ssdpQueue("SSDP messages");
-Fetch currentDesc;
 
-static const char* deviceDir = "devices";
-static const char* schemaDir = "schema";
+// These can be overridden via environment variables
+#define ENV_DEVICE_DIR "DEVICE_DIR"
+#define ENV_SCHEMA_DIR "SCHEMA_DIR"
+
+const char* deviceDir = "out/upnp/devices";
+const char* schemaDir = "out/upnp/schema";
 
 //IMPORT_FSTR(gatedesc_xml, PROJECT_DIR "/devices1/192.168.1.254/1900/gatedesc.xml")
 
@@ -210,20 +60,30 @@ void connectFail(const String& ssid, MacAddress bssid, WifiDisconnectReason reas
 	debugf("I'm NOT CONNECTED!");
 }
 
+#ifdef ARCH_HOST
+bool exist(const String& path)
+{
+	struct stat s;
+	return ::stat(path.c_str(), &s) >= 0;
+}
+
 void makedirs(const String& path)
 {
-#ifdef ARCH_HOST
 	String buf = path;
 	buf.replace('\\', '/');
 	char* s = buf.begin();
 	char* p = s;
 	while((p = strchr(p, '/')) != nullptr) {
 		*p = '\0';
+#ifdef __linux__
+		mkdir(s, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#else
 		mkdir(s);
+#endif
 		*p++ = '/';
 	}
-#endif
 }
+#endif
 
 Print* openStream(String path)
 {
@@ -232,6 +92,13 @@ Print* openStream(String path)
 	path.replace('?', '-');
 	path.replace('&', '-');
 	path.replace(' ', '_');
+
+	if(!options[Option::overwriteExisting] && exist(path)) {
+		Serial.print(F("Skipping existing file '"));
+		Serial.print(path);
+		Serial.println("'");
+		return nullptr;
+	}
 
 	makedirs(path);
 	Serial.print(_F("Writing "));
@@ -242,12 +109,15 @@ Print* openStream(String path)
 	}
 	debug_e("Failed to create '%s'", path.c_str());
 	delete fs;
-	return nullptr;
 #endif
+
+	return nullptr;
 }
 
 void writeServiceSchema(XML::Document& scpd, const String& serviceType)
 {
+	XML::appendNode(scpd.first_node(), "serviceType", serviceType);
+
 	UPnP::Urn urn(serviceType);
 	String path = schemaDir;
 	path += "/service/";
@@ -256,6 +126,7 @@ void writeServiceSchema(XML::Document& scpd, const String& serviceType)
 	path += urn.type;
 	path += urn.version;
 	path += ".xml";
+
 	auto fs = openStream(path);
 	if(fs != nullptr) {
 		XML::serialize(scpd, *fs, true);
@@ -272,6 +143,16 @@ void writeDeviceSchema(XML::Node* device, const String& deviceType)
 	node = device->first_node("friendlyName");
 	assert(node != nullptr);
 	String friendlyName(node->value(), node->value_size());
+
+	auto doc = device->document();
+	auto root = device->document()->first_node();
+	assert(root != nullptr);
+	auto attr = root->first_attribute();
+	while(attr != nullptr) {
+		auto clone = doc->allocate_attribute(attr->name(), attr->value(), attr->name_size(), attr->value_size());
+		device->append_attribute(clone);
+		attr = attr->next_attribute();
+	}
 
 	UPnP::Urn urn(deviceType);
 	String path = schemaDir;
@@ -295,10 +176,15 @@ void parseDevice(XML::Node* device, const Fetch& f)
 	auto node = device->first_node("deviceType");
 	assert(node != nullptr);
 	String deviceType(node->value(), node->value_size());
-	debug_e("deviceType %sfound", deviceType ? "" : "NOT ");
+	if(deviceType == nullptr) {
+		Serial.println("*** deviceType NOT found ***");
+		return;
+	}
 	ssdpQueue.add(UPnP::Urn{deviceType});
 
-	writeDeviceSchema(device, deviceType);
+	if(options[Option::writeDeviceSchema]) {
+		writeDeviceSchema(device, deviceType);
+	}
 
 	auto serviceList = device->first_node("serviceList");
 	debug_i("serviceList %sfound", serviceList ? "" : "NOT ");
@@ -312,11 +198,11 @@ void parseDevice(XML::Node* device, const Fetch& f)
 
 			auto node = svc->first_node("SCPDURL");
 			if(node == nullptr) {
-				debug_e("*** SCPDURL missing ***");
+				Serial.println("*** SCPDURL missing ***");
 			} else {
 				Url url(f.url);
 				url.Path = String(node->value(), node->value_size());
-				descriptionQueue.add(Fetch(String(url), String(f.root), svcType));
+				descriptionQueue.add(Fetch(UPnP::Urn::Kind::service, String(url), String(f.root), svcType));
 			}
 
 			svc = svc->next_sibling();
@@ -324,7 +210,6 @@ void parseDevice(XML::Node* device, const Fetch& f)
 	}
 
 	auto deviceList = device->first_node("deviceList");
-	debug_i("deviceList %sfound", deviceList ? "" : "NOT ");
 	if(deviceList != nullptr) {
 		auto dev = deviceList->first_node();
 		while(dev != nullptr) {
@@ -337,11 +222,14 @@ void parseDevice(XML::Node* device, const Fetch& f)
 void parseDescription(XML::Document& description, const Fetch& f)
 {
 	if(f.kind == UPnP::Urn::Kind::service) {
-		writeServiceSchema(description, f.path);
+		if(options[Option::writeServiceSchema]) {
+			writeServiceSchema(description, f.path);
+		}
 	} else {
 		auto device = XML::getNode(description, "/device");
-		debug_e("device %sfound", device ? "" : "NOT ");
-		if(device != nullptr) {
+		if(device == nullptr) {
+			Serial.println(F("device  NOT found"));
+		} else {
 			parseDevice(device, f);
 		}
 	}
@@ -412,7 +300,7 @@ void fetchNextDescription()
 				Serial.println("' failed, re-trying");
 			}
 		} else if(description != nullptr) {
-			if(options[Option::networkTree]) {
+			if(options[Option::writeDeviceTree]) {
 				// Write description
 				auto fs = openStream(f.fullPath());
 				if(fs != nullptr) {
@@ -442,6 +330,7 @@ void onSsdp(SSDP::BasicMessage& msg)
 	String location = msg[HTTP_HEADER_LOCATION];
 
 	Fetch f;
+	f.kind = UPnP::Urn::Kind::device;
 	f.url = location;
 
 	if(ssdpQueue.contains(f)) {
@@ -467,9 +356,9 @@ void onSsdp(SSDP::BasicMessage& msg)
 	}
 
 	UPnP::Urn urn(deviceType);
-	f.kind = urn.kind;
+	f.kind = UPnP::Urn::Kind::device;
 
-	if(options[Option::networkTree]) {
+	if(options[Option::writeDeviceTree]) {
 		// Write SSDP response
 		String filename;
 		filename += "ssdp-";
@@ -527,75 +416,124 @@ Enumerate services from device description
 Fetch and write each file with path.
 
  */
-void initUPnP()
+void scan(const UPnP::Urn& urn)
 {
-	ssdpQueue.add(UPnP::RootDeviceUrn());
-	beginNextSearch();
+	options = Option::networkScan | Option::writeDeviceTree | Option::writeDeviceSchema | Option::writeServiceSchema;
+	WifiStation.enable(true, false);
+	WifiStation.config(WIFI_SSID, WIFI_PWD);
+	WifiAccessPoint.enable(false, false);
+	WifiEvents.onStationDisconnect(connectFail);
+	WifiEvents.onStationGotIP([urn](IpAddress ip, IpAddress netmask, IpAddress gateway) {
+		debugf("GotIP: %s", ip.toString().c_str());
 
-	statusTimer.initializeMs<10000>(InterruptCallback([]() {
-		Serial.println();
-		Serial.println();
-		Serial.println(_F("** Queue status **"));
-		Serial.println(descriptionQueue.toString());
-		Serial.println(ssdpQueue.toString());
-		Serial.println(_F("** ------------ **"));
-		Serial.println();
-		Serial.println();
-	}));
-	statusTimer.start();
+		Serial.print("Scanning from ");
+		Serial.println(urn.toString());
+
+		ssdpQueue.add(urn);
+		beginNextSearch();
+
+		statusTimer.initializeMs<10000>(InterruptCallback([]() {
+			Serial.println();
+			Serial.println();
+			Serial.println(_F("** Queue status **"));
+			Serial.println(descriptionQueue.toString());
+			Serial.println(ssdpQueue.toString());
+			Serial.println(_F("** ------------ **"));
+			Serial.println();
+			Serial.println();
+		}));
+		statusTimer.start();
+	});
 }
 
-void gotIP(IpAddress ip, IpAddress netmask, IpAddress gateway)
+#ifdef ARCH_HOST
+
+auto parseFile(const String& filename, const Fetch& f)
 {
-	debugf("GotIP: %s", ip.toString().c_str());
-
-	if(ntpClient == nullptr) {
-		ntpClient = new NtpClient([](NtpClient& client, time_t timestamp) {
-			SystemClock.setTime(timestamp, eTZ_UTC);
-			Serial.print("Time synchronized: ");
-			Serial.println(SystemClock.getSystemTimeString());
-		});
-	};
-
-	initUPnP();
+	XML::Document doc;
+	HostFileStream fs(f.root + filename);
+	String content = fs.readString(fs.available());
+	XML::deserialize(doc, content);
+	parseDescription(doc, f);
 }
 
-void urnTest(UPnP::Urn::Kind kind, const String& s)
+void parseXml(String root, String filename)
 {
-	UPnP::Urn urn(s);
-	Serial.print("kind = ");
-	Serial.println(int(urn.kind));
-	Serial.println(urn.toString());
-	assert(kind == urn.kind);
+	options = Option::writeDeviceSchema | Option::writeServiceSchema;
+
+	if(root.length() == 0 || filename.length() == 0) {
+		return;
+	}
+	root.replace('\\', '/');
+	filename.replace('\\', '/');
+	auto len = root.length();
+	if(root[len - 1] == '/') {
+		root.setLength(len - 1);
+	}
+	if(filename[0] != '/') {
+		filename = "/" + filename;
+	}
+
+	Fetch f(UPnP::Urn::Kind::device, "file://.", root, nullptr);
+	parseFile(filename, f);
+	while((f = descriptionQueue.pop())) {
+		Url url(f.url);
+		parseFile(url.Path, f);
+	}
+}
+
+void help()
+{
+	m_printf(_F("\n"
+				"UPnP Scan Utility. Options:\n"
+				"  scan   urn                Perform a local network scan (default is upnp:rootdevice) \n"
+				"  parse  root filenames...  Parse XML files from given root directory\n"
+				"\n"));
 }
 
 /*
-void testUrn()
+ * Return true to continue execution, false to quit.
+ */
+bool parseCommands()
 {
-#define URN_STRING_MAP(XX)                                                                                             \
-	XX(uuid, "uuid:{uuid}", "uuid:{uuid}")                                                                             \
-	XX(root, "upnp:rootdevice", "uuid:{uuid}::upnp:rootdevice")                                                        \
-	XX(device, "urn:{domain}:device:{deviceType}:{version}",                                                           \
-	   "uuid:{uuid}::urn:{domain}:device:{deviceType}:{version}")                                                      \
-	XX(service, "urn:{domain}:service:{serviceType}:{version}",                                                        \
-	   "uuid:{uuid}::urn:{domain}:service:{serviceType}:{version}")
+	auto parameters = commandLine.getParameters();
+	if(parameters.count() == 0) {
+		help();
+		return false;
+	}
 
-	UPnP::Urn urn;
+	String cmd = parameters[0].text;
+	if(cmd == "scan") {
+		auto urn = UPnP::RootDeviceUrn();
+		if(parameters.count() > 1) {
+			auto str = parameters[1].text;
+			if(!urn.decompose(str)) {
+				m_printf("Invalid URN: %s\n", str);
+				return false;
+			}
+		}
+		scan(urn);
+		return true;
+	}
 
-#define XX(kind, urnString, usnString)                                                                                 \
-	urnTest(UPnP::Urn::Kind::kind, urnString);                                                                         \
-	urnTest(UPnP::Urn::Kind::kind, usnString);
-	URN_STRING_MAP(XX)
-#undef XX
+	if(cmd == "parse") {
+		if(parameters.count() < 3) {
+			Serial.println(F("** Missing parameters"));
+			help();
+		} else {
+			String root = parameters[1].text;
+			for(unsigned i = 2; i < parameters.count(); ++i) {
+				parseXml(root, parameters[i].text);
+			}
+		}
+		return false;
+	}
+
+	help();
+	return false;
 }
 
-void parseXml()
-{
-	XML::Document doc;
-	XML::deserialize(doc, gatedesc_xml);
-	parseDescription(doc, Fetch{"LOC", "ROOT", "PATH"});
-}
-*/
+#endif
 
 } // namespace
 
@@ -605,12 +543,25 @@ void init()
 	Serial.begin(SERIAL_BAUD_RATE);
 	Serial.systemDebugOutput(true);
 
-	WifiStation.enable(true, false);
-	WifiStation.config(WIFI_SSID, WIFI_PWD);
-	WifiAccessPoint.enable(false, false);
+#ifdef ARCH_HOST
 
-	//	parseXml();
+	auto p = getenv(ENV_DEVICE_DIR);
+	if(p != nullptr && *p != '\0') {
+		deviceDir = p;
+	}
+	m_printf("DEVICE_DIR = '%s'\n", deviceDir);
 
-	WifiEvents.onStationDisconnect(connectFail);
-	WifiEvents.onStationGotIP(gotIP);
+	p = getenv(ENV_SCHEMA_DIR);
+	if(p != nullptr && *p != '\0') {
+		schemaDir = p;
+	}
+	m_printf("SCHEMA_DIR = '%s'\n", schemaDir);
+
+	if(!parseCommands()) {
+		System.restart();
+	}
+
+#else
+	scan();
+#endif
 }

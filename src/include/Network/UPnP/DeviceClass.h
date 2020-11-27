@@ -65,10 +65,10 @@ public:
 	 */
 	DeviceControl* createObject(ControlPoint& controlPoint, const char* location, const char* uniqueServiceName) const;
 
-	template <typename Other> bool equals() const
+	bool operator==(const DeviceClass& other) const
 	{
-		return getField(Field::domain) == Other::domain && getField(Field::type) == Other::type &&
-			   version() == Other::version_;
+		return getField(Field::domain) == other.getField(Field::domain) &&
+			   getField(Field::type) == other.getField(Field::type) && version() == other.version();
 	}
 
 protected:
