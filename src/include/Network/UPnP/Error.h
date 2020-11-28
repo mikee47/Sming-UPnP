@@ -29,21 +29,30 @@
 	XX(NoActiveRequest, "No active request")                                                                           \
 	XX(NoSoapContent, "SOAP content missing")                                                                          \
 	XX(BadSoapFault, "Unknown SOAP fault kind")                                                                        \
-	XX(BadSoapNamespace, "Bad SOAP namespace attribute")
+	XX(BadSoapNamespace, "Bad SOAP namespace attribute")                                                               \
+	XX(ActionInvalid, "Action name not recognised")                                                                    \
+	XX(ActionNotImplemented, "Action not implemented")
 
 namespace UPnP
 {
-enum class Error {
-#define XX(tag, comment) tag,
+enum ErrorValues {
+#define XX(tag, comment) errorValue##tag,
 	UPNP_ERROR_MAP(XX)
 #undef XX
+};
+
+enum class Error {
+#define XX(tag, comment) tag = -errorValue##tag,
+	UPNP_ERROR_MAP(XX)
+#undef XX
+		Pending = 1
 };
 
 } // namespace UPnP
 
 inline bool operator!(UPnP::Error error)
 {
-	return error == UPnP::Error::Success;
+	return int(error) >= 0;
 }
 
 String toString(UPnP::Error error);

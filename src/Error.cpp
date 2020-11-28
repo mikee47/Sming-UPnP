@@ -42,10 +42,12 @@ DEFINE_FSTR_VECTOR(longStrings, FlashString, UPNP_ERROR_MAP(XX))
 
 String toString(UPnP::Error error)
 {
-	return strings[unsigned(error)];
+	auto code = int(error);
+	return strings[code < 0 ? -code : 0];
 }
 
 String toLongString(UPnP::Error error)
 {
-	return longStrings[unsigned(error)];
+	auto code = int(error);
+	return longStrings[code < 0 ? -code : 0];
 }
