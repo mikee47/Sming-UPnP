@@ -21,7 +21,7 @@
 
 #include "Object.h"
 #include "ObjectList.h"
-#include "Envelope.h"
+#include "ActionRequest.h"
 #include "Constants.h"
 #include <Network/SSDP/Urn.h>
 
@@ -125,7 +125,7 @@ public:
 	 * This is usually handled by generated wrapper class templates.
 	 *
 	 */
-	virtual Error handleAction(Envelope& env) = 0;
+	virtual Error handleAction(ActionRequest& req) = 0;
 
 private:
 	Device& device_;

@@ -1,5 +1,5 @@
 /**
- * ActionResult.h
+ * ActionResponse.h
  *
  * Copyright 2019 mikee47 <mike@sillyhouse.net>
  *
@@ -28,10 +28,10 @@ namespace UPnP
  * @brief All action results inherit from this class.
  * We keep it as basic as possible to avoid name conflicts
  */
-class ActionResult
+class ActionResponse
 {
 public:
-	ActionResult(Envelope& envelope) : envelope(envelope)
+	ActionResponse(Envelope& envelope) : envelope(envelope)
 	{
 	}
 
@@ -56,6 +56,6 @@ private:
 	Envelope& envelope;
 };
 
-using ActionRequest = ActionResult;
+using ActionRequest = ActionResponse;
 
 } // namespace UPnP

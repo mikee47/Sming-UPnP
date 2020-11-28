@@ -2,6 +2,7 @@
 
 #include <Network/UPnP/Belkin/ClassGroup.h>
 #include <Data/Stream/FlashMemoryStream.h>
+#include <Timer.h>
 
 namespace UPnP
 {
@@ -76,13 +77,13 @@ public:
 		return reinterpret_cast<Controllee&>(device());
 	}
 
-	Error getBinaryState(GetBinaryState::Result result)
+	Error getBinaryState(GetBinaryState::Response response)
 	{
-		result.setBinaryState(controllee().getState());
+		response.setBinaryState(controllee().getState());
 		return Error::Success;
 	}
 
-	Error setBinaryState(bool state, SetBinaryState::Result result)
+	Error setBinaryState(bool state, SetBinaryState::Response response)
 	{
 		controllee().setState(state);
 		return Error::Success;
@@ -109,7 +110,7 @@ public:
 		return reinterpret_cast<Controllee&>(device());
 	}
 
-	Error getMetaInfo(GetMetaInfo::Result result)
+	Error getMetaInfo(GetMetaInfo::Response response)
 	{
 		return Error::ActionNotImplemented;
 	}

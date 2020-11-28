@@ -66,7 +66,7 @@ public:
 
 	bool sendRequest(Envelope& request, const Envelope::Callback& callback);
 
-	Error handleAction(Envelope& env) override
+	Error handleAction(ActionRequest& req) override
 	{
 		return Error::ActionNotImplemented;
 	}
