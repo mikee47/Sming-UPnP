@@ -125,7 +125,7 @@ public:
 	 * This is usually handled by generated wrapper class templates.
 	 *
 	 */
-	virtual ErrorCode handleAction(Envelope& env) = 0;
+	virtual Error handleAction(Envelope& env) = 0;
 
 private:
 	Device& device_;

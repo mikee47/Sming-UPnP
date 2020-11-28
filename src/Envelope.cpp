@@ -317,7 +317,7 @@ ErrorCode Envelope::Fault::errorCode() const
 	if(envelope.isFault()) {
 		return ErrorCode(XML::getValue(error(), fs_errorCode).toInt());
 	} else {
-		return ErrorCode::Success;
+		return ErrorCode::None;
 	}
 }
 

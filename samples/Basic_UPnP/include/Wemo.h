@@ -76,16 +76,16 @@ public:
 		return reinterpret_cast<Controllee&>(device());
 	}
 
-	ErrorCode getBinaryState(GetBinaryState::Result result)
+	Error getBinaryState(GetBinaryState::Result result)
 	{
 		result.setBinaryState(controllee().getState());
-		return ErrorCode::Success;
+		return Error::Success;
 	}
 
-	ErrorCode setBinaryState(bool state, SetBinaryState::Result result)
+	Error setBinaryState(bool state, SetBinaryState::Result result)
 	{
 		controllee().setState(state);
-		return ErrorCode::Success;
+		return Error::Success;
 	}
 };
 
@@ -109,10 +109,9 @@ public:
 		return reinterpret_cast<Controllee&>(device());
 	}
 
-	ErrorCode getMetaInfo(GetMetaInfo::Result result)
+	Error getMetaInfo(GetMetaInfo::Result result)
 	{
-		// Not implemented
-		return ErrorCode::ActionFailed;
+		return Error::ActionNotImplemented;
 	}
 };
 
