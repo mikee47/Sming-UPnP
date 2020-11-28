@@ -20,6 +20,7 @@
 #pragma once
 
 #include <WString.h>
+#include "ErrorCode.h"
 
 #define UPNP_ERROR_MAP(XX)                                                                                             \
 	XX(Success, "Success")                                                                                             \
@@ -47,6 +48,11 @@ enum class Error {
 #undef XX
 		Pending = 1
 };
+
+/**
+ * @brief Get corresponding error code for a given error
+ */
+ErrorCode getErrorCode(Error err);
 
 } // namespace UPnP
 

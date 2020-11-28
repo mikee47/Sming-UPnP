@@ -40,6 +40,26 @@ DEFINE_FSTR_VECTOR(longStrings, FlashString, UPNP_ERROR_MAP(XX))
 
 } // namespace
 
+namespace UPnP
+{
+ErrorCode getErrorCode(Error err)
+{
+	switch(err) {
+	case Error::Success:
+		return ErrorCode::None;
+	case Error::NoMemory:
+		return ErrorCode::OutOfMemory;
+	case Error::ActionInvalid:
+		return ErrorCode::InvalidAction;
+	case Error::ActionNotImplemented:
+		return ErrorCode::OptionalActionNotImplemented;
+	default:
+		return ErrorCode::ActionFailed;
+	}
+}
+
+} // namespace UPnP
+
 String toString(UPnP::Error error)
 {
 	auto code = int(error);

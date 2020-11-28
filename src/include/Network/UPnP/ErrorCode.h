@@ -25,7 +25,7 @@
  * @brief UPnP defined action error codes
  */
 #define UPNP_ERRORCODE_MAP(XX)                                                                                         \
-	XX(0, Success, "No Error", "")                                                                                     \
+	XX(0, None, "No Error", "")                                                                                        \
 	XX(401, InvalidAction, "Invalid Action", "No action by that name at this service")                                 \
 	XX(402, InvalidArgs, "Invalid Args",                                                                               \
 	   "Could be any of the following:\n"                                                                              \
