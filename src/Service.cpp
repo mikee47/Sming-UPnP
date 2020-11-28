@@ -20,8 +20,7 @@
 #include "include/Network/UPnP/Device.h"
 #include "include/Network/UPnP/ItemEnumerator.h"
 #include "include/Network/UPnP/DescriptionStream.h"
-#include <Data/Stream/MemoryDataStream.h>
-#include <Data/Stream/FlashMemoryStream.h>
+#include <FlashString/Stream.hpp>
 #include <FlashString/Vector.hpp>
 #include <RapidXML.h>
 #include <Network/SSDP/Uuid.h>
@@ -201,35 +200,19 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 		m_puts("\r\n");
 #endif
 
-		Envelope env(*this);
-		auto err = env.load(std::move(req));
-		if(!!err) {
-			return;
-		}
-
-		String actionName = env.actionName();
-		err = handleAction(env);
-
-		if(env.contentType() == Envelope::ContentType::fault) {
-			response.code = HTTP_STATUS_INTERNAL_SERVER_ERROR;
-		} else if(!!err) {
-			env.createFault(getErrorCode(err));
-			response.code = HTTP_STATUS_INTERNAL_SERVER_ERROR;
-		} else if(env.contentType() != Envelope::ContentType::response) {
-			debug_e("[UPnP] Unhandled action: %s", actionName.c_str());
-			env.createFault(ErrorCode::OptionalActionNotImplemented);
-			response.code = HTTP_STATUS_INTERNAL_SERVER_ERROR;
-		}
-
-		auto stream = new MemoryDataStream;
-		env.serialize(*stream, false);
+		auto env = new Envelope(*this);
+		auto err = env->load(std::move(req));
+		auto stream = new ActionResponse::Stream(connection, env);
 		device_.sendXml(response, stream);
 
-#if DEBUG_VERBOSE_LEVEL >= DBG
-		String s = env.serialize(true);
-		m_puts(s.c_str());
-		m_puts("\r\n");
-#endif
+		ActionRequest request(*env, stream);
+		if(!err) {
+			err = handleAction(request);
+			debug_i("handleAction() returned %s", toString(err).c_str());
+		}
+		if(err != Error::Pending) {
+			request.complete(err);
+		}
 	};
 
 	auto handleSubscribe = [&]() {

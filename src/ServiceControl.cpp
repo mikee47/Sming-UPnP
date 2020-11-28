@@ -19,6 +19,7 @@
 
 #include "include/Network/UPnP/ServiceControl.h"
 #include "include/Network/UPnP/DeviceControl.h"
+#include "include/Network/UPnP/ControlPoint.h"
 
 namespace UPnP
 {
@@ -50,9 +51,9 @@ String ServiceControl::getField(Field desc) const
 	}
 }
 
-bool ServiceControl::sendRequest(Envelope& request, const Envelope::Callback& callback)
+bool ServiceControl::sendRequest(HttpRequest* request) const
 {
-	return device().sendRequest(request, callback);
+	return device().controlPoint().sendRequest(request);
 }
 
 } // namespace UPnP

@@ -312,53 +312,6 @@ bool ControlPoint::processDescriptionResponse(HttpConnection& connection, String
 	return true;
 }
 
-bool ControlPoint::sendRequest(Envelope& env, const Envelope::Callback& callback)
-{
-	auto req = new HttpRequest;
-	req->setMethod(HttpMethod::POST);
-	String url = env.service.device().getUrl(env.service.getField(Service::Field::controlURL));
-	if(!url) {
-		debug_e("[UPnP] No service endpoint defined");
-		return false;
-	}
-	req->uri = url;
-	auto stream = new MemoryDataStream;
-	env.serialize(*stream, false);
-	req->setBody(stream);
-
-	String s = toString(MimeType::XML);
-	s += F("; charset=\"utf-8\"");
-	req->headers[HTTP_HEADER_CONTENT_TYPE] = s;
-	req->headers[F("SOAPACTION")] = env.soapAction();
-
-#if DEBUG_VERBOSE_LEVEL == DBG
-	s = req->toString();
-	s += env.serialize(true);
-	m_nputs(s.c_str(), s.length());
-	m_puts("\r\n");
-#endif
-
-	const Service* service = &env.service;
-	req->onRequestComplete([service, callback](HttpConnection& client, bool successful) -> int {
-		Envelope response(*service);
-		String s;
-#if DEBUG_VERBOSE_LEVEL == DBG
-		s = client.getResponse()->toString();
-		m_nputs(s.c_str(), s.length());
-#endif
-		s = client.getResponse()->getBody();
-#if DEBUG_VERBOSE_LEVEL == DBG
-		m_nputs(s.c_str(), s.length());
-		m_puts("\r\n");
-#endif
-		response.load(std::move(s));
-		callback(response);
-		return 0;
-	});
-
-	return sendRequest(req);
-}
-
 bool ControlPoint::sendRequest(HttpRequest* request)
 {
 	// Don't create response stream until headers are in: this allows requests to be queued

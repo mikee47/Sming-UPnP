@@ -112,8 +112,40 @@ public:
 
 	Error getMetaInfo(GetMetaInfo::Response response)
 	{
-		return Error::ActionNotImplemented;
+		/*
+		 * Not implemented here, but as a test defer the response for
+		 * a short time.
+		 * The standard HttpServer connection timeout is 2 seconds, so
+		 * ID < 1 should succeed, whereas 2+ will probably fail as connection
+		 * will have been destroyed by the time we call complete().
+		 */
+		auto timeout = controllee().id() * 1800;
+		++responseNumber;
+
+		auto timer = new AutoDeleteTimer;
+		timer->initializeMs(timeout, [this, response]() {
+			debug_e("Completing request");
+			String s;
+			s += F("Our meta info response from ");
+			s += controllee().friendlyName();
+			s += F(". This is request #");
+			s += responseNumber;
+			s += F(". Failure count = ");
+			s += failureCount;
+			s += '.';
+			response.setMetaInfo(s);
+			if(!response.complete(Error::Success)) {
+				++failureCount;
+			}
+		});
+		timer->startOnce();
+		debug_e("Pending request...");
+		return Error::Pending;
 	}
+
+private:
+	unsigned responseNumber{0};
+	static unsigned failureCount;
 };
 
 } // namespace Belkin

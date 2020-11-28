@@ -5,6 +5,8 @@ namespace UPnP
 {
 namespace Belkin
 {
+unsigned MetaInfoService::failureCount;
+
 Controllee::Controllee(unsigned id, const String& name) : controllee1Template(), id_(id), name_(name)
 {
 	addService(new BasicEventService(*this));

@@ -102,6 +102,15 @@ public:
 	}
 
 	/**
+	 * @brief Implemented in ServiceControl
+	 */
+	virtual bool sendRequest(HttpRequest* request) const
+	{
+		delete request;
+		return false;
+	}
+
+	/**
 	 * @brief An action request has been received
 	 * @param env Contains the action request
 	 * @retval ErrorCode

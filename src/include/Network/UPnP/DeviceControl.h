@@ -116,8 +116,6 @@ public:
 		return description_;
 	}
 
-	bool sendRequest(Envelope& request, const Envelope::Callback& callback);
-
 protected:
 	Description description_;
 

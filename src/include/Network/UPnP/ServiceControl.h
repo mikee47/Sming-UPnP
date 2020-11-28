@@ -64,7 +64,7 @@ public:
 		return reinterpret_cast<ServiceControl*>(next());
 	}
 
-	bool sendRequest(Envelope& request, const Envelope::Callback& callback);
+	bool sendRequest(HttpRequest* request) const override;
 
 	Error handleAction(ActionRequest& req) override
 	{

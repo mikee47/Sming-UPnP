@@ -70,9 +70,4 @@ String DeviceControl::getField(Field desc) const
 	}
 }
 
-bool DeviceControl::sendRequest(Envelope& request, const Envelope::Callback& callback)
-{
-	return controlPoint().sendRequest(request, callback);
-}
-
 } // namespace UPnP

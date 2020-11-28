@@ -141,8 +141,6 @@ public:
 
 	bool formatMessage(Message& msg, MessageSpec& ms) override;
 
-	bool sendRequest(Envelope& request, const Envelope::Callback& callback);
-
 	/**
 	 * @brief Send a request
 	 * @param request Completed request object: leave response stream unassigned, will be set later

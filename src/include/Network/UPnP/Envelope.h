@@ -41,8 +41,6 @@ public:
 		response,
 	};
 
-	using Callback = Delegate<void(Envelope&)>;
-
 	class Fault
 	{
 	public:
