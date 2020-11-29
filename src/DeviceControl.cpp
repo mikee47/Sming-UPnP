@@ -30,7 +30,12 @@ bool DeviceControl::configureRoot(ControlPoint& controlPoint, const String& loca
 	if(i >= 0) {
 		path.setLength(i);
 	}
-	rootConfig.reset(new RootConfig{controlPoint, baseUrl.toString(), path});
+	String url = baseUrl.toString();
+	i = url.lastIndexOf('/');
+	if(i >= 0) {
+		url.setLength(i);
+	}
+	rootConfig.reset(new RootConfig{controlPoint, url, path});
 
 	return DeviceControl::configure(device);
 }
