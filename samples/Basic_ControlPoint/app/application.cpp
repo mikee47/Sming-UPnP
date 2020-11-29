@@ -16,6 +16,14 @@ UPnP::ControlPoint controlPoint;
 using namespace UPnP::schemas_upnp_org::device;
 using namespace UPnP::schemas_upnp_org::service;
 
+struct GUPnPNetworkLight {
+	SimpleTimer timer;
+	DimmableLight1* device;
+	bool state;
+};
+
+GUPnPNetworkLight light;
+
 void connectFail(const String& ssid, MacAddress bssid, WifiDisconnectReason reason)
 {
 	debugf("I'm NOT CONNECTED!");
@@ -154,6 +162,45 @@ void findMediaServers()
 	timer->initializeMs<5000>(findMediaRenderers).startOnce();
 }
 
+void findLight()
+{
+	Serial.print(_F("Searching for GUPnP network light..."));
+	controlPoint.cancelSearch();
+	controlPoint.beginSearch(Delegate<bool(DimmableLight1&)>([](auto& device) {
+		controlPoint.cancelSearch();
+		light.device = &device;
+		// Set light to max. brightness
+		auto dimming = light.device->getDimming();
+		if(dimming != nullptr) {
+			dimming->setLoadLevelTarget(255, nullptr);
+		}
+		// Toggle the light state once per second
+		light.timer
+			.initializeMs<1000>([]() {
+				auto power = light.device->getSwitchPower();
+				if(power != nullptr) {
+					power->setTarget(light.state, [](auto response) {
+						light.state = !light.state;
+						light.timer.startOnce();
+					});
+				}
+			})
+			.startOnce();
+
+		findMediaServers();
+
+		// Keep the device
+		return true;
+	}));
+
+	light.timer
+		.initializeMs<5000>([]() {
+			controlPoint.cancelSearch();
+			findMediaServers();
+		})
+		.startOnce();
+}
+
 void initUPnP()
 {
 	/*
@@ -163,7 +210,7 @@ void initUPnP()
 	 */
 	UPnP::schemas_upnp_org::registerClasses();
 
-	findMediaServers();
+	findLight();
 }
 
 void gotIP(IpAddress ip, IpAddress netmask, IpAddress gateway)
