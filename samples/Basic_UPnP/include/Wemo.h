@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Network/UPnP/Belkin/ClassGroup.h>
-#include <Data/Stream/FlashMemoryStream.h>
 #include <Timer.h>
 
 namespace UPnP
@@ -66,6 +65,7 @@ public:
 	{
 		switch(desc) {
 		case Field::serviceId:
+			// You could also put this in the schema
 			return F("urn:Belkin:serviceId:basicevent1");
 		default:
 			return basicevent1Template::getField(desc);

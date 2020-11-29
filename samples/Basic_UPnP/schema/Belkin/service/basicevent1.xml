@@ -39,4 +39,5 @@
 		</stateVariable>
 	</serviceStateTable>
 	<serviceType>urn:Belkin:service:basicevent:1</serviceType>
+	<serviceId>urn:Belkin:serviceId:basicevent1</serviceId>
 </scpd>
