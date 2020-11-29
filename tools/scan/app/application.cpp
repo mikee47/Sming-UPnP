@@ -111,31 +111,35 @@ Print* openStream(String path)
 
 	return nullptr;
 }
-void writeServiceSchema(XML::Document& scpd, const String& serviceType)
-{
-	XML::appendNode(scpd.first_node(), "serviceType", serviceType);
 
-	Urn urn(serviceType);
+void writeSchema(XML::Node* object, const Urn& objectType)
+{
 	String path = schemaDir;
-	path += "/service/";
-	path += urn.domain;
 	path += '/';
-	path += urn.type;
-	path += urn.version;
+	path += objectType.domain;
+	path += '/';
+	path += toString(objectType.kind);
+	path += '/';
+	path += objectType.type;
+	path += objectType.version;
 	path += ".xml";
 
 	auto fs = openStream(path);
 	if(fs != nullptr) {
-		XML::serialize(scpd, *fs, true);
+		XML::serialize(*object, *fs, true);
 		delete fs;
 	}
 }
 
+void writeServiceSchema(XML::Document& scpd, const String& serviceType)
+{
+	XML::appendNode(scpd.first_node(), "serviceType", serviceType);
+	writeSchema(&scpd, Urn(serviceType));
+}
+
+
 void writeDeviceSchema(XML::Node* device, const String& deviceType)
 {
-	String manufacturer = XML::getValue(device, "manufacturer");
-	String friendlyName = XML::getValue(device, "friendlyName");
-
 	auto doc = device->document();
 	auto root = device->document()->first_node();
 	assert(root != nullptr);
@@ -146,21 +150,7 @@ void writeDeviceSchema(XML::Node* device, const String& deviceType)
 		attr = attr->next_attribute();
 	}
 
-	Urn urn(deviceType);
-	String path = schemaDir;
-	path += "/device/";
-	path += manufacturer;
-	path += '/';
-	path += friendlyName;
-	path += '/';
-	path += urn.type;
-	path += urn.version;
-	path += ".xml";
-	auto fs = openStream(path);
-	if(fs != nullptr) {
-		XML::serialize(*device, *fs, true);
-		delete fs;
-	}
+	writeSchema(device, Urn(deviceType));
 }
 
 void checkExisting(Fetch& desc)
