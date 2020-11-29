@@ -51,23 +51,26 @@ bool ActionRequestControl::send(const Callback& callback)
 	m_puts("\r\n");
 #endif
 
-	req->onRequestComplete([&service, callback](HttpConnection& client, bool successful) -> int {
-		Envelope env(service);
-		String s;
+	// Don't bother checking the response if a callback wasn't provided
+	if(callback) {
+		req->onRequestComplete([&service, callback](HttpConnection& client, bool successful) -> int {
+			Envelope env(service);
+			String s;
 #if DEBUG_VERBOSE_LEVEL == DBG
-		s = client.getResponse()->toString();
-		m_nputs(s.c_str(), s.length());
+			s = client.getResponse()->toString();
+			m_nputs(s.c_str(), s.length());
 #endif
-		s = client.getResponse()->getBody();
+			s = client.getResponse()->getBody();
 #if DEBUG_VERBOSE_LEVEL == DBG
-		m_nputs(s.c_str(), s.length());
-		m_puts("\r\n");
+			m_nputs(s.c_str(), s.length());
+			m_puts("\r\n");
 #endif
-		env.load(std::move(s));
-		ActionResponse response(env, nullptr);
-		callback(response);
-		return 0;
-	});
+			env.load(std::move(s));
+			ActionResponse response(env, nullptr);
+			callback(response);
+			return 0;
+		});
+	}
 
 	return service.sendRequest(req);
 }
