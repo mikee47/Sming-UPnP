@@ -99,8 +99,9 @@ public:
 	/**
 	 * @brief Obtain content as XML string
 	 */
-	String serialize(bool pretty) const
+	String serialize(bool pretty)
 	{
+		prepareResponse();
 		return XML::serialize(doc, pretty);
 	}
 
@@ -109,6 +110,7 @@ public:
 	 */
 	size_t serialize(Print& p, bool pretty)
 	{
+		prepareResponse();
 		return XML::serialize(doc, p, pretty);
 	}
 
@@ -137,6 +139,28 @@ public:
 	 * @brief Initialise the envelope as a response
 	 */
 	Envelope& createResponse(const String& actionName);
+
+	/**
+	 * @brief Set a flag that this should be converted to Response on next setArg() call
+	 */
+	void convertToResponse()
+	{
+		if(type == ContentType::request) {
+			type = ContentType::response;
+			responsePrepared = false;
+		}
+	}
+
+	/**
+	 * @brief If Response is required but hasn't been prepared yet, do it now.
+	 * This wipes out the incoming request.
+	 */
+	void prepareResponse()
+	{
+		if(type == Envelope::ContentType::response && !responsePrepared) {
+			createResponse(actionName());
+		}
+	}
 
 	/**
 	 * @brief Initialise the envelope as a fault
@@ -234,6 +258,7 @@ public:
 	 */
 	bool addArg(const String& name, const String& value)
 	{
+		prepareResponse();
 		assert(type == ContentType::request || type == ContentType::response);
 		XML::appendNode(content, name, value);
 		return true;
@@ -291,6 +316,7 @@ private:
 	XML::Node* content{nullptr};
 	ContentType type{};
 	Error lastError{};
+	bool responsePrepared{false};
 };
 
 } // namespace UPnP

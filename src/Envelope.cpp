@@ -180,6 +180,7 @@ Envelope& Envelope::createResponse(const String& actionName)
 	XML::appendAttribute(content, xmlns_u, service.objectType());
 
 	name = actionName;
+	responsePrepared = true;
 	return *this;
 }
 

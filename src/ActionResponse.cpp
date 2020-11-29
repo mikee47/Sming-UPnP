@@ -45,7 +45,7 @@ void ActionResponse::Stream::complete(Error err)
 		envelope->createFault(getErrorCode(err));
 		httpResponse.code = HTTP_STATUS_INTERNAL_SERVER_ERROR;
 	} else if(envelope->contentType() != Envelope::ContentType::response) {
-		debug_e("[UPnP] Unhandled action: %s", envelope->actionName().c_str());
+		debug_w("[UPnP] Unhandled action: %s", envelope->actionName().c_str());
 		envelope->createFault(ErrorCode::OptionalActionNotImplemented);
 		httpResponse.code = HTTP_STATUS_INTERNAL_SERVER_ERROR;
 	}
@@ -67,7 +67,7 @@ void ActionResponse::Stream::complete(Error err)
 
 ActionResponse::ActionResponse(const ActionRequest& request) : ActionResponse(request.envelope, request.stream)
 {
-	envelope.createResponse(request.actionName());
+	envelope.convertToResponse();
 }
 
 ActionResponse::~ActionResponse()
