@@ -94,8 +94,6 @@ public:
 
 	IDataSourceStream* createDescription() override;
 
-	ItemEnumerator* getList(unsigned index, String& name) override;
-
 	Device& device() const
 	{
 		return device_;

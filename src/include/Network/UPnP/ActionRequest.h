@@ -29,9 +29,6 @@ public:
 	ActionRequest(Envelope& envelope, Stream* stream) : ActionResponse(envelope, stream)
 	{
 	}
-
-private:
-	friend ActionResponse;
 };
 
 class ActionRequestControl : public ActionResponse

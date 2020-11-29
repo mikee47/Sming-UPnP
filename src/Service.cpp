@@ -70,11 +70,6 @@ XML::Node* Service::getDescription(XML::Document& doc, DescType descType) const
 		return service;
 	}
 
-	case DescType::content: {
-		// TODO
-		return nullptr;
-	}
-
 	default:
 		return nullptr;
 	}
@@ -110,21 +105,6 @@ String Service::getField(Field desc) const
 	case Field::eventSubURL:
 		return getField(Field::type) + F("-event");
 
-	default:
-		return nullptr;
-	}
-}
-
-ItemEnumerator* Service::getList(unsigned index, String& name)
-{
-	switch(index) {
-	// These ones will be virtual lists because of their size
-	//	case 0:
-	//		name = F("actionList");
-	//		return new ItemEnumerator(actionList...
-	//	case 1:
-	//		name = F("serviceStateTable");
-	//		return new ItemEnumerator(serviceStateTable...
 	default:
 		return nullptr;
 	}
