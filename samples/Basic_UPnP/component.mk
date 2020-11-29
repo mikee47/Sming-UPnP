@@ -1,2 +1,2 @@
 DISABLE_SPIFFS := 1
-COMPONENT_DEPENDS := UPnP-Schema malloc_count
+COMPONENT_DEPENDS := UPnP-Schema

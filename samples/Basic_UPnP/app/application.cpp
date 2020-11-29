@@ -4,7 +4,6 @@
 #include <Network/SSDP/Server.h>
 #include <TeaPot.h>
 #include <Wemo.h>
-#include <malloc_count.h>
 
 // If you want, you can define WiFi settings globally in Eclipse Environment Variables
 #ifndef WIFI_SSID
@@ -23,6 +22,15 @@ UPnP::schemas_sming_org::TeaPot teapot(1);
 UPnP::Belkin::Controllee wemo1(1, "Socket #1");
 UPnP::Belkin::Controllee wemo2(2, "Socket #2");
 UPnP::ControlPoint controlPoint;
+
+void setLed(bool state)
+{
+#ifdef ARCH_ESP8266
+	// LED pin output is inverted on Esp8266
+	state = !state;
+#endif
+	digitalWrite(LED_PIN, state);
+}
 
 void connectFail(const String& ssid, MacAddress bssid, WifiDisconnectReason reason)
 {
@@ -103,10 +111,7 @@ void initUPnP()
 	// Control LED in response to wemo1 SetBinaryState action
 	pinMode(LED_PIN, OUTPUT);
 	digitalWrite(LED_PIN, true);
-	wemo1.onStateChange([](auto& device) {
-		// LED pin output is inverted
-		digitalWrite(LED_PIN, !device.getState());
-	});
+	wemo1.onStateChange([](auto& device) { setLed(device.getState()); });
 
 	// Simple search for devices
 	simpleSearch();
@@ -131,7 +136,7 @@ void gotIP(IpAddress ip, IpAddress netmask, IpAddress gateway)
 
 void init()
 {
-	Serial.setTxBufferSize(4096);
+	Serial.setTxBufferSize(1024);
 	Serial.begin(SERIAL_BAUD_RATE);
 	Serial.systemDebugOutput(true);
 
@@ -141,17 +146,4 @@ void init()
 
 	WifiEvents.onStationDisconnect(connectFail);
 	WifiEvents.onStationGotIP(gotIP);
-
-	auto timer = new SimpleTimer;
-	timer
-		->initializeMs<5000>([]() {
-			Serial.print("Free heap: ");
-			Serial.print(system_get_free_heap_size());
-			Serial.print(", used: ");
-			Serial.print(MallocCount::getCurrent());
-			Serial.print(", peak: ");
-			Serial.println(MallocCount::getPeak());
-			MallocCount::resetPeak();
-		})
-		.start();
 }
