@@ -156,7 +156,13 @@ void findMediaServers()
 
 void initUPnP()
 {
+	/*
+	 * This is required in order for the framework to construct the correct C++
+	 * classes based on the obtained device descriptions.
+	 * If a device or service is not registered then it will not be available.
+	 */
 	UPnP::schemas_upnp_org::registerClasses();
+
 	findMediaServers();
 }
 
