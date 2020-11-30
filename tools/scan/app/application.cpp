@@ -276,7 +276,7 @@ void fetchNextDescription()
 
 		if(f.attempts < maxDescriptionFetchAttempts) {
 			++f.attempts;
-			debug_i("Fetching '%s'", f.toString().c_str());
+			debug_i("Fetching '%s', attempt #%u", f.toString().c_str(), f.attempts);
 			fetch = &f;
 			break;
 		}
@@ -311,9 +311,10 @@ void fetchNextDescription()
 
 		auto& f = *fetch;
 
-		if(!connection.getResponse()->isSuccess()) {
+		auto response = connection.getResponse();
+		if(!response->isSuccess()) {
 			// Fetch failed, move to end of queue
-			if(f.attempts >= maxDescriptionFetchAttempts) {
+			if(f.attempts >= maxDescriptionFetchAttempts || response->code == HTTP_STATUS_NOT_FOUND) {
 				debug_e("Giving up on '%s' after %u attempts", f.toString().c_str(), f.attempts);
 				f.state = Fetch::State::failed;
 			} else {
