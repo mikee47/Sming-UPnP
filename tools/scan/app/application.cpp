@@ -61,7 +61,22 @@ const char* logFileName = OUTPUT_DIR "/log.txt";
 const char* deviceDir = OUTPUT_DIR "/devices";
 const char* schemaDir = OUTPUT_DIR "/schema";
 
-//IMPORT_FSTR(gatedesc_xml, PROJECT_DIR "/devices1/192.168.1.254/1900/gatedesc.xml")
+template <typename T> void print(const T& arg)
+{
+	String s(arg);
+	m_nputs(s.c_str(), s.length());
+}
+
+void println()
+{
+	m_puts("\r\n");
+}
+
+template <typename T> void println(const T& arg)
+{
+	print(arg);
+	println();
+}
 
 void connectFail(const String& ssid, MacAddress bssid, WifiDisconnectReason reason)
 {
@@ -107,8 +122,7 @@ Print* openStream(String path)
 #ifdef ARCH_HOST
 	validate(path);
 	makedirs(path);
-	Serial.print(_F("Writing "));
-	Serial.println(path);
+	debug_i("Writing %s", path.c_str());
 	auto fs = new HostFileStream;
 	if(fs->open(path, eFO_CreateNewAlways | eFO_WriteOnly)) {
 		return fs;
@@ -174,9 +188,7 @@ void checkExisting(Fetch& desc)
 		return;
 	}
 
-	Serial.print(F("Skipping '"));
-	Serial.print(path);
-	Serial.println(F("': already fetched."));
+	debug_w("Skipping '%s': already fetched", path.c_str());
 	desc.state = Fetch::State::skipped;
 #endif
 }
@@ -185,7 +197,7 @@ void parseDevice(XML::Node* device, const Fetch& f)
 {
 	String deviceType = XML::getValue(device, "deviceType");
 	if(!deviceType) {
-		Serial.println("*** deviceType NOT found ***");
+		debug_e("*** deviceType NOT found ***");
 		return;
 	}
 	ssdpQueue.add(Urn{deviceType});
@@ -201,14 +213,14 @@ void parseDevice(XML::Node* device, const Fetch& f)
 		while(svc != nullptr) {
 			String svcType = XML::getValue(svc, "serviceType");
 			if(!svcType) {
-				Serial.println("*** serviceType missing ***");
+				debug_e("*** serviceType missing ***");
 			} else {
 				ssdpQueue.add(Urn{svcType});
 
 				Url url(f.url);
 				url.Path = XML::getValue(svc, "SCPDURL");
 				if(!url.Path) {
-					Serial.println("*** SCPDURL missing ***");
+					debug_e("*** SCPDURL missing ***");
 				} else {
 					auto& desc = descriptionQueue.add({Urn::Kind::service, String(url), String(f.root), svcType});
 					desc.id = XML::getValue(svc, "serviceId");
@@ -239,7 +251,7 @@ void parseDescription(XML::Document& description, const Fetch& f)
 	} else {
 		auto device = XML::getNode(description, "/device");
 		if(device == nullptr) {
-			Serial.println(F("device  NOT found"));
+			debug_e("device  NOT found");
 		} else {
 			parseDevice(device, f);
 		}
@@ -264,8 +276,7 @@ void fetchNextDescription()
 
 		if(f.attempts < maxDescriptionFetchAttempts) {
 			++f.attempts;
-			Serial.print(_F("Fetching '"));
-			Serial.println(f.toString());
+			debug_i("Fetching '%s'", f.toString().c_str());
 			fetch = &f;
 			break;
 		}
@@ -275,26 +286,26 @@ void fetchNextDescription()
 
 	auto callback = [fetch](HttpConnection& connection, XML::Document* description) {
 #if DEBUG_VERBOSE_LEVEL == DBG
-		Serial.println();
-		Serial.println();
-		Serial.println(_F("====== BEGIN ======"));
-		Serial.print(_F("Remote IP: "));
-		Serial.print(connection.getRemoteIp());
-		Serial.print(':');
-		Serial.println(connection.getRemotePort());
+		println();
+		println();
+		println(F("====== BEGIN ======"));
+		print(F("Remote IP: "));
+		print(connection.getRemoteIp().toString());
+		print(':');
+		println(connection.getRemotePort());
 
-		Serial.println(_F("Request: "));
-		Serial.println(connection.getRequest()->toString());
-		Serial.println();
+		println(F("Request: "));
+		println(connection.getRequest()->toString());
+		println();
 
-		Serial.println(connection.getResponse()->toString());
-		Serial.println();
+		println(connection.getResponse()->toString());
+		println();
 
 		if(description != nullptr) {
-			Serial.println(_F("Content:"));
+			println(F("Content: "));
 			XML::serialize(*description, Serial, true);
-			Serial.println();
-			Serial.println(_F("======  END  ======"));
+			println();
+			println(F("======  END  ======"));
 		}
 #endif
 
@@ -306,9 +317,7 @@ void fetchNextDescription()
 				debug_e("Giving up on '%s' after %u attempts", f.toString().c_str(), f.attempts);
 				f.state = Fetch::State::failed;
 			} else {
-				Serial.print(_F("Fetch '"));
-				Serial.print(f.url);
-				Serial.println("' failed, re-trying");
+				debug_w("Fetch '%s' failed, re-trying", f.url.c_str());
 			}
 		} else if(description != nullptr) {
 			if(options[Option::writeDeviceTree]) {
@@ -397,10 +406,10 @@ void onSsdp(SSDP::BasicMessage& msg)
 
 void printQueue(const FetchList& list)
 {
-	Serial.println(list.toString());
+	println(list.toString());
 	for(unsigned i = 0; i < list.count(); ++i) {
-		Serial.print("  ");
-		Serial.println(list[i].toString());
+		print("  ");
+		println(list[i].toString());
 	}
 }
 
@@ -415,7 +424,7 @@ void beginNextSearch()
 	controlPoint.cancelSearch();
 	auto& f = ssdpQueue.find(Fetch::State::pending);
 	if(!bool(f)) {
-		Serial.println(_F("ALL DONE"));
+		println(F("ALL DONE"));
 		printScanSummary();
 		System.restart(2000);
 		return;
@@ -435,21 +444,21 @@ void scan(const Urn& urn)
 	WifiEvents.onStationGotIP([urn](IpAddress ip, IpAddress netmask, IpAddress gateway) {
 		debugf("GotIP: %s", ip.toString().c_str());
 
-		Serial.print("Scanning from ");
-		Serial.println(urn.toString());
+		print("Scanning from ");
+		println(urn.toString());
 
 		ssdpQueue.add(urn);
 		beginNextSearch();
 
 		statusTimer.initializeMs<10000>(InterruptCallback([]() {
-			Serial.println();
-			Serial.println();
-			Serial.println(_F("** Queue status **"));
-			Serial.println(descriptionQueue.toString());
-			Serial.println(ssdpQueue.toString());
-			Serial.println(_F("** ------------ **"));
-			Serial.println();
-			Serial.println();
+			println();
+			println();
+			println(F("** Queue status **"));
+			println(descriptionQueue.toString());
+			println(ssdpQueue.toString());
+			println(F("** ------------ **"));
+			println();
+			println();
 		}));
 		statusTimer.start();
 	});
@@ -494,12 +503,12 @@ void parseXml(String root, String filename)
 
 void help()
 {
-	m_printf(_F("\r\n"
-				"UPnP Scan Utility. Options:\r\n"
-				"  scan   urn                Perform a local network scan (default is upnp:rootdevice)\r\n"
-				"  fetch  URL(s)...          Fetch descriptions\r\n"
-				"  parse  root filenames...  Parse XML files from given root directory\r\n"
-				"\r\n"));
+	println();
+	println(F("UPnP Scan Utility. Options:"));
+	println(F("  scan   urn                Perform a local network scan (default is upnp:rootdevice)"));
+	println(F("  fetch  URL(s)...          Fetch descriptions"));
+	println(F("  parse  root filenames...  Parse XML files from given root directory"));
+	println();
 }
 
 /*
@@ -543,7 +552,7 @@ bool parseCommands()
 
 	if(cmd == "parse") {
 		if(parameters.count() < 3) {
-			Serial.println(F("** Missing parameters"));
+			println(F("** Missing parameters"));
 			help();
 		} else {
 			String root = parameters[1].text;
@@ -564,10 +573,11 @@ HostFileStream log;
 
 void openLogFile()
 {
+	makedirs(logFileName);
 	log.open(logFileName, eFO_CreateNewAlways | eFO_Append | eFO_WriteOnly);
 	log.println();
 	log.println();
-	log.print(_F("Log opened: "));
+	log.print(F("Log opened: "));
 	log.println(SystemClock.getSystemTimeString());
 
 	previous_nputs_callback = m_setPuts([](const char* str, size_t length) {
@@ -582,7 +592,7 @@ void openLogFile()
 
 void init()
 {
-	Serial.setTxBufferSize(4096);
+	Serial.setTxBufferSize(1024);
 	Serial.begin(SERIAL_BAUD_RATE);
 	Serial.systemDebugOutput(true);
 
