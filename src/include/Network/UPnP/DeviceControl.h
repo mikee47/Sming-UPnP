@@ -89,7 +89,7 @@ public:
 
 	template <typename T> DeviceControl* getDevice(const T& deviceType)
 	{
-		return getDevice<DeviceControl>(deviceType);
+		return Device::getDevice<DeviceControl>(deviceType);
 	}
 
 	String getField(Field desc) const override;

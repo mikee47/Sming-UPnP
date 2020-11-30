@@ -22,6 +22,7 @@
 #include <RapidXML.h>
 #include "Error.h"
 #include "ErrorCode.h"
+#include "Base64.h"
 
 namespace UPnP
 {
@@ -250,6 +251,12 @@ public:
 	bool getArg(const String& name, float& value, float defaultValue = 0.0);
 	bool getArg(const String& name, double& value, double defaultValue = 0.0);
 
+	bool getArg(const String& name, Base64& value)
+	{
+		value = getArgValue(name);
+		return bool(value);
+	}
+
 	/** @} */
 
 	/**
@@ -297,6 +304,11 @@ public:
 	bool addArg(const String& name, double value)
 	{
 		return addArg(name, String(value));
+	}
+
+	bool addArg(const String& name, const Base64& value)
+	{
+		return addArg(name, value.encode());
 	}
 
 	/** @} */
