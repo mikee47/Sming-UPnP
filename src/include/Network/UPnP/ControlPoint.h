@@ -13,7 +13,7 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along with FlashString.
+ * You should have received a copy of the GNU General Public License along with this library.
  * If not, see <https://www.gnu.org/licenses/>.
  *
  ****/
@@ -22,20 +22,60 @@
 
 #include "Object.h"
 #include "ObjectList.h"
+#include "ClassGroup.h"
 #include <Network/SSDP/Message.h>
 #include <Network/HttpClient.h>
-#include "Urn.h"
 #include "Constants.h"
+#include "DeviceControl.h"
+#include "Search.h"
+#include <memory>
 
 namespace UPnP
 {
-class ControlPoint : public ObjectTemplate<ControlPoint>
+class ControlPoint : public ObjectTemplate<ControlPoint, BaseObject>
 {
 public:
-	using DescriptionCallback = Delegate<void(HttpConnection& connection, XML::Document& description)>;
-
-	ControlPoint(size_t maxDescriptionSize = 2048) : maxDescriptionSize(maxDescriptionSize)
+	/**
+	 * @brief Constructor
+	 * @param maxResponseSize Limits size of stream used to receive HTTP responses
+	 */
+	ControlPoint(size_t maxResponseSize = 2048) : maxResponseSize(maxResponseSize)
 	{
+		controlPoints.add(this);
+	}
+
+	~ControlPoint()
+	{
+		controlPoints.remove(this);
+	}
+
+	/**
+	 * @brief Cancel any outstanding search and reset the list of known unique service names
+	 */
+	void reset()
+	{
+		cancelSearch();
+		uniqueServiceNames.clear();
+	}
+
+	/**
+	 * @brief Perform a reset and destroy all created devices
+	 */
+	void clear()
+	{
+		reset();
+		rootDevices.clear();
+	}
+
+	/**
+	 * @brief Searches for UPnP device or service and returns SSDP response messages
+	 * @param urn unique identifier of the service or device to find
+	 * @param callback Invoked with SSDP response message
+	 * @retval bool true on success, false if request queue is full
+	 */
+	bool beginSearch(const Urn& urn, SsdpSearch::Callback callback)
+	{
+		return submitSearch(new SsdpSearch(urn, callback));
 	}
 
 	/**
@@ -44,7 +84,54 @@ public:
 	 * @param callback Invoked with device description document
 	 * @retval bool true on success, false if request queue is full
 	 */
-	bool beginSearch(const Urn& urn, DescriptionCallback callback);
+	bool beginSearch(const Urn& urn, DescriptionSearch::Callback callback)
+	{
+		return submitSearch(new DescriptionSearch(urn, callback));
+	}
+
+	/**
+	 * @brief Searches for UPnP device
+	 * @param cls Device class object
+	 * @param callback Invoked with constructed control object
+	 * @retval bool true on success, false if request queue is full
+	 */
+	bool beginSearch(const ObjectClass& cls, DeviceSearch::Callback callback)
+	{
+		return submitSearch(new DeviceSearch(cls, callback));
+	}
+
+	/**
+	 * @brief Searches for UPnP service
+	 * @param cls Service class object
+	 * @param callback Invoked with constructed control object
+	 * @retval bool true on success, false if request queue is full
+	 */
+	bool beginSearch(const ObjectClass& cls, ServiceSearch::Callback callback)
+	{
+		return submitSearch(new ServiceSearch(cls, callback));
+	}
+
+	template <typename Device> bool beginSearch(Delegate<bool(Device&)> callback)
+	{
+		return beginSearch(Device().getClass(),
+						   [callback](DeviceControl& device) { return callback(reinterpret_cast<Device&>(device)); });
+	}
+
+	/**
+	 * @brief Determine if there's an active search in progress
+	 */
+	bool isSearchActive() const
+	{
+		return bool(activeSearch);
+	}
+
+	/**
+	 * @brief Cancel any active search operation
+	 * @retval bool true if a search was active, false if there was no active search
+	 * @todo Set timeout on search operation and call this automatically
+	 * Need to inform application though - perhaps a generic callback on the class?
+	 */
+	bool cancelSearch();
 
 	/**
 	 * @brief Called by framework to handle an incoming SSDP message
@@ -52,23 +139,7 @@ public:
 	 */
 	virtual void onNotify(BasicMessage& msg);
 
-	/* Object */
-
-	RootDevice* getRoot() override
-	{
-		return nullptr;
-	}
-
-	void search(const SearchFilter& filter) override
-	{
-	}
-
 	bool formatMessage(Message& msg, MessageSpec& ms) override;
-
-	bool onHttpRequest(HttpServerConnection& connection) override
-	{
-		return false;
-	}
 
 	/**
 	 * @brief Send a request
@@ -79,30 +150,37 @@ public:
 
 	/**
 	 * @brief Send a request for description document
-	 * @param request Completed request (response stream unassigned)
-	 * @param callback To be invoked with requested document
-	 * @retval bool true on success, false if queue is full
-	 */
-	bool sendDescriptionRequest(HttpRequest* request, DescriptionCallback callback);
-
-	/**
-	 * @brief Send a request for description document
 	 * @param request Description URL
 	 * @param callback To be invoked with requested document
 	 * @retval bool true on success, false if queue is full
 	 */
-	bool requestDescription(const String& url, DescriptionCallback callback);
+	bool requestDescription(const String& url, DescriptionSearch::Callback callback);
+
+	/**
+	 * @brief Called via SSDP when incoming message received
+	 */
+	static void onSsdpMessage(BasicMessage& msg);
+
+	static const ObjectClass* findClass(const Urn& objectType);
+
+	static void registerClasses(const FlashString& domain, const ObjectClass::List& classes)
+	{
+		objectClasses.add(domain, classes);
+	}
 
 private:
-	void processDescriptionResponse(HttpConnection& connection, DescriptionCallback callback);
+	using List = ObjectList<ControlPoint>;
 
+	bool submitSearch(Search* search);
+	static bool processDescriptionResponse(HttpConnection& connection, String& buffer, XML::Document& description);
+
+	static List controlPoints;
+	static ClassGroup::List objectClasses;
+	DeviceControl::OwnedList rootDevices;
 	static HttpClient http;
-	size_t maxDescriptionSize; // <<< Maximum size of XML description that can be processed
-	UPnP::Urn searchUrn;
-	DescriptionCallback searchCallback;
+	size_t maxResponseSize; // <<< Maximum size of XML description that can be processed
 	CStringArray uniqueServiceNames;
+	std::unique_ptr<Search> activeSearch;
 };
-
-using ControlPointList = ObjectList<ControlPoint>;
 
 } // namespace UPnP

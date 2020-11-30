@@ -1,211 +1,186 @@
 UPnP
 ====
 
+`Universal Plug and Play <https://en.wikipedia.org/wiki/Universal_Plug_and_Play>`__.
+
 Introduction
 ------------
 
 A C++ library for managing UPnP devices and services using the Sming framework.
 
-`Universal Plug and Play (UPnP) <https://en.wikipedia.org/wiki/Universal_Plug_and_Play>`__ *is a set of networking protocols
-that permits networked devices, such as personal computers, printers, Internet gateways, Wi-Fi access points and mobile devices
-to seamlessly discover each other's presence on the network and establish functional network services for data sharing,
-communications, and entertainment.* (Wikipedia)
-
-UPnP provides a set of standards which allows user applications (*Control Points* such as a mobile phone App.)
-to discover and control embedded *devices* through standardised *services*.
-
-.. image:: upnp-discovery.png
-
-Please refer to the official
-`UPnP Device Architecture version 2.0 <http://upnp.org/specs/arch/UPnP-arch-DeviceArchitecture-v2.0.pdf>`__
-for further details.
+If you're not famililar with the mechanics of UPnP See :doc:`about` for some background information.
 
 
-Background
-----------
+Schema
+------
 
-There are various open source UPnP libraries available, however we have a very specific
-set of requirements which none of them can really meet.
+A separate :library:`UPnP-Schema` is used to manage UPnP device and service schema.
+It generates C++ classes and sample code directly from these, which you can then use in your
+application.
 
-If (like me) you're only dimly aware of UPnP and how it works, researching the
-requirements is an important first step and in itself is time consuming.
-
-What we'd really like is a simple API which lets us throw together a fully UPnP
-compliant solution in the time it takes to drink a cup of coffee, with only a basic
-knowledge of how it all works.
-
-The ESP8266 is a 'Class II IoT Device'
-   This classification is from `RFC7228: Terminology for Constrained-Node Networks <https://tools.ietf.org/html/rfc7228>`__,
-   and considers the resources available for an embedded device.
-
-   Basically, it *can't* run Linux but it *can* support IP networking.
-
-   Whilst the ESP32 is 'less constrained', it's still class II and without care and
-   attention to framework (and application) design all that extra RAM and horsepower
-   will rapidly disappear.
-
-UPnP (and SSDP) is just UDP, TCP, XML and JSON, so what's the problem?
-   True, you can just throw together a custom solution which implements the various protocols
-   and works OK. But like everything to do it properly takes time and effort.
-
-   If you want it to be reliable and behave like a good neighbour then sticking to the
-   standards is important:
-
-   -  Be nice, don't flood the network with search requests
-   -  But at the same time UDP is 'unreliable' so we should repeat messages
-   -  How to listen to SSDP broadcasts without hanging the system
-
-What's this about XML? Why can't we just use JSON?
-   One of the advantages of `JSON <https://en.wikipedia.org/wiki/JSON>`__ is it's compact, human-friendly format.
-   `XML <https://en.wikipedia.org/wiki/XML>`__ is less so, but it is more structured
-   and well-suited for machine-to-machine information transfer.
-
-   It's a core part of UPnP. See `UPnP Resouces <https://openconnectivity.org/developer/specifications/upnp-resources/upnp>`__.
-
-   One of the many cool things about XML is `XSLT <https://en.wikipedia.org/wiki/XSLT>`__,
-   which lets us easily convert existing XML documents into any format we like.
-   The tools to do this are readily available; we can perform these transformations
-   in a web browser, for example, hence the wealth of online tools to do just this.
-
-   We can also use the published `Schema <https://en.wikipedia.org/wiki/XML_schema>`__
-   to ensure strict standards compliance.
-
-How do we deal with XML on a memory-constrained device?
-   For very simple devices it's not an issue, but larger sets of description information
-   will need to be handled in small chunks and assembled before it gets sent out.
-   We want our classes to take care of all this transparently.
-
-   If we want to discover other networked devices and control them, we'll also
-   need to parse the XML data in a similar way.
-
-   -  `Tiny XML-2 <https://github.com/leethomason/tinyxml2>`__ is a very popular library.
-      It's a `DOM parser <https://en.wikipedia.org/wiki/Document_Object_Model>`__ so memory
-      consumption is likely to be an issue.
-   -  `Micro XPath <https://github.com/tmittet/microxpath>`__ is tiny, perhaps a little too simple though
-   -  `Expat <https://github.com/libexpat/libexpat>`__ is a
-      `SAX parser <https://en.wikipedia.org/wiki/Simple_API_for_XML>`__ written in C,
-      could be just the ticket.
-
-   `What XML parser should I use in C? <https://stackoverflow.com/questions/9387610/what-xml-parser-should-i-use-in-c>`__.
-
-Most of the UPnP libraries are for Linux or Windows
-   The `OSGi Alliance <https://www.osgi.org/>`__ provides a *dynamic module system* for java which includes
-   many good design ideas and a great deal of useful information, such as:
-
-   -  `Why is Modularity so Important? <https://www.osgi.org/developer/modularity/>`__
-   -  `Architecture <https://www.osgi.org/developer/architecture/>`__, see list at bottom for references to the various
-      open-source implementations.
-   -  `OSGi Compendium Release 7 <https://osgi.org/javadoc/osgi.cmpn/7.0.0/>`__, see *org.osgi.service.upnp* package
-
-   There are a couple of C/C++ frameworks which implemenent the OSGi specifications:
-
-   -  `Apache Celix <https://github.com/apache/celix>`__
-   -  `C++ Micro Services <https://github.com/CppMicroServices/CppMicroServices>`__
-
-   Others:
-
-   -  `gUPnP <https://gitlab.gnome.org/GNOME/gupnp-av>`__ object-oriented framework in C.
-
-   Curiously, I've failed to turn up anything for FreeRTOS.
-
-   I should probably mention Microsoft as they're the ones who created UPnP in the first place!
-   See `UPnP APIs <https://docs.microsoft.com/en-us/windows/win32/upnp/universal-plug-and-play-start-page>`__.
+Generation of suitable schema can be done using the **scanner** tool.
 
 
-Good integration with the Sming framework
-   I like `Arduino-upnp <https://github.com/dannybackx/arduino-upnp>`__, it's a good approach and
-   has some really great ideas. So if any of this library seems familiar that'll be why!
+Controlling devices
+-------------------
 
+The :sample:`Basic_ControlPoint` sample shows how this is done.
 
-In the end I decided to just build something from scratch.
-These are the specific areas I wanted to address:
+Registration
+   To control UPnP-enabled devices on your local network they must first be located.
 
-Support for existing Sming applications
-   You already have an embedded device but want to make it accessible via UPnP services.
-   That means we want a lightweight layer which is easily added on top.
+   In order for this to happen, the framework must be able to match the C++ class implementation
+   against the schema. You must therefore register all devices and services that you wish to
+   control by calling :cpp:func:`UPnP::ControlPoint::registerClasses`.
+   
+   This method takes a :cpp:class:`UPnP::ClassGroup` which typically defines all devices and services
+   belonging to a specific domain. See :library:`UPnP-Schema` for further details about the available schema.
 
-Be careful with RAM
-   We don't want to waste RAM keeping track of state and other information which is already
-   available elsewhere.
+   Here's an example from the ControlPoint sample::
 
-   Instead of keeping lists of services or devices we use an abstract enumerator.
-   For example, a lighting controller may track the state of dozens or hundreds of lights,
-   so the overhead of creating an object instance for each one is best avoided.
+      #include <Network/UPnP/schemas-upnp-org/ClassGroup.h>
 
-   Also, there is a considerably amount of UPnP configuration information but it
-   can be stored in Flash and only read out when actually required.
+      // Let's make things a little easier for ourselves
+      using namespace UPnP::schemas_upnp_org::device;
+      using namespace UPnP::schemas_upnp_org::service;
 
+      void initUPnP()
+      {
+         UPnP::schemas_upnp_org::registerClasses();
+      }
 
-Classes
--------
-
-An application implements their devices and services using these provided base classes.
-
-DeviceHost
-   Implements SSDP discovery and notification supporting multiple root devices.
-   The :library:`SSDP` library handles the protocol details.
-
-Device
-   All devices are implemented using this base class, including root devices.
-   A common example of a root device is a Television, with separate (embedded) devices
-   controlling subsystems such as sound, vision, networking, etc.
-
-   Sming in a TV, now there's an idea...
-
-Service
-   A service implements actions and manages state to control a device.
-   Like when a REST request asks for a light to be turned on, it'll be a service that performs the
-   action and tracks state.
-   The advantage with UPnP is that services are self-documented. You can explore this using
-   various :ref:`upnp_tools`.
-
-Item
-   All UPnP classes are implemented using the *Item* class template, which allows them to be efficiently
-   enumerated as a linked list. Class templates are ideal because they avoid the complication
-   of dynamic type casting and generate efficient code.
-
-List
-   A singly-linked list of items, such as devices or services.
-
-
-Features
---------
 
 Discovery
-   UPnP requires a minimal amount of information exchange to advertise services,
-   however device descriptions can be relatively large and therefore unsafe to
-   manipulate in a limited RAM system.
 
-   Sming's template streams are one possible solution to this problem.
-   The IMPORT_FSTR feature allows applications to easily define their own
-   descriptions (templates or otherwise). The alternative is to use SPIFFS,
-   however when :issue:`Partition Tables <1676>` are supported this will provide
-   the best of both worlds.
+   This is done using a :cpp:func:`UPnP::ControlPoint::beginSearch` method, which takes
+   two parameters: the first identifies what you are looking for, the second is a callback
+   which gets invoked when a match has been found.
+   You'll typically implement this callback using a lambda function.
 
-   However, the application should not normally need to do all this as the framework will,
-   by default, enumerate device fields and build the device description information 'on the fly'.
+   For example, let's find all ``MediaRenderer1`` devices::
 
-Memory efficiency
-   Much of the UPnP framework is concerned with discovery and notification, which requires a significant
-   amount of configuration data. This data is obtained via callbacks as required which allows
-   device and service implementations to fetch it from flash memory storage or create it on demand,
-   thus saving on RAM.
+      // Only one active search is permitted so be sure to cancel any existing ones first
+      controlPoint.cancelSearch();
+      controlPoint.beginSearch(Delegate<bool(MediaRenderer1&)>([](auto& device) {
+         // We can now do stuff with the located device
 
-   Using linked lists also avoids the need for separate RAM allocation and simpler enumeration.
-   Applications are responsible for device and service memory allocation, but unless services need
-   to be dynamically created or destroyed it's simplest to just create them statically.
+         // Return true to keep the device, false to destroy it
+         return false;
+      });
 
-Enumeration
-   One way to manage lists of many objects is to implement an enumerator with a single
-   Service class instance. Every call to ``enumerator.next()`` returns the same object
-   instance but with its internal state updated.
+   This method takes a template parameter which is the C++ class type defining the device you
+   are searching for. The framework will fetch the description for each corresponding device
+   and construct a :cpp:class:`DeviceControl` object with appropriate services and embedded devices.
 
-   The main caveat to this approach is that if you need to keep hold of one these
-   objects then you must make a copy; you cannot hold onto references. For this reason
-   enumerators have a ``clone()`` method and objects have copy constructors.
+Control
+   Your search callback function gets a reference to a located device. These devices are created
+   on the heap and owned by the :cpp:class:`UPnP::ControlPoint`. If you want to keep the device,
+   you should take a reference to it and return ``true`` from the callback.
+
+   To actually do anything useful typically requires use of a :cpp:class:`UPnP::ServiceControl` object.
+   You'll usually get this by calling :cpp:class:`UPnP::DeviceControl::getService` or one of the
+   generated helper methods. Note that this returns a pointer, which will be ``nullptr`` if the
+   service isn't available::
+   
+      auto render = device.getRenderingControl();
+      if(render != nullptr) {
+         // ...
+      }
+
+   Once you have a Service object, you can control it using action methods::
+
+         render->getVolume(0, RenderingControl1::Channel::fs_Master, [&device](auto response) {
+            // Process response here
+         });
+   
+   Action methods take a list of zero or more input parameters, with the final argument for the response.
+
+.. note::
+
+   The exact type of the response can be determined for you by the compiler.
+   Here's the explicit call::
+
+      render->getVolume(0, RenderingControl1::Channel::fs_Master, [&device](RenderingControl1::GetVolume::Response response response) {
+         // ...
+      });
 
 
-.. _upnp_tools:
+   OK, so handling the action method response. You can get the result values using methods of ``response``,
+   but you must first check that the device did not return a fault::
+
+      Serial.println();
+      Serial.println(_F("render->getVolume(0, Master):"));
+      // Sample uses a `checkResponse` helper function
+      if(auto fault = response.fault()) {
+         fault.printTo(Serial);
+      } else {
+         Serial.print(device.friendlyName());
+         Serial.print(_F(": Current Volume = "));
+         Serial.println(response.getCurrentVolume());
+      }
+      Serial.println();
+
+
+Implementing devices
+--------------------
+
+The :sample:`Basic_UPnP` sample contains a couple of examples of how to create your own hosted devices.
+The ``TeaPot`` device is the simplest possible implementation, with no services.
+
+The ``Wemo`` device is more elaborate and has two services.
+
+Both of these are constructed using code generated from custom schema.
+These are located in the project's ``schema`` directory which is picked up automatically
+when the :library:`UPnP-Schema` library is built.
+
+The framework generates a class template for each device and service.
+For example, take a look in ``Wemo.h``::
+
+   class BasicEventService : public service::basicevent1Template<BasicEventService>
+   {
+   public:
+      // Need access to constructors
+      using basicevent1Template::basicevent1Template;
+
+      // Override methods if you need to customise any fields
+      String getField(Field desc) const override
+      {
+         switch(desc) {
+         case Field::serviceId:
+            // You could also put this in the schema
+            return F("urn:Belkin:serviceId:basicevent1");
+         default:
+            return basicevent1Template::getField(desc);
+         }
+      }
+
+      // Access to our device implementation
+      Controllee& controllee()
+      {
+         return reinterpret_cast<Controllee&>(device());
+      }
+
+
+      /* Here are the action methods */
+
+      Error getBinaryState(GetBinaryState::Response response)
+      {
+         response.setBinaryState(controllee().getState());
+         return Error::Success;
+      }
+   
+      Error setBinaryState(bool state, SetBinaryState::Response response)
+      {
+         controllee().setState(state);
+         return Error::Success;
+      }
+   };
+   
+This perhaps slightly strange construction uses
+`CRTP <https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern>`__
+to use static polymorphism and avoid virtual method tables.
+This allows the compiler to generate more efficient code.
+
 
 UPnP Tools
 ----------

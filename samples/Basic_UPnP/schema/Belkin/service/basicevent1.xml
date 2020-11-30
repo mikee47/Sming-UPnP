@@ -1,0 +1,43 @@
+<scpd xmlns="urn:schemas-upnp-org:service-1-0">
+	<specVersion>
+		<major>1</major>
+		<minor>0</minor>
+	</specVersion>
+	<actionList>
+		<action>
+			<name>SetBinaryState</name>
+			<argumentList>
+				<argument>
+					<name>BinaryState</name>
+					<relatedStateVariable>BinaryState</relatedStateVariable>
+					<direction>in</direction>
+				</argument>
+			</argumentList>
+		</action>
+		<action>
+			<name>GetBinaryState</name>
+			<argumentList>
+				<argument>
+					<retval />
+					<name>BinaryState</name>
+					<relatedStateVariable>BinaryState</relatedStateVariable>
+					<direction>out</direction>
+				</argument>
+			</argumentList>
+		</action>
+	</actionList>
+	<serviceStateTable>
+		<stateVariable sendEvents="yes">
+			<name>BinaryState</name>
+			<dataType>boolean</dataType>
+			<defaultValue>0</defaultValue>
+		</stateVariable>
+		<stateVariable sendEvents="yes">
+			<name>level</name>
+			<dataType>string</dataType>
+			<defaultValue>0</defaultValue>
+		</stateVariable>
+	</serviceStateTable>
+	<serviceType>urn:Belkin:service:basicevent:1</serviceType>
+	<serviceId>urn:Belkin:serviceId:basicevent1</serviceId>
+</scpd>

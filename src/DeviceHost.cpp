@@ -12,18 +12,17 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along with FlashString.
+ * You should have received a copy of the GNU General Public License along with this library.
  * If not, see <https://www.gnu.org/licenses/>.
  *
  ****/
 
 #include "include/Network/UPnP/DeviceHost.h"
 #include "include/Network/UPnP/DescriptionStream.h"
-#include "include/Network/UPnP/ControlPoint.h"
 #include <Network/SSDP/Server.h>
-#include <WMath.h>
 #include <Platform/Station.h>
 #include <Data/Stream/MemoryDataStream.h>
+#include "main.h"
 
 namespace UPnP
 {
@@ -96,7 +95,7 @@ void DeviceHost::onSearchRequest(const BasicMessage& request)
 
 void DeviceHost::search(SearchFilter& filter, Device* device)
 {
-	filter.callback = [&](Object* object, SearchMatch match) {
+	filter.callback = [&](BaseObject* object, SearchMatch match) {
 		auto item = new MessageSpec(filter.ms, match, object);
 		server.messageQueue.add(item, filter.delayMs);
 		filter.delayMs += 100;
@@ -107,8 +106,8 @@ void DeviceHost::search(SearchFilter& filter, Device* device)
 #endif
 
 	if(device == nullptr) {
-		for(auto dev = deviceHost.firstRootDevice(); dev != nullptr; dev = dev->getNext()) {
-			dev->search(filter);
+		for(auto& dev : deviceHost.devices()) {
+			dev.search(filter);
 		}
 	} else {
 		device->search(filter);
@@ -146,38 +145,19 @@ void DeviceHost::search(SearchFilter& filter, Device* device)
 void DeviceHost::notify(Device* device, NotifySubtype subtype)
 {
 	MessageSpec ms(subtype, SearchTarget::all);
-	ms.setRemote(SSDP_MULTICAST_IP, SSDP_MULTICAST_PORT);
+	ms.setRemote(SSDP::multicastIp, SSDP::multicastPort);
 	SearchFilter filter(ms, 500);
 	search(filter, device);
 }
 
 bool DeviceHost::begin()
 {
-	return SSDP::server.begin(
-		[this](BasicMessage& msg) {
-			if(msg.type == MessageType::msearch) {
-				onSearchRequest(msg);
-			} else {
-				for(auto cp = controlPoints.head(); cp != nullptr; cp = cp->getNext()) {
-					cp->onNotify(msg);
-				}
-			}
-		},
-		[](Message& msg, MessageSpec& ms) {
-			auto object = ms.object<Object>();
-			if(object == nullptr) {
-				// Send directly
-				// TODO: This is ControlPoint stuff
-				server.sendMessage(msg);
-			} else {
-				object->sendMessage(msg, ms);
-			}
-		});
+	return UPnP::initialize();
 }
 
 void DeviceHost::end()
 {
-	SSDP::server.end();
+	return UPnP::finalize();
 }
 
 bool DeviceHost::isActive() const
@@ -185,9 +165,9 @@ bool DeviceHost::isActive() const
 	return SSDP::server.isActive();
 }
 
-bool DeviceHost::registerDevice(RootDevice* device)
+bool DeviceHost::registerDevice(Device* device)
 {
-	if(!rootDevices.add(device)) {
+	if(!devices_.add(device)) {
 		return false;
 	}
 
@@ -199,9 +179,9 @@ bool DeviceHost::registerDevice(RootDevice* device)
 	return true;
 }
 
-bool DeviceHost::unRegisterDevice(RootDevice* device)
+bool DeviceHost::unRegisterDevice(Device* device)
 {
-	if(!rootDevices.remove(device)) {
+	if(!devices_.remove(device)) {
 		// Device wasn't running
 		return false;
 	}
@@ -223,13 +203,12 @@ bool DeviceHost::onHttpRequest(HttpServerConnection& connection)
 		return false;
 	}
 
-	auto device = rootDevices.head();
-	while(device != nullptr) {
-		if(device->onHttpRequest(connection)) {
+	for(auto& device : devices_) {
+		if(device.onHttpRequest(connection)) {
 			return true;
 		}
-		device = device->getNext();
 	}
+
 	return false;
 }
 
@@ -244,9 +223,9 @@ IDataSourceStream* DeviceHost::generateDebugPage(const String& title)
 				   "The following devices are being advertised:<p>"
 				   "<ul>"));
 
-	for(auto dev = firstRootDevice(); dev != nullptr; dev = dev->getNext()) {
-		String fn = dev->getField(UPnP::Device::Field::friendlyName);
-		String url = dev->getField(UPnP::Device::Field::presentationURL);
+	for(auto& dev : devices()) {
+		String fn = dev.getField(UPnP::Device::Field::friendlyName);
+		String url = dev.getField(UPnP::Device::Field::presentationURL);
 		mem->print(_F("<li><a href=\""));
 		mem->print(url);
 		mem->print(_F("\">"));

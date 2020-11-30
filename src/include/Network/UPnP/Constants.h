@@ -12,7 +12,7 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along with FlashString.
+ * You should have received a copy of the GNU General Public License along with this library.
  * If not, see <https://www.gnu.org/licenses/>.
  *
  ****/
@@ -23,31 +23,19 @@
 
 namespace UPnP
 {
-DECLARE_FSTR(upnp_org);
-DECLARE_FSTR(schemas_upnp_org);
+DECLARE_FSTR(fs_xmlns)
 
-#define UPNP_DEVICETYPE_MAP(XX) XX(Basic, "Basic")
-
-namespace DeviceType
+namespace schemas_upnp_org
 {
-#define XX(tag, str) DECLARE_FSTR(tag)
-UPNP_DEVICETYPE_MAP(XX)
-#undef XX
-} // namespace DeviceType
+DECLARE_FSTR(device_1_0)
+DECLARE_FSTR(service_1_0)
+DECLARE_FSTR(control_1_0)
 
-#define UPNP_SERVICETYPE_MAP(XX)                                                                                       \
-	XX(ContentDirectory, "ContentDirectory")                                                                           \
-	XX(ConnectionManager, "ConnectionManager")                                                                         \
-	XX(X_MS_MediaReceiverRegistrar, "X_MS_MediaReceiverRegistrar")
+namespace device
+{
+DECLARE_FSTR(Basic)
+}
 
-namespace ServiceType
-{
-namespace upnp_org
-{
-#define XX(tag, str) DECLARE_FSTR(tag)
-UPNP_SERVICETYPE_MAP(XX)
-#undef XX
-} // namespace upnp_org
-} // namespace ServiceType
+} // namespace schemas_upnp_org
 
 } // namespace UPnP

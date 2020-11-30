@@ -1,46 +1,41 @@
-#include <Network/UPnP/RootDevice.h>
+#include <Network/UPnP/schemas-sming-org/ClassGroup.h>
 
-class TeaPot : public UPnP::RootDevice
+namespace UPnP
+{
+namespace schemas_sming_org
+{
+class TeaPot : public device::TeaPot1Template<TeaPot>
 {
 public:
 	TeaPot(uint8_t id) : id_(id)
 	{
 	}
 
-	String getField(Field desc) override
+	String getField(Field desc) const override
 	{
 		switch(desc) {
-		case Field::deviceType:
-			return F("upnp:tea-pot"); // This device is a tea pot
 		case Field::UDN:
-			return F("uuid:1231313131::upnp:tea-pot"); // This is the unique id of the device.
-		case Field::friendlyName:
-			return F("Sming Tea Pot");
-		case Field::modelName:
-			return F("Simple tea pot");
-		case Field::manufacturer:
-			return F("Sming");
-		case Field::manufacturerURL:
-			return F("https://github.com/SmingHub/Sming");
-		case Field::modelDescription:
-			return F("Simple UPnP test device for Sming");
-		case Field::modelNumber:
-			return F("1");
+			// This is the unique id of the device
+			return F("uuid:68317e07-d356-455a-813b-d23f2556354a");
 		case Field::serialNumber:
 			return F("12345678");
-		case Field::baseURL: {
-			// Ensure URL is unique if there are multiple devices
-			String s;
-			s += F("/teapot/");
-			s += id_;
-			s += '/';
-			return s;
-		}
 		default:
-			return RootDevice::getField(desc);
+			return Device::getField(desc);
 		}
+	}
+
+	// Ensure URL is unique if there are multiple devices
+	String getUrlBasePath() const override
+	{
+		String path = Device::getUrlBasePath();
+		path += '/';
+		path += id_;
+		return path;
 	}
 
 private:
 	uint8_t id_;
 };
+
+} // namespace schemas_sming_org
+} // namespace UPnP

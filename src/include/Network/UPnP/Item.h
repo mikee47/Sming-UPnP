@@ -12,7 +12,7 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along with FlashString.
+ * You should have received a copy of the GNU General Public License along with this library.
  * If not, see <https://www.gnu.org/licenses/>.
  *
  ****/
@@ -42,7 +42,7 @@ public:
 	{
 	}
 
-	virtual XML::Node* getDescription(XML::Document& doc, DescType descType)
+	virtual XML::Node* getDescription(XML::Document& doc, DescType descType) const
 	{
 		return nullptr;
 	}
@@ -52,9 +52,14 @@ public:
 		return nullptr;
 	}
 
-	virtual Item* next()
+	virtual Item* next() const
 	{
 		return nullptr;
+	}
+
+	bool operator==(const Item& other) const
+	{
+		return this == &other;
 	}
 };
 

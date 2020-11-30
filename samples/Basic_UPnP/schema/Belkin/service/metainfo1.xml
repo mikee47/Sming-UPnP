@@ -1,0 +1,27 @@
+<scpd xmlns="urn:schemas-upnp-org:service-1-0">
+	<specVersion>
+		<major>1</major>
+		<minor>0</minor>
+	</specVersion>
+	<actionList>
+		<action>
+			<name>GetMetaInfo</name>
+			<argumentList>
+				<argument>
+					<retval />
+					<name>MetaInfo</name>
+					<relatedStateVariable>MetaInfo</relatedStateVariable>
+					<direction>out</direction>
+				</argument>
+			</argumentList>
+		</action>
+	</actionList>
+	<serviceStateTable>
+		<stateVariable sendEvents="yes">
+			<name>MetaInfo</name>
+			<dataType>string</dataType>
+			<defaultValue>0</defaultValue>
+		</stateVariable>
+	</serviceStateTable>
+	<serviceType>urn:Belkin:service:metainfo:1</serviceType>
+</scpd>

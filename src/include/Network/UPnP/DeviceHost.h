@@ -12,15 +12,14 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along with FlashString.
+ * You should have received a copy of the GNU General Public License along with this library.
  * If not, see <https://www.gnu.org/licenses/>.
  *
  ****/
 
 #pragma once
 
-#include "RootDevice.h"
-#include "ControlPoint.h"
+#include "Device.h"
 
 namespace UPnP
 {
@@ -36,19 +35,9 @@ public:
 
 	bool isActive() const;
 
-	bool registerDevice(RootDevice* device);
+	bool registerDevice(Device* device);
 
-	bool unRegisterDevice(RootDevice* device);
-
-	bool registerControlPoint(ControlPoint* cp)
-	{
-		return controlPoints.add(cp);
-	}
-
-	bool unRegisterControlPoint(ControlPoint* cp)
-	{
-		return controlPoints.remove(cp);
-	}
+	bool unRegisterDevice(Device* device);
 
 	bool onHttpRequest(HttpServerConnection& connection);
 
@@ -57,21 +46,22 @@ public:
 	 */
 	IDataSourceStream* generateDebugPage(const String& title);
 
-	RootDevice* firstRootDevice()
+	Device::List& devices()
 	{
-		return rootDevices.head();
+		return devices_;
 	}
 
 	void notify(Device* device, NotifySubtype subype);
 
-private:
+	/**
+	 * @brief Called via SSDP when incoming message received
+	 */
 	void onSearchRequest(const BasicMessage& request);
 
+private:
 	void search(SearchFilter& filter, Device* device);
 
-private:
-	RootDeviceList rootDevices;
-	ControlPointList controlPoints;
+	Device::List devices_;
 };
 
 extern DeviceHost deviceHost;

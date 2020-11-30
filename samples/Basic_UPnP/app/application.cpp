@@ -4,7 +4,6 @@
 #include <Network/SSDP/Server.h>
 #include <TeaPot.h>
 #include <Wemo.h>
-#include <malloc_count.h>
 
 // If you want, you can define WiFi settings globally in Eclipse Environment Variables
 #ifndef WIFI_SSID
@@ -12,18 +11,31 @@
 #define WIFI_PWD "PleaseEnterPass"
 #endif
 
+//
+#define LED_PIN 2
+
 namespace
 {
 NtpClient* ntpClient;
 HttpServer server;
-TeaPot teapot(1);
-Wemo::Controllee wemo1(1, "Socket #1");
-Wemo::Controllee wemo2(2, "Socket #2");
+UPnP::schemas_sming_org::TeaPot teapot(1);
+UPnP::Belkin::Controllee wemo1(1, "Socket #1");
+UPnP::Belkin::Controllee wemo2(2, "Socket #2");
 UPnP::ControlPoint controlPoint;
+
+void setLed(bool state)
+{
+#ifdef ARCH_ESP8266
+	// LED pin output is inverted on Esp8266
+	state = !state;
+#endif
+	digitalWrite(LED_PIN, state);
+}
 
 void connectFail(const String& ssid, MacAddress bssid, WifiDisconnectReason reason)
 {
-	debugf("I'm NOT CONNECTED!");
+	Serial.print(F("I'm NOT CONNECTED! "));
+	Serial.println(WifiEvents.getDisconnectReasonDesc(reason));
 }
 
 int onHttpRequest(HttpServerConnection& connection, HttpRequest& request, HttpResponse& response)
@@ -51,10 +63,15 @@ int onHttpRequest(HttpServerConnection& connection, HttpRequest& request, HttpRe
 
 void simpleSearch()
 {
-	UPnP::ServiceUrn urn("dial-multiscreen-org", "dial", 1);
-	controlPoint.beginSearch(urn, [](HttpConnection& connection, XML::Document& description) {
+	ServiceUrn urn(F("dial-multiscreen-org"), F("dial"), 1);
+	controlPoint.beginSearch(urn, [](HttpConnection& connection, XML::Document* description) {
+		if(description == nullptr) {
+			Serial.println(F("Search failed"));
+			return;
+		}
+
 		debug_e("Found service!");
-		auto node = XML::getNode(description, F("/device/friendlyName"));
+		auto node = XML::getNode(*description, F("/device/friendlyName"));
 		if(node == nullptr) {
 			Serial.println(_F("UNEXPECTED! friendlyName missing from device description"));
 		} else {
@@ -91,6 +108,11 @@ void initUPnP()
 	UPnP::deviceHost.registerDevice(&wemo1);
 	UPnP::deviceHost.registerDevice(&wemo2);
 
+	// Control LED in response to wemo1 SetBinaryState action
+	pinMode(LED_PIN, OUTPUT);
+	digitalWrite(LED_PIN, true);
+	wemo1.onStateChange([](auto& device) { setLed(device.getState()); });
+
 	// Simple search for devices
 	simpleSearch();
 }
@@ -114,7 +136,7 @@ void gotIP(IpAddress ip, IpAddress netmask, IpAddress gateway)
 
 void init()
 {
-	Serial.setTxBufferSize(4096);
+	Serial.setTxBufferSize(1024);
 	Serial.begin(SERIAL_BAUD_RATE);
 	Serial.systemDebugOutput(true);
 
@@ -124,17 +146,4 @@ void init()
 
 	WifiEvents.onStationDisconnect(connectFail);
 	WifiEvents.onStationGotIP(gotIP);
-
-	auto timer = new SimpleTimer;
-	timer
-		->initializeMs<5000>([]() {
-			Serial.print("Free heap: ");
-			Serial.print(system_get_free_heap_size());
-			Serial.print(", used: ");
-			Serial.print(MallocCount::getCurrent());
-			Serial.print(", peak: ");
-			Serial.println(MallocCount::getPeak());
-			MallocCount::resetPeak();
-		})
-		.start();
 }

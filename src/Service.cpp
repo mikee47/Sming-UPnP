@@ -12,19 +12,18 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along with FlashString.
+ * You should have received a copy of the GNU General Public License along with this library.
  * If not, see <https://www.gnu.org/licenses/>.
  *
  ****/
 
-#include "include/Network/UPnP/RootDevice.h"
+#include "include/Network/UPnP/Device.h"
 #include "include/Network/UPnP/ItemEnumerator.h"
 #include "include/Network/UPnP/DescriptionStream.h"
-#include <Data/Stream/MemoryDataStream.h>
-#include <Data/Stream/FlashMemoryStream.h>
+#include <FlashString/Stream.hpp>
 #include <FlashString/Vector.hpp>
 #include <RapidXML.h>
-#include <Network/SSDP/UUID.h>
+#include <Network/SSDP/Uuid.h>
 
 namespace
 {
@@ -45,17 +44,17 @@ String toString(UPnP::Service::Field field)
 
 namespace UPnP
 {
-RootDevice* Service::getRoot()
+Device& Service::root()
 {
-	return (device_ == nullptr) ? nullptr : device_->getRoot();
+	return device_.root();
 }
 
-XML::Node* Service::getDescription(XML::Document& doc, DescType descType)
+XML::Node* Service::getDescription(XML::Document& doc, DescType descType) const
 {
 	switch(descType) {
 	case DescType::header: {
 		auto root = XML::appendNode(&doc, "scpd");
-		XML::appendAttribute(root, _F("xmlns"), _F("urn:schemas-upnp-org:service-1-0"));
+		XML::appendAttribute(root, fs_xmlns, schemas_upnp_org::service_1_0);
 		return root;
 	}
 
@@ -71,68 +70,41 @@ XML::Node* Service::getDescription(XML::Document& doc, DescType descType)
 		return service;
 	}
 
-	case DescType::content: {
-		// TODO
-		return nullptr;
-	}
-
 	default:
 		return nullptr;
 	}
 }
 
-String Service::getField(Field desc)
+IDataSourceStream* Service::createDescription()
+{
+	return new FSTR::Stream(*getClass().service().schema);
+}
+
+String Service::getField(Field desc) const
 {
 	// Provide defaults for required fields
 	switch(desc) {
 	case Field::serviceType:
-		return ServiceUrn(getField(Field::domain), getField(Field::type), getField(Field::version));
-
+		return String(objectType());
+	case Field::domain:
+		return getClass().domain();
 	case Field::type:
-		return F("{type REQUIRED}");
+		return getClass().type();
+	case Field::version:
+		return String(version());
 
 	case Field::serviceId:
-		return F("{serviceId REQUIRED}");
-
-	case Field::version:
-		return String('1');
+		return *getClass().service().serviceId;
 
 	case Field::SCPDURL:
-		return getField(Field::baseURL) + _F("desc.xml");
+		return getField(Field::type) + ".xml";
 
 	case Field::controlURL:
-		return getField(Field::baseURL) + _F("control");
+		return getField(Field::type) + F("-control");
 
 	case Field::eventSubURL:
-		return getField(Field::baseURL) + _F("event");
+		return getField(Field::type) + F("-event");
 
-	case Field::domain:
-		return device_->getField(Device::Field::domain);
-
-	case Field::baseURL: {
-		String url = device_->getField(Device::Field::baseURL);
-		String s = getField(Field::type);
-		splitTypeVersion(s);
-		url += s;
-		url += '/';
-		return url;
-	}
-
-	default:
-		return nullptr;
-	}
-}
-
-ItemEnumerator* Service::getList(unsigned index, String& name)
-{
-	switch(index) {
-	// These ones will be virtual lists because of their size
-	//	case 0:
-	//		name = F("actionList");
-	//		return new ItemEnumerator(actionList...
-	//	case 1:
-	//		name = F("serviceStateTable");
-	//		return new ItemEnumerator(serviceStateTable...
 	default:
 		return nullptr;
 	}
@@ -145,7 +117,7 @@ void Service::search(const SearchFilter& filter)
 		filter.callback(this, SearchMatch::type);
 		break;
 	case SearchTarget::type:
-		if(filter.targetString == getField(Field::serviceType)) {
+		if(typeIs(filter.targetString)) {
 			filter.callback(this, SearchMatch::type);
 		}
 		break;
@@ -161,11 +133,11 @@ bool Service::formatMessage(Message& msg, MessageSpec& ms)
 		return false;
 	}
 
-	msg[HTTP_HEADER_SERVER] = device_->getField(Device::Field::serverId);
-	msg[HTTP_HEADER_LOCATION] = getRoot()->getURL(getField(Field::SCPDURL)).toString();
+	msg[HTTP_HEADER_SERVER] = device_.getField(Device::Field::serverId);
+	msg[HTTP_HEADER_LOCATION] = device().getUrl(getField(Field::SCPDURL));
 
-	String st = getField(Field::serviceType);
-	String usn = device_->getField(Device::Field::UDN);
+	String st = String(objectType());
+	String usn = device_.getField(Device::Field::UDN);
 	usn += "::";
 	usn += st;
 
@@ -202,64 +174,49 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 
 	auto handleControl = [&]() {
 		String req = request.getBody();
-		if(req.length() == 0) {
-			debug_w("Service: Empty request body");
-			return;
-		}
 
 #if DEBUG_VERBOSE_LEVEL >= DBG
 		m_puts(req.c_str());
 		m_puts("\r\n");
 #endif
 
-		ActionInfo info(connection, *this);
-		if(!info.load(req)) {
-			return;
+		auto env = new Envelope(*this);
+		auto err = env->load(std::move(req));
+		auto stream = new ActionResponse::Stream(connection, env);
+		device_.sendXml(response, stream);
+
+		ActionRequest request(*env, stream);
+		if(!err) {
+			err = handleAction(request);
+			debug_i("handleAction() returned %s", toString(err).c_str());
 		}
-
-		String actionName = info.actionName();
-		handleAction(info);
-
-		if(info.response == nullptr) {
-			debug_w("[UPnP] Unhandled action: %s", actionName.c_str());
-			info.createResponse();
-			// TODO: Set an error code in the response
+		if(err != Error::Pending) {
+			request.complete(err);
 		}
-
-		auto stream = new MemoryDataStream;
-		XML::serialize(info.envelope.doc, stream);
-		device_->sendXml(response, stream);
-
-#if DEBUG_VERBOSE_LEVEL >= DBG
-		String s;
-		XML::serialize(info.envelope.doc, s, true);
-		m_puts(s.c_str());
-		m_puts("\r\n");
-#endif
 	};
 
 	auto handleSubscribe = [&]() {
-		UUID uuid;
+		Uuid uuid;
 		uuid.generate();
 
-		response.headers[HTTP_HEADER_SERVER] = device_->getField(Device::Field::serverId);
+		response.headers[HTTP_HEADER_SERVER] = device_.getField(Device::Field::serverId);
 		response.headers["SID"] = String("uuid:") + String(uuid);
 		response.headers[HTTP_HEADER_CONTENT_LENGTH] = "0";
 		response.headers["TIMEOUT"] = "1800";
 		response.code = HTTP_STATUS_OK;
 	};
 
-	if(uri.Path == getField(Field::SCPDURL)) {
+	if(uri.Path == device().resolvePath(getField(Field::SCPDURL))) {
 		printRequest();
 		if(request.method == HTTP_GET) {
-			device_->sendXml(response, createDescription());
+			device_.sendXml(response, createDescription());
 		} else {
 			response.code = HTTP_STATUS_BAD_REQUEST;
 		}
 		return true;
 	}
 
-	if(uri.Path == getField(Field::controlURL)) {
+	if(uri.Path == device().resolvePath(getField(Field::controlURL))) {
 		printRequest();
 		if(request.method == HTTP_POST) {
 			handleControl();
@@ -269,7 +226,7 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 		return true;
 	}
 
-	if(uri.Path == getField(Field::eventSubURL)) {
+	if(uri.Path == device().resolvePath(getField(Field::eventSubURL))) {
 		printRequest(true);
 		// TODO: Handle this URL
 		if(request.method == HTTP_SUBSCRIBE || request.method == HTTP_UNSUBSCRIBE) {

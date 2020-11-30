@@ -12,7 +12,7 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along with FlashString.
+ * You should have received a copy of the GNU General Public License along with this library.
  * If not, see <https://www.gnu.org/licenses/>.
  *
  ****/
@@ -62,12 +62,13 @@ bool LinkedItemList::remove(LinkedItem* item)
 	while(it->next_ != nullptr) {
 		if(it->next_ == item) {
 			it->next_ = item->next_;
-			break;
+			item->next_ = nullptr;
+			return true;
 		}
 		it = it->next_;
 	}
-	item->next_ = nullptr;
-	return true;
+
+	return false;
 }
 
 } // namespace UPnP
