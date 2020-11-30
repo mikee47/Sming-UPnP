@@ -22,6 +22,7 @@ struct Fetch {
 	String url;
 	String root;
 	String path;
+	String id;
 	State state{State::none};
 	uint8_t attempts{0};
 

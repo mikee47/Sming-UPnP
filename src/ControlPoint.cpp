@@ -317,7 +317,13 @@ bool ControlPoint::sendRequest(HttpRequest* request)
 	// Don't create response stream until headers are in: this allows requests to be queued
 	if(request != nullptr && request->getResponseStream() == nullptr) {
 		request->onHeadersComplete([this](HttpConnection& client, HttpResponse& response) -> int {
-			client.getRequest()->setResponseStream(new LimitedMemoryStream(maxResponseSize));
+			auto stream = new MemoryDataStream(maxResponseSize);
+			client.getRequest()->setResponseStream(stream);
+			auto s = reinterpret_cast<const HttpHeaders&>(response.headers)[HTTP_HEADER_CONTENT_LENGTH];
+			if(s && !stream->ensureCapacity(s.toInt())) {
+				debug_e("Response too big (%s bytes), failing request", s.c_str());
+				return -1;
+			}
 			return 0;
 		});
 	}
