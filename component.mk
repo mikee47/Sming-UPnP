@@ -18,8 +18,8 @@ COMPONENT_SRCDIRS := src
 UPNP_SCAN_TOOL = $(UPNP_TOOLS)/scan/out/Host/debug/firmware/scan$(TOOL_EXT)
 
 .PHONY: upnp-tools
-upnp-tools: ##Build UPnP tools - append SMING_ARCH as required
-	$(Q) $(MAKE) -C $(UPNP_TOOLS)/scan
+upnp-tools: ##Build UPnP tools
+	$(Q) $(MAKE) -C $(UPNP_TOOLS)/scan SMING_ARCH=Host ENABLE_CUSTOM_LWIP=2
 
 $(UPNP_SCAN_TOOL):
 	$(info )

@@ -22,7 +22,13 @@
 
 namespace
 {
-UPnP::ControlPoint controlPoint(0x20000);
+UPnP::ControlPoint controlPoint(
+#ifdef ARCH_HOST
+	0x20000
+#else
+	8192
+#endif
+);
 Timer queueTimer;
 Timer statusTimer;
 Timer fetchTimer;
@@ -50,8 +56,10 @@ FetchList ssdpQueue("SSDP messages");
 #define ENV_DEVICE_DIR "DEVICE_DIR"
 #define ENV_SCHEMA_DIR "SCHEMA_DIR"
 
-const char* deviceDir = "out/upnp/devices";
-const char* schemaDir = "out/upnp/schema";
+#define OUTPUT_DIR "out/upnp"
+const char* logFileName = OUTPUT_DIR "/log.txt";
+const char* deviceDir = OUTPUT_DIR "/devices";
+const char* schemaDir = OUTPUT_DIR "/schema";
 
 //IMPORT_FSTR(gatedesc_xml, PROJECT_DIR "/devices1/192.168.1.254/1900/gatedesc.xml")
 
@@ -131,12 +139,12 @@ void writeSchema(XML::Node* object, const Urn& objectType)
 	}
 }
 
-void writeServiceSchema(XML::Document& scpd, const String& serviceType)
+void writeServiceSchema(XML::Document& scpd, const String& serviceType, const String& serviceId)
 {
 	XML::appendNode(scpd.first_node(), "serviceType", serviceType);
+	XML::appendNode(scpd.first_node(), "serviceId", serviceId);
 	writeSchema(&scpd, Urn(serviceType));
 }
-
 
 void writeDeviceSchema(XML::Node* device, const String& deviceType)
 {
@@ -156,7 +164,7 @@ void writeDeviceSchema(XML::Node* device, const String& deviceType)
 void checkExisting(Fetch& desc)
 {
 #ifdef ARCH_HOST
-	if(options[Option::overwriteExisting]) {
+	if(desc.state == Fetch::State::success || options[Option::overwriteExisting]) {
 		return;
 	}
 
@@ -203,6 +211,7 @@ void parseDevice(XML::Node* device, const Fetch& f)
 					Serial.println("*** SCPDURL missing ***");
 				} else {
 					auto& desc = descriptionQueue.add({Urn::Kind::service, String(url), String(f.root), svcType});
+					desc.id = XML::getValue(svc, "serviceId");
 					checkExisting(desc);
 				}
 			}
@@ -225,7 +234,7 @@ void parseDescription(XML::Document& description, const Fetch& f)
 {
 	if(f.kind == Urn::Kind::service) {
 		if(options[Option::writeServiceSchema]) {
-			writeServiceSchema(description, f.path);
+			writeServiceSchema(description, f.path, f.id);
 		}
 	} else {
 		auto device = XML::getNode(description, "/device");
@@ -550,6 +559,23 @@ bool parseCommands()
 	return false;
 }
 
+nputs_callback_t previous_nputs_callback;
+HostFileStream log;
+
+void openLogFile()
+{
+	log.open(logFileName, eFO_CreateNewAlways | eFO_Append | eFO_WriteOnly);
+	log.println();
+	log.println();
+	log.print(_F("Log opened: "));
+	log.println(SystemClock.getSystemTimeString());
+
+	previous_nputs_callback = m_setPuts([](const char* str, size_t length) {
+		log.write(reinterpret_cast<const uint8_t*>(str), length);
+		return previous_nputs_callback(str, length);
+	});
+}
+
 #endif
 
 } // namespace
@@ -561,6 +587,7 @@ void init()
 	Serial.systemDebugOutput(true);
 
 #ifdef ARCH_HOST
+	openLogFile();
 
 	auto p = getenv(ENV_DEVICE_DIR);
 	if(p != nullptr && *p != '\0') {
