@@ -47,7 +47,9 @@ enum class Option {
 BitSet<uint32_t, Option> options;
 
 constexpr unsigned maxDescriptionFetchAttempts{3};
-constexpr unsigned descriptionFetchTimeout{5000};
+constexpr unsigned descriptionFetchTimeout{2000};
+constexpr unsigned fetchRetryDelay{1000};
+constexpr unsigned fetchInterval{250};
 
 FetchList descriptionQueue("Descriptions");
 FetchList ssdpQueue("SSDP messages");
@@ -258,7 +260,7 @@ void parseDescription(XML::Document& description, const Fetch& f)
 	}
 }
 
-void scheduleFetch(unsigned delay = 2000)
+void scheduleFetch(unsigned delay)
 {
 	queueTimer.initializeMs(delay, fetchNextDescription).startOnce();
 }
@@ -301,15 +303,20 @@ void fetchNextDescription()
 		println(connection.getResponse()->toString());
 		println();
 
-		if(description != nullptr) {
-			println(F("Content: "));
-			XML::serialize(*description, Serial, true);
-			println();
-			println(F("======  END  ======"));
+		println(F("Content: "));
+		String content;
+		if(description == nullptr) {
+			content = connection.getResponse()->getBody();
+		} else {
+			content = XML::serialize(*description, true);
 		}
+		println(content);
+		println(F("======  END  ======"));
 #endif
 
 		auto& f = *fetch;
+
+		unsigned fetchDelay{fetchInterval};
 
 		auto response = connection.getResponse();
 		if(!response->isSuccess()) {
@@ -319,6 +326,7 @@ void fetchNextDescription()
 				f.state = Fetch::State::failed;
 			} else {
 				debug_w("Fetch '%s' failed, re-trying", f.url.c_str());
+				fetchDelay = fetchRetryDelay;
 			}
 		} else if(description != nullptr) {
 			if(options[Option::writeDeviceTree]) {
@@ -335,16 +343,19 @@ void fetchNextDescription()
 			parseDescription(*description, f);
 		}
 
-		scheduleFetch();
+		scheduleFetch(fetchDelay);
 	};
 
 	assert(fetch != nullptr);
+
+	unsigned fetchDelay;
 	if(controlPoint.requestDescription(fetch->url, callback)) {
-		fetchTimer.initializeMs<descriptionFetchTimeout>(fetchNextDescription);
-		fetchTimer.startOnce();
+		fetchDelay = descriptionFetchTimeout;
 	} else {
-		scheduleFetch();
+		fetchDelay = fetchRetryDelay;
 	}
+
+	scheduleFetch(fetchDelay);
 }
 
 Fetch createDescFetch(const String& location)
@@ -402,7 +413,7 @@ void onSsdp(SSDP::BasicMessage& msg)
 	auto& desc = descriptionQueue.add(f);
 	checkExisting(desc);
 
-	scheduleFetch();
+	scheduleFetch(fetchInterval);
 }
 
 void printQueue(const FetchList& list)
@@ -547,7 +558,7 @@ bool parseCommands()
 			descriptionQueue.add(createDescFetch(parameters[i].text));
 		}
 
-		scheduleFetch();
+		scheduleFetch(fetchInterval);
 		return true;
 	}
 
@@ -587,7 +598,7 @@ void openLogFile()
 	});
 }
 
-#endif
+#endif // ARCH_HOST
 
 } // namespace
 

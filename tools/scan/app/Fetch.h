@@ -102,11 +102,9 @@ struct Fetch {
 		s += ") ";
 		if(url) {
 			s += url;
-			s += F("' -> ");
+			s += F(" -> ");
 		}
-		s += '\'';
 		s += fullPath();
-		s += '\'';
 		return s;
 	}
 };
