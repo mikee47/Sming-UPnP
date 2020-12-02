@@ -64,7 +64,7 @@ public:
 
 	const DeviceControl& root() const
 	{
-		return reinterpret_cast<const DeviceControl&>(Device::root());
+		return static_cast<const DeviceControl&>(Device::root());
 	}
 
 	String getUrl(const String& path) const override

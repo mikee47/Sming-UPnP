@@ -319,7 +319,7 @@ bool ControlPoint::sendRequest(HttpRequest* request)
 		request->onHeadersComplete([this](HttpConnection& client, HttpResponse& response) -> int {
 			auto stream = new MemoryDataStream(maxResponseSize);
 			client.getRequest()->setResponseStream(stream);
-			auto s = reinterpret_cast<const HttpHeaders&>(response.headers)[HTTP_HEADER_CONTENT_LENGTH];
+			auto s = static_cast<const HttpHeaders&>(response.headers)[HTTP_HEADER_CONTENT_LENGTH];
 			auto len = s.toInt() + 1; // Allow for NUL terminator when we call moveString() later
 			if(s && !stream->ensureCapacity(len)) {
 				debug_e("Response too big (%s bytes), failing request", s.c_str());
