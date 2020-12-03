@@ -49,7 +49,7 @@ BitSet<uint32_t, Option> options;
 constexpr unsigned maxDescriptionFetchAttempts{3};
 constexpr unsigned descriptionFetchTimeout{2000};
 constexpr unsigned fetchRetryDelay{1000};
-constexpr unsigned fetchInterval{250};
+constexpr unsigned fetchInterval{500};
 
 FetchList descriptionQueue("Descriptions");
 FetchList ssdpQueue("SSDP messages");

@@ -45,7 +45,10 @@ bool ActionRequestControl::send(const Callback& callback)
 	req->headers[F("SOAPACTION")] = envelope.soapAction();
 
 #if DEBUG_VERBOSE_LEVEL == DBG
-	s = req->toString();
+	s = "req 0x";
+	s += String(uint32_t(req), HEX);
+	s += ": ";
+	s += req->toString();
 	s += envelope.serialize(true);
 	m_nputs(s.c_str(), s.length());
 	m_puts("\r\n");
@@ -57,7 +60,10 @@ bool ActionRequestControl::send(const Callback& callback)
 			Envelope env(service);
 			String s;
 #if DEBUG_VERBOSE_LEVEL == DBG
-			s = client.getResponse()->toString();
+			s = "req 0x";
+			s += String(uint32_t(client.getRequest()), HEX);
+			s += ": ";
+			s += client.getResponse()->toString();
 			m_nputs(s.c_str(), s.length());
 #endif
 			s = client.getResponse()->getBody();
