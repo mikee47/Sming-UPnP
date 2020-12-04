@@ -208,25 +208,13 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 
 			rootDevices.add(device);
 
-			/******
-			 * Deferring the callback allows the stack to unwind first.
-			 * However, we get `HPE_CLOSED_CONNECTION` error when attempting to send any HTTP
-			 * requests from that callback, e.g. sending action request.
-			 *
-			 * Invoking the callback directly and it works.
-			 *
-			 * Why is that? How to fix it?
-			 */
-			//			auto callback = search.callback;
-			//			System.queueCallback([this, callback, device]() {
-			//				if(!callback(*device)) {
-			//					rootDevices.remove(device);
-			//				}
-			//			});
-			if(!search.callback(*device)) {
-				rootDevices.remove(device);
-			}
-			/*****/
+			// Deferring the callback allows the stack to unwind first
+			auto callback = search.callback;
+			System.queueCallback([this, callback, device]() {
+				if(!callback(*device)) {
+					rootDevices.remove(device);
+				}
+			});
 
 			break;
 		}
@@ -252,18 +240,12 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 
 			rootDevices.add(device);
 
-			/***** See above */
-			//			auto callback = search.callback;
-			//			System.queueCallback([this, callback, device, service]() {
-			//				if(!callback(*device, *service)) {
-			//					rootDevices.remove(device);
-			//				}
-			//			});
-
-			if(!search.callback(*device, *service)) {
-				rootDevices.remove(device);
-			}
-			/*****/
+			auto callback = search.callback;
+			System.queueCallback([this, callback, device, service]() {
+				if(!callback(*device, *service)) {
+					rootDevices.remove(device);
+				}
+			});
 
 			break;
 		}
