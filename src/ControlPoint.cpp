@@ -170,6 +170,7 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 
 			return 0;
 		});
+		sendRequest(request);
 		return;
 	}
 
