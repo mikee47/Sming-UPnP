@@ -99,7 +99,18 @@ public:
 		return String(description_.udn);
 	}
 
+	/**
+	 * @brief Configure device using information from description document
+	 */
 	bool configure(XML::Node* device);
+
+	/**
+	 * @brief Inherited classes may override this to pull out any additional information from
+	 * received response headers, etc. Invoked *after* description has been processed
+	 */
+	virtual void onConnected(HttpConnection& connection)
+	{
+	}
 
 	DeviceControl* getNext()
 	{

@@ -209,6 +209,8 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 
 			rootDevices.add(device);
 
+			device->onConnected(connection);
+
 			// Deferring the callback allows the stack to unwind first
 			auto callback = search.callback;
 			System.queueCallback([this, callback, device]() {
@@ -240,6 +242,8 @@ void ControlPoint::onNotify(SSDP::BasicMessage& message)
 			}
 
 			rootDevices.add(device);
+
+			device->onConnected(connection);
 
 			auto callback = search.callback;
 			System.queueCallback([this, callback, device, service]() {
