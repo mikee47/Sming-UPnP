@@ -21,11 +21,11 @@
 
 namespace UPnP
 {
-const ObjectClass* ClassGroup::find(const String& type, uint8_t version) const
+const ObjectClass* ClassGroup::find(Urn::Kind kind, const String& type, uint8_t version) const
 {
 	for(unsigned i = 0; i < classes.length(); ++i) {
 		auto cls = classes.data()[i];
-		if(cls->typeIs(type, version)) {
+		if(cls->typeIs(kind, type, version)) {
 			return cls;
 		}
 	}
@@ -57,7 +57,7 @@ const ObjectClass* ClassGroup::List::find(const Urn& objectType) const
 			continue;
 		}
 
-		auto cls = group.find(objectType.type, objectType.version);
+		auto cls = group.find(objectType.kind, objectType.type, objectType.version);
 		if(cls != nullptr) {
 			return cls;
 		}

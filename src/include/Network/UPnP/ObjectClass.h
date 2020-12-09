@@ -124,7 +124,7 @@ struct ObjectClass {
 	Urn objectType() const;
 	bool operator==(const ObjectClass& other) const;
 	bool typeIs(const Urn& objectType) const;
-	bool typeIs(const String& type, uint8_t version) const;
+	bool typeIs(Urn::Kind kind, const String& type, uint8_t version) const;
 
 	explicit operator bool() const
 	{

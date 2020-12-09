@@ -35,7 +35,7 @@ struct ClassGroup {
 	const FlashString& domain;
 	const ObjectClass::List& classes;
 
-	const ObjectClass* find(const String& type, uint8_t version) const;
+	const ObjectClass* find(Urn::Kind kind, const String& type, uint8_t version) const;
 };
 
 } // namespace UPnP

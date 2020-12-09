@@ -50,9 +50,9 @@ bool ObjectClass::typeIs(const Urn& objectType) const
 		   type() == objectType.type;
 }
 
-bool ObjectClass::typeIs(const String& type, uint8_t version) const
+bool ObjectClass::typeIs(Urn::Kind kind, const String& type, uint8_t version) const
 {
-	return this->version() == version && this->type() == type;
+	return this->kind() == kind && this->version() == version && this->type() == type;
 }
 
 } // namespace UPnP
