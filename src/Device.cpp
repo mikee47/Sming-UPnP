@@ -114,25 +114,6 @@ String Device::getField(Field desc) const
 	case Field::presentationURL:
 		return getUrl(defaultPresentationURL);
 
-	case Field::friendlyName:
-		return fstr(getClass().device().friendlyName);
-	case Field::manufacturer:
-		return fstr(getClass().device().manufacturer);
-	case Field::manufacturerURL:
-		return fstr(getClass().device().manufacturerURL);
-	case Field::modelDescription:
-		return fstr(getClass().device().modelDescription);
-	case Field::modelName:
-		return fstr(getClass().device().modelName);
-	case Field::modelNumber:
-		return fstr(getClass().device().modelNumber);
-	case Field::modelURL:
-		return fstr(getClass().device().modelURL);
-	case Field::serialNumber:
-		return fstr(getClass().device().serialNumber);
-	case Field::UDN:
-		return fstr(getClass().device().UDN);
-
 	case Field::URLBase:
 		return getUrl(getUrlBasePath());
 
@@ -144,8 +125,36 @@ String Device::getField(Field desc) const
 
 	case Field::productNameAndVersion:
 		return F("MyApp/1.0");
-	default:
-		return nullptr;
+
+	default: {
+		auto info = getClass().device();
+		if(info == nullptr) {
+			return nullptr;
+		}
+
+		switch(desc) {
+		case Field::friendlyName:
+			return fstr(info->friendlyName);
+		case Field::manufacturer:
+			return fstr(info->manufacturer);
+		case Field::manufacturerURL:
+			return fstr(info->manufacturerURL);
+		case Field::modelDescription:
+			return fstr(info->modelDescription);
+		case Field::modelName:
+			return fstr(info->modelName);
+		case Field::modelNumber:
+			return fstr(info->modelNumber);
+		case Field::modelURL:
+			return fstr(info->modelURL);
+		case Field::serialNumber:
+			return fstr(info->serialNumber);
+		case Field::UDN:
+			return fstr(info->UDN);
+		default:
+			return nullptr;
+		}
+	}
 	}
 }
 

@@ -66,6 +66,7 @@ struct ObjectClass {
 	const FlashString* domain_;
 	const FlashString* type_;
 	const CreateObject createObject_;
+	// Both of these fields are optional and may be null
 	union {
 		const Device* device_;
 		const Service* service_;
@@ -81,16 +82,16 @@ struct ObjectClass {
 		return *type_;
 	}
 
-	const Device& device() const
+	const Device* device() const
 	{
 		assert(kind() == Kind::device);
-		return *device_;
+		return device_;
 	}
 
-	const Service& service() const
+	const Service* service() const
 	{
 		assert(kind() == Kind::service);
-		return *service_;
+		return service_;
 	}
 
 	Version version() const

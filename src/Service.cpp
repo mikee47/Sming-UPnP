@@ -77,7 +77,8 @@ XML::Node* Service::getDescription(XML::Document& doc, DescType descType) const
 
 IDataSourceStream* Service::createDescription()
 {
-	return new FSTR::Stream(*getClass().service().schema);
+	auto info = getClass().service();
+	return info && info->schema ? new FSTR::Stream(*info->schema) : nullptr;
 }
 
 String Service::getField(Field desc) const
@@ -93,9 +94,6 @@ String Service::getField(Field desc) const
 	case Field::version:
 		return String(version());
 
-	case Field::serviceId:
-		return *getClass().service().serviceId;
-
 	case Field::SCPDURL:
 		return getField(Field::type) + ".xml";
 
@@ -105,8 +103,21 @@ String Service::getField(Field desc) const
 	case Field::eventSubURL:
 		return getField(Field::type) + F("-event");
 
-	default:
-		return nullptr;
+	default: {
+		auto info = getClass().service();
+		if(info == nullptr) {
+			return nullptr;
+		}
+
+		auto fstr = [](const FlashString* s) { return s && s->length() ? String(*s) : nullptr; };
+
+		switch(desc) {
+		case Field::serviceId:
+			return fstr(info->serviceId);
+		default:
+			return nullptr;
+		}
+	}
 	}
 }
 
