@@ -73,7 +73,7 @@ public:
 	 * @param callback Invoked with SSDP response message
 	 * @retval bool true on success, false if request queue is full
 	 */
-	bool beginSearch(const Urn& urn, SsdpSearch::Callback callback)
+	Search* beginSearch(const Urn& urn, SsdpSearch::Callback callback)
 	{
 		return submitSearch(new SsdpSearch(urn, callback));
 	}
@@ -84,7 +84,7 @@ public:
 	 * @param callback Invoked with device description document
 	 * @retval bool true on success, false if request queue is full
 	 */
-	bool beginSearch(const Urn& urn, DescriptionSearch::Callback callback)
+	Search* beginSearch(const Urn& urn, DescriptionSearch::Callback callback)
 	{
 		return submitSearch(new DescriptionSearch(urn, callback));
 	}
@@ -95,7 +95,7 @@ public:
 	 * @param callback Invoked with constructed control object
 	 * @retval bool true on success, false if request queue is full
 	 */
-	bool beginSearch(const ObjectClass& cls, DeviceSearch::Callback callback)
+	Search* beginSearch(const ObjectClass& cls, DeviceSearch::Callback callback)
 	{
 		return submitSearch(new DeviceSearch(cls, callback));
 	}
@@ -106,12 +106,12 @@ public:
 	 * @param callback Invoked with constructed control object
 	 * @retval bool true on success, false if request queue is full
 	 */
-	bool beginSearch(const ObjectClass& cls, ServiceSearch::Callback callback)
+	Search* beginSearch(const ObjectClass& cls, ServiceSearch::Callback callback)
 	{
 		return submitSearch(new ServiceSearch(cls, callback));
 	}
 
-	template <typename Device> bool beginSearch(Delegate<bool(Device&)> callback)
+	template <typename Device> Search* beginSearch(Delegate<bool(Device&)> callback)
 	{
 		return beginSearch(Device().getClass(),
 						   [callback](DeviceControl& device) { return callback(reinterpret_cast<Device&>(device)); });
@@ -122,16 +122,17 @@ public:
 	 */
 	bool isSearchActive() const
 	{
-		return bool(activeSearch);
+		return !activeSearches.isEmpty();
 	}
 
 	/**
-	 * @brief Cancel any active search operation
-	 * @retval bool true if a search was active, false if there was no active search
+	 * @brief Cancel active search operation
+	 * @retval bool true if a search was cancelled, false if there was no active search
+	 * @param search Search to cancel, or null (default) to cancel all searches
 	 * @todo Set timeout on search operation and call this automatically
 	 * Need to inform application though - perhaps a generic callback on the class?
 	 */
-	bool cancelSearch();
+	bool cancelSearch(Search* search = nullptr);
 
 	/**
 	 * @brief Called by framework to handle an incoming SSDP message
@@ -180,7 +181,7 @@ private:
 	static HttpClient http;
 	size_t maxResponseSize; // <<< Maximum size of XML description that can be processed
 	CStringArray uniqueServiceNames;
-	std::unique_ptr<Search> activeSearch;
+	Search::OwnedList activeSearches;
 };
 
 } // namespace UPnP

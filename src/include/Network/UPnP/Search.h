@@ -29,6 +29,9 @@ namespace UPnP
  * @brief This is a helper class used by ControlPoint to manage different search types
  */
 struct Search {
+	using List = ObjectList<Search>;
+	using OwnedList = OwnedObjectList<Search>;
+
 	enum class Kind {
 		none,	///< No search active
 		ssdp,	///< SSDP response

@@ -43,46 +43,57 @@ const ObjectClass* ControlPoint::findClass(const Urn& objectType)
 	return cls;
 }
 
-bool ControlPoint::submitSearch(Search* search)
+Search* ControlPoint::submitSearch(Search* search)
 {
-	if(bool(activeSearch)) {
-		debug_e("Search already in progress");
-		delete search;
-		return false;
+	if(activeSearches.contains(search)) {
+		debug_w("Search already in progress");
+		return search;
 	}
 
 	if(!bool(*search)) {
 		debug_e("Invalid search");
 		delete search;
-		return false;
+		return nullptr;
 	}
 
 	if(!initialize()) {
 		delete search;
-		return false;
+		return nullptr;
 	}
 
-	activeSearch.reset(search);
+	activeSearches.add(search);
 
 	auto message = new SSDP::MessageSpec(SSDP::MessageType::msearch, SSDP::SearchTarget::type, this);
 	message->setRepeat(2);
 	SSDP::server.messageQueue.add(message, 0);
 	debug_i("Searching for %s", search->toString().c_str());
 
-	return true;
+	return search;
 }
 
-bool ControlPoint::cancelSearch()
+bool ControlPoint::cancelSearch(Search* search)
 {
-	if(!bool(activeSearch)) {
-		return false;
+	bool res;
+
+	if(search != nullptr) {
+		debug_i("Cancelling search for %s", search->toString().c_str());
+		res = activeSearches.remove(search);
+	} else if(activeSearches.isEmpty()) {
+		res = false;
+	} else {
+		while(!activeSearches.isEmpty()) {
+			search = activeSearches.head();
+			debug_i("Cancelling search for %s", search->toString().c_str());
+			activeSearches.remove(search);
+		}
+		res = true;
 	}
 
-	debug_i("Cancelling search for %s", activeSearch->toString().c_str());
+	if(res && activeSearches.isEmpty()) {
+		SSDP::server.messageQueue.remove(this);
+	}
 
-	SSDP::server.messageQueue.remove(this);
-	activeSearch.reset();
-	return true;
+	return res;
 }
 
 bool ControlPoint::formatMessage(SSDP::Message& message, SSDP::MessageSpec& ms)
