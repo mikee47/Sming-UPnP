@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <Network/WebHelpers/base64.h>
+#include <Data/WebHelpers/base64.h>
 #include <cstring>
 
 namespace UPnP
