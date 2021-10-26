@@ -1,4 +1,4 @@
-/**
+/****
  * Error.h
  *
  * Copyright 2020 mikee47 <mike@sillyhouse.net>
