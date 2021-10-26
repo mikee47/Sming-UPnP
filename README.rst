@@ -204,3 +204,10 @@ Linux:
    You can also start a "software" smart bulb device and use it to test your control point application::
 
       gupnp-network-light
+
+
+API Documentation
+-----------------
+
+.. doxygennamespace:: UPnP
+   :members:

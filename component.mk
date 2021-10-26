@@ -11,6 +11,8 @@ COMPONENT_INCDIRS := \
 
 COMPONENT_SRCDIRS := src
 
+COMPONENT_DOXYGEN_INPUT := src/include
+
 # Create targets for application schema
 #
 # Tool for scanning, fetching and parsing. Needs to be pre-built
