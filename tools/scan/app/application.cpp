@@ -126,7 +126,7 @@ Print* openStream(String path)
 	makedirs(path);
 	debug_i("Writing %s", path.c_str());
 	auto fs = new HostFileStream;
-	if(fs->open(path, eFO_CreateNewAlways | eFO_WriteOnly)) {
+	if(fs->open(path, File::CreateNewAlways | File::WriteOnly)) {
 		return fs;
 	}
 	debug_e("Failed to create '%s'", path.c_str());
@@ -586,7 +586,7 @@ HostFileStream log;
 void openLogFile()
 {
 	makedirs(logFileName);
-	log.open(logFileName, eFO_CreateNewAlways | eFO_Append | eFO_WriteOnly);
+	log.open(logFileName, File::CreateNewAlways | File::Append | File::WriteOnly);
 	log.println();
 	log.println();
 	log.print(F("Log opened: "));
