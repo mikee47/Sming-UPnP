@@ -276,39 +276,19 @@ public:
 		return addArg(name, String(value));
 	}
 
-	bool addArg(const String& name, char value)
-	{
-		return addArg(name, String(value));
-	}
-
-	bool addArg(const String& name, uint32_t value)
-	{
-		return addArg(name, String(value));
-	}
-
-	bool addArg(const String& name, int value)
-	{
-		return addArg(name, String(value));
-	}
-
 	bool addArg(const String& name, bool value)
 	{
 		return addArg(name, value ? "1" : "0");
 	}
 
-	bool addArg(const String& name, float value)
-	{
-		return addArg(name, String(value));
-	}
-
-	bool addArg(const String& name, double value)
-	{
-		return addArg(name, String(value));
-	}
-
 	bool addArg(const String& name, const Base64& value)
 	{
 		return addArg(name, value.encode());
+	}
+
+	template <typename T> bool addArg(const String& name, T value)
+	{
+		return addArg(name, String(value));
 	}
 
 	/** @} */
