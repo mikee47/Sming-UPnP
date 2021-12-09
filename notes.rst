@@ -22,7 +22,7 @@ Device state management
 
    -  Remove the device from the stack so it won't respond to any new requests
    -  Queue a set of 'ssdp:byebye' announcements
-   -  When the final annoucement has been sent, notify the application
+   -  When the final announcement has been sent, notify the application
       via callback that the device has been removed
 
    When the application gets a 'remove' notification it can safely destroy the
@@ -69,7 +69,7 @@ URL handling
    but using separate ports does mean we can use separate HttpServer instances.
    
    It would not make much sense for a URL to be somewhere completely different, but it doesn't
-   appear to be prohibted by the V1.0 spec. V2, however, deprecates URLBase and mandates that URLs
+   appear to be prohibited by the V1.0 spec. V2, however, deprecates URLBase and mandates that URLs
    are all relative to the SSDP response location (where the description file is served from).
 
 

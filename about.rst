@@ -60,7 +60,7 @@ What's this about XML? Why can't we just use JSON?
    `XML <https://en.wikipedia.org/wiki/XML>`__ is less so, but it is more structured
    and well-suited for machine-to-machine information transfer.
 
-   It's a core part of UPnP. See `UPnP Resouces <https://openconnectivity.org/developer/specifications/upnp-resources/upnp>`__.
+   It's a core part of UPnP. See `UPnP Resources <https://openconnectivity.org/developer/specifications/upnp-resources/upnp>`__.
 
    One of the many cool things about XML is `XSLT <https://en.wikipedia.org/wiki/XSLT>`__,
    which lets us easily convert existing XML documents into any format we like.
