@@ -1,4 +1,4 @@
-Device_Scanner
+Device Scanner
 ==============
 
 .. highlight:: bash

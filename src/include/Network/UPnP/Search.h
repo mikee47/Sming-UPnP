@@ -85,10 +85,10 @@ struct Search {
 	String urn;
 };
 
-/**
- * @brief Callback invoked for every matching SSDP message
- */
 struct SsdpSearch : public Search {
+	/**
+	 * @brief Callback invoked for every matching SSDP message
+	 */
 	using Callback = Delegate<void(SSDP::BasicMessage& message)>;
 
 	SsdpSearch(const Urn& urn, Callback callback) : Search(Kind::ssdp, urn), callback(callback)
@@ -103,11 +103,11 @@ struct SsdpSearch : public Search {
 	Callback callback;
 };
 
-/**
- * @brief Callback invoked when description received
- * If HTTP request fails, description will be null
- */
 struct DescriptionSearch : public Search {
+	/**
+	 * @brief Callback invoked when description received
+	 * If HTTP request fails, description will be null
+	 */
 	using Callback = Delegate<void(HttpConnection& connection, XML::Document* description)>;
 
 	DescriptionSearch(const Urn& urn, Callback callback) : Search(Kind::desc, urn), callback(callback)
@@ -122,13 +122,13 @@ struct DescriptionSearch : public Search {
 	Callback callback;
 };
 
-/**
- * @brief Callback invoked when device has been located
- * @param device
- * @retval bool Return true to keep the device, false to destroy it
- * @note If callback sends out action requests then must return true
- */
 struct DeviceSearch : public Search {
+	/**
+	 * @brief Callback invoked when device has been located
+	 * @param device A newly constructed instance matching the search criteria
+	 * @retval bool Return true to keep the device, false to destroy it
+	 * @note If callback sends out action requests then must return true
+	 */
 	using Callback = Delegate<bool(DeviceControl& device)>;
 
 	DeviceSearch(const ObjectClass& cls, Callback callback)
@@ -145,14 +145,14 @@ struct DeviceSearch : public Search {
 	Callback callback;
 };
 
-/**
- * @brief Callback invoked when service has been located
- * @param device
- * @param service Requested service
- * @retval bool Return true to keep the device, false to destroy it
- * @note If callback sends out action requests then must return true
- */
 struct ServiceSearch : public Search {
+	/**
+	 * @brief Callback invoked when service has been located
+	 * @param device A newly constructed instance matching the search criteria
+	 * @param service Requested service interface
+	 * @retval bool Return true to keep the device, false to destroy it
+	 * @note If callback sends out action requests then must return true
+	 */
 	using Callback = Delegate<bool(DeviceControl& device, ServiceControl& service)>;
 
 	ServiceSearch(const ObjectClass& cls, Callback callback)

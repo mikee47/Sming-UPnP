@@ -161,8 +161,21 @@ public:
 	 */
 	static void onSsdpMessage(BasicMessage& msg);
 
+	/**
+	 * @brief Find a registered class
+	 * @param objectType Urn uniquely identifying the class
+	 * @retval ObjectClass* The class, or nullptr if not found
+	 */
 	static const ObjectClass* findClass(const Urn& objectType);
 
+	/**
+	 * @brief Use this method to register all device and service classes you need to control
+	 * @param domain
+	 * @param classes List of classes to register
+	 *
+	 * Class information is required in order to instantiate device or service objects in response
+	 * to incoming descriptions. This information must be pre-registered with the control point.
+	 */
 	static void registerClasses(const FlashString& domain, const ObjectClass::List& classes)
 	{
 		objectClasses.add(domain, classes);

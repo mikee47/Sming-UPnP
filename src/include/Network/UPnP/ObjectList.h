@@ -65,8 +65,10 @@ public:
 		return n;
 	}
 
-	/*
-	 * T can be Urn or String
+	/**
+	 * @brief Search list for matching entry
+	 * @tparam Urn or String
+	 * @retval ObjectType* Located definition or nullptr if not found
 	 */
 	template <typename T> ObjectType* find(const T& objectType)
 	{
@@ -79,6 +81,11 @@ public:
 		return nullptr;
 	}
 
+	/**
+	 * @brief Search list for matching entry given its class
+	 * @objectClass Class information for object
+	 * @retval ObjectType* Located definition or nullptr if not found
+	 */
 	ObjectType* find(const ObjectClass& objectClass)
 	{
 		return this->find(objectClass.objectType());

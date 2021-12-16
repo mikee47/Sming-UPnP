@@ -30,6 +30,9 @@ class Object;
 class DeviceControl;
 class ServiceControl;
 
+/**
+ * @brief Describes device or service class
+ */
 struct ObjectClass {
 	using List = const FSTR::Vector<ObjectClass>&;
 	using Kind = Urn::Kind;
@@ -44,6 +47,9 @@ struct ObjectClass {
 	 */
 	using CreateObject = Object* (*)(DeviceControl* owner);
 
+	/**
+	 * @brief Device description fields
+	 */
 	struct Device {
 		const FlashString* friendlyName;
 		const FlashString* manufacturer;
@@ -56,6 +62,9 @@ struct ObjectClass {
 		const FlashString* UDN;
 	};
 
+	/**
+	 * @brief Service description fields
+	 */
 	struct Service {
 		const FlashString* serviceId;
 		const FlashString* schema;

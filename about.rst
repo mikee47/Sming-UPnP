@@ -1,5 +1,5 @@
-UPnP
-====
+About UPnP
+==========
 
 Introduction
 ------------

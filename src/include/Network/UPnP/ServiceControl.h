@@ -47,6 +47,9 @@ public:
 	{
 	}
 
+	/**
+	 * @brief Get the root device
+	 */
 	DeviceControl& root()
 	{
 		return reinterpret_cast<DeviceControl&>(Service::root());
@@ -71,6 +74,9 @@ public:
 		return Error::ActionNotImplemented;
 	}
 
+	/**
+	 * @brief Called during initialisation to configure this object
+	 */
 	bool configure(const XML::Node* service);
 
 	DeviceControl& device() const
@@ -78,7 +84,10 @@ public:
 		return reinterpret_cast<DeviceControl&>(Service::device());
 	}
 
-	Description& description()
+	/**
+	 * @brief Get service description
+	 */
+	const Description& description()
 	{
 		return description_;
 	}

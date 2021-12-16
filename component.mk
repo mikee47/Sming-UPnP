@@ -12,6 +12,7 @@ COMPONENT_INCDIRS := \
 COMPONENT_SRCDIRS := src
 
 COMPONENT_DOXYGEN_INPUT := src/include
+COMPONENT_DOCFILES := tools/scan/README.rst
 
 # Create targets for application schema
 #
