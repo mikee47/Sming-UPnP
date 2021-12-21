@@ -184,6 +184,7 @@ This perhaps slightly strange construction uses
 to use static polymorphism and avoid virtual method tables.
 This allows the compiler to generate more efficient code.
 
+.. _upnp_tools:
 
 UPnP Tools
 ----------
