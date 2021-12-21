@@ -8,7 +8,10 @@ Introduction
 
 A C++ library for managing UPnP devices and services using the Sming framework.
 
-If you're not famililar with the mechanics of UPnP, see :doc:`about` for an introduction.
+.. toctree::
+   :glob:
+
+   *
 
 
 Schema
@@ -137,7 +140,7 @@ These are located in the project's ``schema`` directory which is picked up autom
 when the :library:`UPnP-Schema` library is built.
 
 The framework generates a class template for each device and service.
-For example, take a look in ``Wemo.h``::
+For example, take a look in :source:`samples/Basic_UPnP/include/Wemo.h#L59-L91`::
 
    class BasicEventService : public service::basicevent1Template<BasicEventService>
    {
@@ -184,6 +187,7 @@ This perhaps slightly strange construction uses
 to use static polymorphism and avoid virtual method tables.
 This allows the compiler to generate more efficient code.
 
+.. _upnp_tools:
 
 UPnP Tools
 ----------
@@ -202,15 +206,10 @@ Linux:
 
        gupnp-universal-cp
 
-.. image:: upnp-browser.png
+   .. image:: upnp-browser.png
 
    You can also start a "software" smart bulb device and use it to test your control point application::
 
       gupnp-network-light
 
 
-API Documentation
------------------
-
-.. doxygennamespace:: UPnP
-   :members:
