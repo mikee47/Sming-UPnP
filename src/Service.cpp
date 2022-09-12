@@ -23,7 +23,8 @@
 #include <FlashString/Stream.hpp>
 #include <FlashString/Vector.hpp>
 #include <RapidXML.h>
-#include <Network/SSDP/Uuid.h>
+#include <Data/Uuid.h>
+#include <Platform/Station.h>
 
 namespace
 {
@@ -208,7 +209,7 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 
 	auto handleSubscribe = [&]() {
 		Uuid uuid;
-		uuid.generate();
+		uuid.generate(WifiStation.getMacAddress());
 
 		response.headers[HTTP_HEADER_SERVER] = device_.getField(Device::Field::serverId);
 		response.headers["SID"] = String("uuid:") + String(uuid);

@@ -22,7 +22,7 @@
 #include "Device.h"
 #include "ServiceControl.h"
 #include <Data/CString.h>
-#include <Network/SSDP/Uuid.h>
+#include <Data/Uuid.h>
 
 namespace UPnP
 {
