@@ -24,18 +24,22 @@
 
 namespace UPnP
 {
+class ClassGroupList;
+
 struct ClassGroup {
-	class List : public Vector<ClassGroup>
-	{
-	public:
-		int add(const FlashString& domain, const ObjectClass::List& classes);
-		const ObjectClass* find(const Urn& objectType) const;
-	};
+	using List = ClassGroupList;
 
 	const FlashString& domain;
 	const ObjectClass::List& classes;
 
 	const ObjectClass* find(Urn::Kind kind, const String& type, uint8_t version) const;
+};
+
+class ClassGroupList : public Vector<ClassGroup>
+{
+public:
+	int add(const FlashString& domain, const ObjectClass::List& classes);
+	const ObjectClass* find(const Urn& objectType) const;
 };
 
 } // namespace UPnP
