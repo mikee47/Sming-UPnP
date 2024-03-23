@@ -31,7 +31,7 @@ class LinkedItemList;
 class LinkedItem : public Item
 {
 public:
-	LinkedItem* next() const override
+	Item* next() const override
 	{
 		return next_;
 	}

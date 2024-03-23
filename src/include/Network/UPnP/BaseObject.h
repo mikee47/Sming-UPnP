@@ -79,9 +79,15 @@ public:
 template <typename ObjectType, typename BaseObjectType> class ObjectTemplate : public BaseObjectType
 {
 public:
-	class Iterator : public std::iterator<std::forward_iterator_tag, ObjectType>
+	class Iterator
 	{
 	public:
+		using iterator_category = std::random_access_iterator_tag;
+		using value_type = ObjectType;
+		using difference_type = std::ptrdiff_t;
+		using pointer = ObjectType*;
+		using reference = ObjectType&;
+
 		Iterator(ObjectType* x) : o(x)
 		{
 		}

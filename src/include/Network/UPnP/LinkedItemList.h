@@ -58,7 +58,7 @@ public:
 	{
 		auto p = head_;
 		while(p != nullptr && p != item) {
-			p = p->next();
+			p = p->getNext();
 		}
 		return p;
 	}

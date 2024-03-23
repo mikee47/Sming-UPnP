@@ -28,7 +28,7 @@ ActionResponse::Stream::~Stream()
 	debug_w("[UPnP] destroy ActionResponse::Stream");
 	if(auto response = responses.head()) {
 		reinterpret_cast<ActionResponse*>(response)->stream = nullptr;
-		response = response->next();
+		response = response->getNext();
 	}
 }
 
