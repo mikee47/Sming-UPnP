@@ -176,7 +176,7 @@ public:
 	 * Class information is required in order to instantiate device or service objects in response
 	 * to incoming descriptions. This information must be pre-registered with the control point.
 	 */
-	static void registerClasses(const FlashString& domain, const ObjectClass::List& classes)
+	static void registerClasses(const FlashString& domain, ObjectClass::List& classes)
 	{
 		objectClasses.add(domain, classes);
 	}

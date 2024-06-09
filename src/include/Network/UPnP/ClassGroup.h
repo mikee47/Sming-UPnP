@@ -30,7 +30,7 @@ struct ClassGroup {
 	using List = ClassGroupList;
 
 	const FlashString& domain;
-	const ObjectClass::List& classes;
+	ObjectClass::List& classes;
 
 	const ObjectClass* find(Urn::Kind kind, const String& type, uint8_t version) const;
 };
@@ -38,7 +38,7 @@ struct ClassGroup {
 class ClassGroupList : public Vector<ClassGroup>
 {
 public:
-	int add(const FlashString& domain, const ObjectClass::List& classes);
+	int add(const FlashString& domain, ObjectClass::List& classes);
 	const ObjectClass* find(const Urn& objectType) const;
 };
 

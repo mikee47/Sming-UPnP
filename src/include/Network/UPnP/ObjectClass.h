@@ -79,7 +79,7 @@ struct ObjectClass {
 	union {
 		const Device* device_;
 		const Service* service_;
-	};
+	} opt;
 
 	const FlashString& domain() const
 	{
@@ -94,13 +94,13 @@ struct ObjectClass {
 	const Device* device() const
 	{
 		assert(kind() == Kind::device);
-		return device_;
+		return opt.device_;
 	}
 
 	const Service* service() const
 	{
 		assert(kind() == Kind::service);
-		return service_;
+		return opt.service_;
 	}
 
 	Version version() const

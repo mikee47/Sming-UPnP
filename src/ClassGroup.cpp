@@ -33,7 +33,7 @@ const ObjectClass* ClassGroup::find(Urn::Kind kind, const String& type, uint8_t 
 	return nullptr;
 }
 
-int ClassGroup::List::add(const FlashString& domain, const ObjectClass::List& classes)
+int ClassGroup::List::add(const FlashString& domain, ObjectClass::List& classes)
 {
 	for(unsigned i = 0; i < count(); ++i) {
 		auto& group = elementAt(i);
