@@ -1,7 +1,3 @@
-ifeq ($(GCC_VERSION_COMPATIBLE),0)
-$(error UPnP requires a recent compiler - please upgrade!)
-endif
-
 COMPONENT_DEPENDS := SSDP RapidXML
 UPNP_TOOLS := $(COMPONENT_PATH)/tools
 
