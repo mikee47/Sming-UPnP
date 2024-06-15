@@ -46,7 +46,7 @@ bool ActionRequestControl::send(const Callback& callback)
 
 #if DEBUG_VERBOSE_LEVEL == DBG
 	s = "req 0x";
-	s += String(uint32_t(req), HEX);
+	s += String(uintptr_t(req), HEX);
 	s += ": ";
 	s += req->toString();
 	s += envelope.serialize(true);
@@ -61,7 +61,7 @@ bool ActionRequestControl::send(const Callback& callback)
 			String s;
 #if DEBUG_VERBOSE_LEVEL == DBG
 			s = "req 0x";
-			s += String(uint32_t(client.getRequest()), HEX);
+			s += String(uintptr_t(client.getRequest()), HEX);
 			s += ": ";
 			s += client.getResponse()->toString();
 			m_nputs(s.c_str(), s.length());
