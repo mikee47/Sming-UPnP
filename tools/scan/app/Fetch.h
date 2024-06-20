@@ -48,7 +48,7 @@ struct Fetch {
 		return completed[state];
 	}
 
-	bool operator==(const Fetch& other)
+	bool operator==(const Fetch& other) const
 	{
 		return root == other.root && path == other.path;
 	}
