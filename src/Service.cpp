@@ -169,7 +169,7 @@ bool Service::onHttpRequest(HttpServerConnection& connection)
 
 	auto& uri = request.uri;
 
-	auto printRequest = [&](bool verbose = false) {
+	auto printRequest = [&]([[maybe_unused]] bool verbose = false) {
 		debug_i("[UPnP] %s:%u %s %s for '%s'", connection.getRemoteIp().toString().c_str(), connection.getRemotePort(),
 				toString(request.method).c_str(), uri.Path.c_str(), getField(Field::type).c_str());
 

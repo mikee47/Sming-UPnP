@@ -78,12 +78,9 @@ public:
 
 	/**
 	 * @brief Called by framework to handle an incoming HTTP request.
-	 * @param connection
-	 * @param request
-	 * @param response
 	 * @retval bool true if request was handled
 	 */
-	virtual bool onHttpRequest(HttpServerConnection& connection)
+	virtual bool onHttpRequest(HttpServerConnection&)
 	{
 		return false;
 	}

@@ -179,7 +179,7 @@ void findLight()
 			.initializeMs<1000>([]() {
 				auto power = light.device->getSwitchPower();
 				if(power != nullptr) {
-					power->setTarget(light.state, [](auto response) {
+					power->setTarget(light.state, [](auto) {
 						light.state = !light.state;
 						light.timer.startOnce();
 					});
@@ -213,12 +213,12 @@ void initUPnP()
 	findLight();
 }
 
-void gotIP(IpAddress ip, IpAddress netmask, IpAddress gateway)
+void gotIP([[maybe_unused]] IpAddress ip, IpAddress, IpAddress)
 {
 	debugf("GotIP: %s", ip.toString().c_str());
 
 	if(ntpClient == nullptr) {
-		ntpClient = new NtpClient([](NtpClient& client, time_t timestamp) {
+		ntpClient = new NtpClient([](NtpClient&, time_t timestamp) {
 			SystemClock.setTime(timestamp, eTZ_UTC);
 			Serial.print("Time synchronized: ");
 			Serial.println(SystemClock.getSystemTimeString());

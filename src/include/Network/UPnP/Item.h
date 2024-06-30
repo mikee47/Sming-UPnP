@@ -42,12 +42,12 @@ public:
 	{
 	}
 
-	virtual XML::Node* getDescription(XML::Document& doc, DescType descType) const
+	virtual XML::Node* getDescription(XML::Document&, DescType) const
 	{
 		return nullptr;
 	}
 
-	virtual ItemEnumerator* getList(unsigned index, String& name)
+	virtual ItemEnumerator* getList([[maybe_unused]] unsigned index, [[maybe_unused]] String& name)
 	{
 		return nullptr;
 	}

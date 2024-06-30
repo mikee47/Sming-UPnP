@@ -85,7 +85,7 @@ bool ControlPoint::cancelSearch()
 	return true;
 }
 
-bool ControlPoint::formatMessage(SSDP::Message& message, SSDP::MessageSpec& ms)
+bool ControlPoint::formatMessage(SSDP::Message& message, SSDP::MessageSpec&)
 {
 	// Override the search target
 	if(!bool(activeSearch)) {

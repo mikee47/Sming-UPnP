@@ -32,7 +32,7 @@ void setLed(bool state)
 	digitalWrite(LED_PIN, state);
 }
 
-void connectFail(const String& ssid, MacAddress bssid, WifiDisconnectReason reason)
+void connectFail(const String&, MacAddress, WifiDisconnectReason reason)
 {
 	Serial.print(F("I'm NOT CONNECTED! "));
 	Serial.println(WifiEvents.getDisconnectReasonDesc(reason));
@@ -117,12 +117,12 @@ void initUPnP()
 	simpleSearch();
 }
 
-void gotIP(IpAddress ip, IpAddress netmask, IpAddress gateway)
+void gotIP([[maybe_unused]] IpAddress ip, IpAddress, IpAddress)
 {
 	debugf("GotIP: %s", ip.toString().c_str());
 
 	if(ntpClient == nullptr) {
-		ntpClient = new NtpClient([](NtpClient& client, time_t timestamp) {
+		ntpClient = new NtpClient([](NtpClient&, time_t timestamp) {
 			SystemClock.setTime(timestamp, eTZ_UTC);
 			Serial.print("Time synchronized: ");
 			Serial.println(SystemClock.getSystemTimeString());

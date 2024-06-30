@@ -44,7 +44,7 @@ public:
 
 	size_t write(const uint8_t* data, size_t size) override;
 
-	uint16_t readMemoryBlock(char* buffer, int bufSize) override
+	uint16_t readMemoryBlock(char*, int) override
 	{
 		return 0;
 	}

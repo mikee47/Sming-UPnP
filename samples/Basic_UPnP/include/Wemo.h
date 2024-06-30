@@ -83,7 +83,7 @@ public:
 		return Error::Success;
 	}
 
-	Error setBinaryState(bool state, SetBinaryState::Response response)
+	Error setBinaryState(bool state, SetBinaryState::Response)
 	{
 		controllee().setState(state);
 		return Error::Success;

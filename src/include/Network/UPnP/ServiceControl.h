@@ -69,7 +69,7 @@ public:
 
 	bool sendRequest(HttpRequest* request) const override;
 
-	Error handleAction(ActionRequest& req) override
+	Error handleAction(ActionRequest&) override
 	{
 		return Error::ActionNotImplemented;
 	}

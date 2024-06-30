@@ -56,7 +56,7 @@ bool ActionRequestControl::send(const Callback& callback)
 
 	// Don't bother checking the response if a callback wasn't provided
 	if(callback) {
-		req->onRequestComplete([&service, callback](HttpConnection& client, bool successful) -> int {
+		req->onRequestComplete([&service, callback](HttpConnection& client, bool) -> int {
 			Envelope env(service);
 			String s;
 #if DEBUG_VERBOSE_LEVEL == DBG

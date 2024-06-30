@@ -133,7 +133,7 @@ public:
 	 * @brief Inherited classes may override this to pull out any additional information from
 	 * received response headers, etc. Invoked *after* description has been processed
 	 */
-	virtual void onConnected(HttpConnection& connection)
+	virtual void onConnected(HttpConnection&)
 	{
 	}
 
