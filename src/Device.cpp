@@ -29,9 +29,10 @@
 #include <FlashString/Vector.hpp>
 #include <FlashString/TemplateStream.hpp>
 
+IMPORT_FSTR_LOCAL(upnp_default_page, COMPONENT_PATH "/resource/default.html");
+
 namespace
 {
-IMPORT_FSTR_LOCAL(upnp_default_page, COMPONENT_PATH "/resource/default.html");
 DEFINE_FSTR_LOCAL(defaultPresentationURL, "index.html");
 
 #define XX(name, req) DEFINE_FSTR_LOCAL(fn_##name, #name);
